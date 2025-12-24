@@ -71,11 +71,17 @@ export function A2UIRow({ node, renderChildren }: A2UIComponentProps<A2UIRowNode
     gap: node.gap ?? "0.5rem",
     alignItems: node.align ? alignMap[node.align] : undefined,
     justifyContent: node.justify ? justifyMap[node.justify] : undefined,
+    flexWrap: node.wrap ? "wrap" : undefined,
     ...node.style,
   }
 
+  // Use CSS classes for responsive behavior
+  const className = node.responsive
+    ? "a2ui-row-responsive"
+    : ""
+
   return (
-    <div style={style}>
+    <div style={style} className={className}>
       {node.children && renderChildren?.(node.children)}
     </div>
   )
@@ -96,7 +102,7 @@ export function A2UICard({ node, onAction, renderChildren }: A2UIComponentProps<
 
   return (
     <div
-      className={`rounded-lg border border-border bg-card p-4 shadow-sm transition-colors ${
+      className={`rounded-lg border border-border bg-card p-3 shadow-sm transition-colors md:p-4 ${
         node.hoverable !== false ? "hover:bg-card/80" : ""
       } ${handleClick ? "cursor-pointer" : ""}`}
       style={node.style}
@@ -329,22 +335,24 @@ export function A2UITabs({ node, renderChildren }: A2UIComponentProps<A2UITabsNo
 
   return (
     <div style={node.style}>
-      <div className="flex border-b border-border">
-        {node.tabs.map((tab, index) => (
-          <button
-            key={index}
-            onClick={() => setActiveTab(index)}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === index
-                ? "border-b-2 border-primary font-semibold text-foreground"
-                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <div className="flex min-w-max border-b border-border md:min-w-0">
+          {node.tabs.map((tab, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveTab(index)}
+              className={`flex-1 whitespace-nowrap px-3 py-2.5 text-xs font-medium transition-colors md:px-4 md:py-3 md:text-sm ${
+                activeTab === index
+                  ? "border-b-2 border-primary font-semibold text-foreground"
+                  : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="py-4">
+      <div className="py-3 md:py-4">
         {node.tabs[activeTab]?.content && renderChildren?.(node.tabs[activeTab].content!)}
       </div>
     </div>
@@ -421,25 +429,25 @@ export function A2UIModal({ node, onAction, renderChildren }: A2UIComponentProps
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 md:px-4"
       onClick={handleBackdropClick}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-lg border border-border bg-card shadow-xl"
+        className="h-full w-full overflow-auto border-border bg-card shadow-xl md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-lg md:border"
         style={node.style}
       >
         {node.title && (
-          <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <h2 className="text-lg font-semibold">{node.title}</h2>
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6 md:py-4">
+            <h2 className="text-base font-semibold md:text-lg">{node.title}</h2>
             <button
               onClick={handleClose}
-              className="text-2xl text-muted-foreground hover:text-foreground"
+              className="rounded-md p-1 text-2xl text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               &times;
             </button>
           </div>
         )}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {node.children && renderChildren?.(node.children)}
         </div>
       </div>

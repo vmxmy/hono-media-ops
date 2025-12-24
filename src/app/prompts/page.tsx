@@ -195,16 +195,18 @@ export default function PromptsPage() {
           type: "row",
           justify: "between",
           align: "start",
+          wrap: true,
+          gap: "0.75rem",
           children: [
             {
               type: "column",
               gap: "0.5rem",
-              style: { flex: 1 },
+              style: { flex: 1, minWidth: "200px" },
               children: [
                 { type: "text", text: prompt.name, variant: "h4" },
                 { type: "badge", text: prompt.category || "default", color: "default" },
                 ...(prompt.description ? [{ type: "text" as const, text: prompt.description, variant: "body" as const, color: "muted" as const }] : []),
-                { type: "text", text: prompt.content.length > 100 ? prompt.content.slice(0, 100) + "..." : prompt.content, variant: "body", color: "muted" },
+                { type: "text", text: prompt.content.length > 80 ? prompt.content.slice(0, 80) + "..." : prompt.content, variant: "body", color: "muted", style: { fontSize: "0.8rem" } },
               ],
             },
             {
@@ -225,16 +227,16 @@ export default function PromptsPage() {
 
   const pageNode: A2UIColumnNode = {
     type: "column",
-    gap: "2rem",
+    gap: "1.5rem",
     children: [
       { type: "text", text: t("prompts.title"), variant: "h2" },
       {
         type: "row",
-        gap: "2rem",
-        style: { display: "grid", gridTemplateColumns: "1fr 1fr" },
+        gap: "1.5rem",
+        responsive: true,
         children: [
-          formCard,
-          { type: "column", gap: "1rem", children: [{ type: "text", text: t("prompts.title"), variant: "h3" }, buildPromptsList()] },
+          { type: "column", gap: "0", style: { flex: 1, minWidth: 0 }, children: [formCard] },
+          { type: "column", gap: "1rem", style: { flex: 1, minWidth: 0 }, children: [{ type: "text", text: t("prompts.title"), variant: "h3" }, buildPromptsList()] },
         ],
       },
     ],

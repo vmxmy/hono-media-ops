@@ -59,6 +59,8 @@ export interface A2UIRowNode extends A2UIBaseNode {
   gap?: string // Gap between children
   align?: "start" | "center" | "end" | "stretch" // Align items vertically
   justify?: "start" | "center" | "end" | "between" | "around" // Justify content horizontally
+  responsive?: boolean // Stack vertically on mobile (default: false)
+  wrap?: boolean // Allow wrapping (default: false)
 }
 
 // Generic container

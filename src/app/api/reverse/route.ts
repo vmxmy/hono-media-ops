@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { jwtVerify } from "jose"
 import { env } from "@/env"
 
-const N8N_WEBHOOK_URL = "https://n8n.rn.ziikoo.com/webhook/8b45616e-b28c-49a3-81d1-5db418629e07"
-
 export async function POST(request: Request) {
   try {
     // Verify auth
@@ -34,7 +32,12 @@ export async function POST(request: Request) {
     }
 
     // Forward to n8n webhook
-    const response = await fetch(N8N_WEBHOOK_URL, {
+    const webhookUrl = env.N8N_REVERSE_WEBHOOK_URL
+    if (!webhookUrl) {
+      return NextResponse.json({ error: "Reverse webhook not configured" }, { status: 503 })
+    }
+
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

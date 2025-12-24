@@ -153,37 +153,110 @@ export default function ReversePage() {
     }
 
     const logCards: A2UINode[] = logs.map((log) => {
-      const metrics = log.metrics as { burstiness?: number; ttr?: number; avgSentLen?: number } | null
-      const reverseResult = log.reverseResult as { genre?: string; tone?: string; structure?: string; vocabulary?: string[] } | null
-
-      // Basic info tab content
-      const basicTabContent: A2UINode = {
-        type: "column",
-        gap: "0.5rem",
-        children: [
-          ...(log.articleUrl
-            ? [
-                {
-                  type: "column" as const,
-                  gap: "0.25rem",
-                  children: [
-                    { type: "text" as const, text: t("reverse.articleUrl"), variant: "caption" as const, color: "muted" as const },
-                    { type: "text" as const, text: log.articleUrl, style: { wordBreak: "break-all" as const, fontSize: "0.875rem" } },
-                  ],
-                },
-              ]
-            : []),
-          {
-            type: "text",
-            text: `${t("reverse.createdAt")}: ${formatDate(log.createdAt)}`,
-            variant: "caption",
-            color: "muted",
-          },
-        ],
+      // Parse reverse_result_json - it might be a string or object
+      let parsed: ReverseResultParsed | null = null
+      if (log.reverseResultJson) {
+        try {
+          if (typeof log.reverseResultJson === "string") {
+            parsed = JSON.parse(log.reverseResultJson)
+          } else if (typeof log.reverseResultJson === "object") {
+            const obj = log.reverseResultJson as { text?: string }
+            if (obj.text) {
+              parsed = JSON.parse(obj.text)
+            } else {
+              parsed = log.reverseResultJson as ReverseResultParsed
+            }
+          }
+        } catch {
+          parsed = null
+        }
       }
 
-      // Metrics tab content
-      const hasMetrics = metrics && (metrics.burstiness != null || metrics.ttr != null || metrics.avgSentLen != null)
+      // Use legacy metric fields if JSONB metrics not available
+      const burstiness = log.metricBurstiness
+      const ttr = log.metricTtr
+      const avgSentLen = log.metricAvgSentLen
+
+      // Style profile tab - most valuable info
+      const hasStyleInfo = parsed?.style_name || parsed?.meta_profile
+      const styleTabContent: A2UINode = {
+        type: "column",
+        gap: "0.75rem",
+        children: hasStyleInfo
+          ? [
+              // Style name - prominent display
+              ...(parsed?.style_name
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.25rem",
+                      children: [
+                        { type: "text" as const, text: t("reverse.styleName"), variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: parsed.style_name, variant: "h4" as const },
+                      ],
+                    },
+                  ]
+                : []),
+              // Meta profile
+              ...(parsed?.meta_profile
+                ? [
+                    {
+                      type: "row" as const,
+                      gap: "1.5rem",
+                      style: { flexWrap: "wrap" as const },
+                      children: [
+                        ...(parsed.meta_profile.archetype
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                children: [
+                                  { type: "text" as const, text: t("reverse.archetype"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "text" as const, text: parsed.meta_profile.archetype, style: { fontSize: "0.875rem" } },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(parsed.meta_profile.target_audience
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                children: [
+                                  { type: "text" as const, text: t("reverse.targetAudience"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "text" as const, text: parsed.meta_profile.target_audience, style: { fontSize: "0.875rem" } },
+                                ],
+                              },
+                            ]
+                          : []),
+                      ],
+                    },
+                  ]
+                : []),
+              // Tone keywords
+              ...(parsed?.meta_profile?.tone_keywords && parsed.meta_profile.tone_keywords.length > 0
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.25rem",
+                      children: [
+                        { type: "text" as const, text: t("reverse.toneKeywords"), variant: "caption" as const, color: "muted" as const },
+                        {
+                          type: "row" as const,
+                          gap: "0.25rem",
+                          style: { flexWrap: "wrap" as const },
+                          children: parsed.meta_profile.tone_keywords.map((k) => ({ type: "badge" as const, text: k, color: "default" as const })),
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+            ]
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // Metrics tab - quantitative data
+      const hasMetrics = burstiness != null || ttr != null || avgSentLen != null
       const metricsTabContent: A2UINode = {
         type: "column",
         gap: "0.5rem",
@@ -194,93 +267,52 @@ export default function ReversePage() {
                 gap: "1.5rem",
                 style: { flexWrap: "wrap" },
                 children: [
-                  ...(metrics.burstiness != null
+                  ...(burstiness != null
                     ? [
                         {
                           type: "column" as const,
                           gap: "0.125rem",
                           children: [
                             { type: "text" as const, text: t("insights.burstiness"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: metrics.burstiness.toFixed(2), variant: "h4" as const },
+                            { type: "text" as const, text: burstiness.toFixed(2), variant: "h4" as const },
                           ],
                         },
                       ]
                     : []),
-                  ...(metrics.ttr != null
+                  ...(ttr != null
                     ? [
                         {
                           type: "column" as const,
                           gap: "0.125rem",
                           children: [
                             { type: "text" as const, text: t("insights.ttr"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: metrics.ttr.toFixed(2), variant: "h4" as const },
+                            { type: "text" as const, text: ttr.toFixed(2), variant: "h4" as const },
                           ],
                         },
                       ]
                     : []),
-                  ...(metrics.avgSentLen != null
+                  ...(avgSentLen != null
                     ? [
                         {
                           type: "column" as const,
                           gap: "0.125rem",
                           children: [
                             { type: "text" as const, text: t("insights.avgSentLen"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: metrics.avgSentLen.toFixed(1), variant: "h4" as const },
+                            { type: "text" as const, text: avgSentLen.toFixed(1), variant: "h4" as const },
                           ],
                         },
                       ]
                     : []),
                 ],
               },
-            ]
-          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
-      }
-
-      // Analysis tab content
-      const hasAnalysis = reverseResult && (reverseResult.tone || reverseResult.structure || (reverseResult.vocabulary && reverseResult.vocabulary.length > 0))
-      const analysisTabContent: A2UINode = {
-        type: "column",
-        gap: "0.5rem",
-        children: hasAnalysis
-          ? [
-              ...(reverseResult.tone
+              // Model info inline
+              ...(log.modelName
                 ? [
                     {
-                      type: "column" as const,
-                      gap: "0.125rem",
-                      children: [
-                        { type: "text" as const, text: t("reverse.tone"), variant: "caption" as const, color: "muted" as const },
-                        { type: "text" as const, text: reverseResult.tone },
-                      ],
-                    },
-                  ]
-                : []),
-              ...(reverseResult.structure
-                ? [
-                    {
-                      type: "column" as const,
-                      gap: "0.125rem",
-                      children: [
-                        { type: "text" as const, text: t("reverse.structure"), variant: "caption" as const, color: "muted" as const },
-                        { type: "text" as const, text: reverseResult.structure },
-                      ],
-                    },
-                  ]
-                : []),
-              ...(reverseResult.vocabulary && reverseResult.vocabulary.length > 0
-                ? [
-                    {
-                      type: "column" as const,
-                      gap: "0.25rem",
-                      children: [
-                        { type: "text" as const, text: t("reverse.vocabulary"), variant: "caption" as const, color: "muted" as const },
-                        {
-                          type: "row" as const,
-                          gap: "0.25rem",
-                          style: { flexWrap: "wrap" as const },
-                          children: reverseResult.vocabulary.slice(0, 8).map((v) => ({ type: "badge" as const, text: v, color: "default" as const })),
-                        },
-                      ],
+                      type: "text" as const,
+                      text: `${t("reverse.modelName")}: ${log.modelName}`,
+                      variant: "caption" as const,
+                      color: "muted" as const,
                     },
                   ]
                 : []),
@@ -288,55 +320,51 @@ export default function ReversePage() {
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
       }
 
-      // Model tab content
-      const hasModelInfo = log.modelName || log.totalTokens || log.costEstimatedUsd
-      const modelTabContent: A2UINode = {
+      // Blueprint tab - structure guide
+      const hasBlueprint = parsed?.blueprint && parsed.blueprint.length > 0
+      const blueprintTabContent: A2UINode = {
         type: "column",
         gap: "0.5rem",
-        children: hasModelInfo
+        children: hasBlueprint
+          ? parsed!.blueprint!.map((section, idx) => ({
+              type: "column" as const,
+              gap: "0.125rem",
+              style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+              children: [
+                { type: "text" as const, text: `${idx + 1}. ${section.section || ""}`, variant: "body" as const, style: { fontWeight: 600 } },
+                { type: "text" as const, text: section.specs || "", variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem" } },
+              ],
+            }))
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // Prompt tab - the actionable output
+      const hasPrompt = parsed?.execution_prompt || log.finalSystemPrompt
+      const promptText = parsed?.execution_prompt || log.finalSystemPrompt || ""
+      const promptTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasPrompt
           ? [
               {
-                type: "row",
-                gap: "1.5rem",
-                style: { flexWrap: "wrap" },
-                children: [
-                  ...(log.modelName
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("reverse.modelName"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: log.modelName },
-                          ],
-                        },
-                      ]
-                    : []),
-                  ...(log.totalTokens
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("reverse.totalTokens"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: log.totalTokens.toLocaleString() },
-                          ],
-                        },
-                      ]
-                    : []),
-                  ...(log.costEstimatedUsd
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("reverse.cost"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: `$${log.costEstimatedUsd.toFixed(4)}` },
-                          ],
-                        },
-                      ]
-                    : []),
-                ],
+                type: "text",
+                text: promptText.length > 300 ? promptText.slice(0, 300) + "..." : promptText,
+                style: {
+                  whiteSpace: "pre-wrap",
+                  fontSize: "0.75rem",
+                  lineHeight: "1.4",
+                  padding: "0.5rem",
+                  backgroundColor: "var(--muted)",
+                  borderRadius: "0.375rem",
+                  maxHeight: "120px",
+                  overflow: "auto",
+                },
+              },
+              {
+                type: "text",
+                text: t("reverse.clickToViewFull"),
+                variant: "caption",
+                color: "muted",
               },
             ]
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
@@ -351,32 +379,48 @@ export default function ReversePage() {
             type: "column",
             gap: "0.75rem",
             children: [
-              // Header row with title, badges and delete button
+              // Header row with style name, badges and actions
               {
                 type: "row",
                 justify: "between",
                 align: "start",
+                wrap: true,
+                gap: "0.75rem",
                 children: [
                   {
                     type: "column",
                     gap: "0.5rem",
-                    style: { flex: 1 },
+                    style: { flex: 1, minWidth: "200px" },
                     children: [
                       {
-                        type: "text",
-                        text: log.articleTitle || log.articleUrl?.slice(0, 50) || t("reverse.untitled"),
-                        variant: "h4",
-                        style: { cursor: "pointer" },
+                        type: "link",
+                        text: parsed?.style_name || log.articleTitle || t("reverse.untitled"),
+                        variant: "default",
+                        style: { fontSize: "1rem", fontWeight: 600, cursor: "pointer", wordBreak: "break-word" },
                         onClick: { action: "viewDetail", args: [log.id] },
                       },
                       {
                         type: "row",
-                        gap: "0.5rem",
+                        gap: "0.375rem",
+                        wrap: true,
                         children: [
                           { type: "badge", text: getStatusLabel(log.status ?? "PENDING"), color: getStatusColor(log.status ?? "PENDING") },
                           ...(log.genreCategory ? [{ type: "badge" as const, text: log.genreCategory, color: "default" as const }] : []),
+                          ...(log.modelName ? [{ type: "badge" as const, text: log.modelName, color: "default" as const }] : []),
                         ],
                       },
+                      // Show URL if different from title
+                      ...(log.articleUrl && log.articleUrl !== parsed?.style_name
+                        ? [
+                            {
+                              type: "text" as const,
+                              text: log.articleUrl.length > 40 ? log.articleUrl.slice(0, 40) + "..." : log.articleUrl,
+                              variant: "caption" as const,
+                              color: "muted" as const,
+                              style: { wordBreak: "break-all" as const, fontSize: "0.7rem" },
+                            },
+                          ]
+                        : []),
                     ],
                   },
                   {
@@ -388,14 +432,14 @@ export default function ReversePage() {
                   },
                 ],
               } as A2UIRowNode,
-              // Tabs for detailed info
+              // Tabs for detailed info - reordered by value
               {
                 type: "tabs",
                 tabs: [
-                  { label: t("reverse.tabBasic"), content: basicTabContent },
+                  { label: t("reverse.tabStyle"), content: styleTabContent },
+                  { label: t("reverse.tabPrompt"), content: promptTabContent },
+                  { label: t("reverse.tabBlueprint"), content: blueprintTabContent },
                   { label: t("reverse.tabMetrics"), content: metricsTabContent },
-                  { label: t("reverse.tabAnalysis"), content: analysisTabContent },
-                  { label: t("reverse.tabModel"), content: modelTabContent },
                 ],
               },
             ],
@@ -574,12 +618,14 @@ export default function ReversePage() {
   // Build page structure
   const pageNode: A2UIColumnNode = {
     type: "column",
-    gap: "1.5rem",
+    gap: "1rem",
     children: [
       {
         type: "row",
         justify: "between",
         align: "center",
+        wrap: true,
+        gap: "0.75rem",
         children: [
           { type: "text", text: t("reverse.title"), variant: "h2" },
           { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },

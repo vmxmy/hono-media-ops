@@ -100,3 +100,36 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+
+/* A2UI Responsive utilities */
+@media (max-width: 767px) {
+    .a2ui-row-responsive {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .a2ui-row-responsive > * {
+        width: 100% !important;
+        flex: none !important;
+    }
+
+    /* Mobile modal adjustments */
+    .a2ui-modal-mobile {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+    }
+
+    /* Mobile tabs - horizontal scroll */
+    .a2ui-tabs-mobile {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .a2ui-tabs-mobile::-webkit-scrollbar {
+        display: none;
+    }
+}

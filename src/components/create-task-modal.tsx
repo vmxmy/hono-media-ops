@@ -258,12 +258,13 @@ export function CreateTaskModal({
     },
     {
       type: "row",
-      gap: "1rem",
+      gap: "0.75rem",
+      responsive: true,
       children: [
         {
           type: "form-field",
           label: t("taskForm.coverRatio"),
-          style: { flex: 1 },
+          style: { flex: 1, minWidth: 0 },
           children: [
             {
               type: "select",
@@ -284,7 +285,7 @@ export function CreateTaskModal({
         {
           type: "form-field",
           label: t("taskForm.coverResolution"),
-          style: { flex: 1 },
+          style: { flex: 1, minWidth: 0 },
           children: [
             {
               type: "select",
@@ -303,12 +304,13 @@ export function CreateTaskModal({
     },
     {
       type: "row",
-      gap: "1rem",
+      gap: "0.75rem",
+      responsive: true,
       children: [
         {
           type: "form-field",
           label: t("taskForm.coverModel"),
-          style: { flex: 1 },
+          style: { flex: 1, minWidth: 0 },
           children: [
             {
               type: "select",
@@ -328,7 +330,7 @@ export function CreateTaskModal({
         {
           type: "form-field",
           label: t("taskForm.coverMode"),
-          style: { flex: 1 },
+          style: { flex: 1, minWidth: 0 },
           children: [
             {
               type: "select",

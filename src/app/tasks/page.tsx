@@ -187,7 +187,9 @@ export default function TasksPage() {
       type: "row",
       justify: "between",
       align: "center",
-      style: { marginBottom: "1.5rem" },
+      wrap: true,
+      gap: "0.75rem",
+      style: { marginBottom: "1rem" },
       children: [
         { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
         { type: "button", text: t("tasks.newTask"), variant: "primary", size: "md", onClick: { action: "newTask" } },

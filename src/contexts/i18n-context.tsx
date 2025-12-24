@@ -182,10 +182,15 @@ export type I18nKey =
     | "reverse.executionId"
     | "reverse.noContent"
     | "reverse.deleteConfirm"
-    | "reverse.tabBasic"
+    | "reverse.tabStyle"
+    | "reverse.tabPrompt"
+    | "reverse.tabBlueprint"
     | "reverse.tabMetrics"
-    | "reverse.tabAnalysis"
-    | "reverse.tabModel"
+    | "reverse.styleName"
+    | "reverse.archetype"
+    | "reverse.targetAudience"
+    | "reverse.toneKeywords"
+    | "reverse.clickToViewFull"
     // App
     | "app.title"
     | "app.description"
@@ -372,10 +377,15 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.executionId": "Execution ID",
         "reverse.noContent": "No content",
         "reverse.deleteConfirm": "Are you sure you want to delete this record?",
-        "reverse.tabBasic": "Basic",
+        "reverse.tabStyle": "Style",
+        "reverse.tabPrompt": "Prompt",
+        "reverse.tabBlueprint": "Blueprint",
         "reverse.tabMetrics": "Metrics",
-        "reverse.tabAnalysis": "Analysis",
-        "reverse.tabModel": "Model",
+        "reverse.styleName": "Style Name",
+        "reverse.archetype": "Archetype",
+        "reverse.targetAudience": "Target Audience",
+        "reverse.toneKeywords": "Tone Keywords",
+        "reverse.clickToViewFull": "Click title to view full details",
         // App
         "app.title": "Media Ops",
         "app.description": "AI-powered article generation platform",
@@ -551,10 +561,15 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.executionId": "执行 ID",
         "reverse.noContent": "无内容",
         "reverse.deleteConfirm": "确定要删除这条记录吗？",
-        "reverse.tabBasic": "基本信息",
-        "reverse.tabMetrics": "指标",
-        "reverse.tabAnalysis": "分析结果",
-        "reverse.tabModel": "模型",
+        "reverse.tabStyle": "风格画像",
+        "reverse.tabPrompt": "提示词",
+        "reverse.tabBlueprint": "结构蓝图",
+        "reverse.tabMetrics": "量化指标",
+        "reverse.styleName": "风格名称",
+        "reverse.archetype": "写作人设",
+        "reverse.targetAudience": "目标受众",
+        "reverse.toneKeywords": "语调关键词",
+        "reverse.clickToViewFull": "点击标题查看完整详情",
         // App
         "app.title": "Media Ops",
         "app.description": "AI 驱动的文章生成平台",

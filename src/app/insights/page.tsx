@@ -53,6 +53,19 @@ export default function InsightsPage() {
     []
   )
 
+  // Safely format metric values (may be string from JSONB)
+  const formatMetric = (value: unknown, decimals: number): string => {
+    if (value == null) return "-"
+    const num = typeof value === "string" ? parseFloat(value) : Number(value)
+    return isNaN(num) ? "-" : num.toFixed(decimals)
+  }
+
+  const formatPercent = (value: unknown): string => {
+    if (value == null) return "-"
+    const num = typeof value === "string" ? parseFloat(value) : Number(value)
+    return isNaN(num) ? "-" : `${(num * 100).toFixed(0)}%`
+  }
+
   // Build style profile card
   const buildProfileCard = (): A2UICardNode => {
     if (profileLoading) {
@@ -80,7 +93,7 @@ export default function InsightsPage() {
           gap: "0.25rem",
           style: { flex: 1, textAlign: "center" },
           children: [
-            { type: "text", text: profile.averageMetrics.burstiness?.toFixed(2) ?? "-", variant: "h3" },
+            { type: "text", text: formatMetric(profile.averageMetrics.burstiness, 2), variant: "h3" },
             { type: "text", text: t("insights.burstiness"), variant: "caption", color: "muted" },
           ],
         },
@@ -89,7 +102,7 @@ export default function InsightsPage() {
           gap: "0.25rem",
           style: { flex: 1, textAlign: "center" },
           children: [
-            { type: "text", text: profile.averageMetrics.ttr?.toFixed(3) ?? "-", variant: "h3" },
+            { type: "text", text: formatMetric(profile.averageMetrics.ttr, 3), variant: "h3" },
             { type: "text", text: t("insights.ttr"), variant: "caption", color: "muted" },
           ],
         },
@@ -98,7 +111,7 @@ export default function InsightsPage() {
           gap: "0.25rem",
           style: { flex: 1, textAlign: "center" },
           children: [
-            { type: "text", text: profile.averageMetrics.avgSentLen?.toFixed(1) ?? "-", variant: "h3" },
+            { type: "text", text: formatMetric(profile.averageMetrics.avgSentLen, 1), variant: "h3" },
             { type: "text", text: t("insights.avgSentLen"), variant: "caption", color: "muted" },
           ],
         },
@@ -111,7 +124,7 @@ export default function InsightsPage() {
       style: { flexWrap: "wrap", marginTop: "0.5rem" },
       children: profile.topGenres.slice(0, 5).map((g) => ({
         type: "badge",
-        text: `${g.genre} (${(g.percentage * 100).toFixed(0)}%)`,
+        text: `${g.genre} (${formatPercent(g.percentage)})`,
         color: "primary" as const,
       })),
     }
@@ -151,7 +164,7 @@ export default function InsightsPage() {
                   type: "column",
                   gap: "0.25rem",
                   children: [
-                    { type: "text", text: `${(profile.successRate * 100).toFixed(0)}%`, variant: "h2" },
+                    { type: "text", text: formatPercent(profile.successRate), variant: "h2" },
                     { type: "text", text: t("insights.successRate"), variant: "caption", color: "muted" },
                   ],
                 },
@@ -195,9 +208,9 @@ export default function InsightsPage() {
             children: [
               { type: "text", text: point.date, variant: "caption" },
               { type: "row", gap: "1rem", children: [
-                { type: "text", text: `B: ${point.burstiness?.toFixed(2) ?? "-"}`, variant: "caption", color: "muted" },
-                { type: "text", text: `TTR: ${point.ttr?.toFixed(3) ?? "-"}`, variant: "caption", color: "muted" },
-                { type: "text", text: `Len: ${point.avgSentLen?.toFixed(1) ?? "-"}`, variant: "caption", color: "muted" },
+                { type: "text", text: `B: ${formatMetric(point.burstiness, 2)}`, variant: "caption", color: "muted" },
+                { type: "text", text: `TTR: ${formatMetric(point.ttr, 3)}`, variant: "caption", color: "muted" },
+                { type: "text", text: `Len: ${formatMetric(point.avgSentLen, 1)}`, variant: "caption", color: "muted" },
                 { type: "badge", text: String(point.count), color: "default" as const },
               ]},
             ],
@@ -267,7 +280,7 @@ export default function InsightsPage() {
                       type: "column",
                       gap: "0.25rem",
                       children: [
-                        { type: "text", text: `${(genreInsights.successRate * 100).toFixed(0)}%`, variant: "h3" },
+                        { type: "text", text: formatPercent(genreInsights.successRate), variant: "h3" },
                         { type: "text", text: t("insights.successRate"), variant: "caption", color: "muted" },
                       ],
                     },
@@ -283,8 +296,8 @@ export default function InsightsPage() {
                       style: { flex: 1 },
                       children: [
                         { type: "text", text: t("insights.burstiness"), variant: "label" },
-                        { type: "text", text: `Avg: ${genreInsights.metrics.burstiness.avg?.toFixed(2) ?? "-"}`, variant: "caption" },
-                        { type: "text", text: `Range: ${genreInsights.metrics.burstiness.min?.toFixed(2) ?? "-"} - ${genreInsights.metrics.burstiness.max?.toFixed(2) ?? "-"}`, variant: "caption", color: "muted" },
+                        { type: "text", text: `Avg: ${formatMetric(genreInsights.metrics.burstiness.avg, 2)}`, variant: "caption" },
+                        { type: "text", text: `Range: ${formatMetric(genreInsights.metrics.burstiness.min, 2)} - ${formatMetric(genreInsights.metrics.burstiness.max, 2)}`, variant: "caption", color: "muted" },
                       ],
                     },
                     {
@@ -293,8 +306,8 @@ export default function InsightsPage() {
                       style: { flex: 1 },
                       children: [
                         { type: "text", text: t("insights.ttr"), variant: "label" },
-                        { type: "text", text: `Avg: ${genreInsights.metrics.ttr.avg?.toFixed(3) ?? "-"}`, variant: "caption" },
-                        { type: "text", text: `Range: ${genreInsights.metrics.ttr.min?.toFixed(3) ?? "-"} - ${genreInsights.metrics.ttr.max?.toFixed(3) ?? "-"}`, variant: "caption", color: "muted" },
+                        { type: "text", text: `Avg: ${formatMetric(genreInsights.metrics.ttr.avg, 3)}`, variant: "caption" },
+                        { type: "text", text: `Range: ${formatMetric(genreInsights.metrics.ttr.min, 3)} - ${formatMetric(genreInsights.metrics.ttr.max, 3)}`, variant: "caption", color: "muted" },
                       ],
                     },
                   ],
