@@ -69,6 +69,7 @@ export default function LoginPage() {
         {
           type: "input",
           id: "username",
+          value: username,
           placeholder: t("auth.username"),
           inputType: "text",
           onChange: { action: "setUsername" },
@@ -83,6 +84,7 @@ export default function LoginPage() {
         {
           type: "input",
           id: "accessCode",
+          value: accessCode,
           placeholder: t("auth.accessCode"),
           inputType: "password",
           onChange: { action: "setAccessCode" },
