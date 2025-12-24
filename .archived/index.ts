@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { html, raw } from 'hono/html'
 import { sign, verify } from 'hono/jwt'
-import { drizzle } from 'drizzle-orm/d1'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
 import { eq, desc, sql } from 'drizzle-orm'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { users, tasks } from './db/schema'
+import { users, tasks, prompts, taskExecutions, reverseEngineeringLogs } from './db/schema'
 
 // Validation schemas
 const loginSchema = z.object({
@@ -43,9 +44,15 @@ const createTaskSchema = z.object({
 })
 
 type Bindings = {
-  DB: D1Database
+  PGSQL_URL: string
   JWT_SECRET: string
   N8N_WEBHOOK_URL: string
+}
+
+// Create database connection helper
+const getDb = (pgsqlUrl: string) => {
+  const client = postgres(pgsqlUrl, { prepare: false })
+  return drizzle(client)
 }
 
 type AuthPayload = {
@@ -427,12 +434,258 @@ const Layout = (props: { title: string; body: unknown }) => html`
       0%, 100% { opacity: 0.3; }
       50% { opacity: 0.7; }
     }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 256px;
+      min-height: 100vh;
+      background: hsl(var(--card));
+      border-right: 1px solid hsl(var(--border));
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem 0;
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 0.5rem 1rem;
+    }
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 0.5rem;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: hsl(var(--foreground));
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      margin: 0.125rem 0;
+    }
+    .sidebar-link:hover {
+      background: hsl(var(--muted));
+    }
+    .sidebar-link.active {
+      background: hsl(var(--primary) / 0.1);
+      color: hsl(var(--primary));
+      border-left: 3px solid hsl(var(--primary));
+      margin-left: -3px;
+    }
+    .sidebar-link svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+    }
+    .sidebar-footer {
+      padding: 1rem;
+      border-top: 1px solid hsl(var(--border));
+    }
+    .sidebar-divider {
+      height: 1px;
+      background: hsl(var(--border));
+      margin: 0.5rem 1rem;
+    }
+    .main-with-sidebar {
+      margin-left: 256px;
+      min-height: 100vh;
+    }
+    /* Mobile sidebar */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: hsl(var(--card));
+      border-bottom: 1px solid hsl(var(--border));
+      z-index: 30;
+      padding: 0 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mobile-menu-btn {
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: hsl(var(--foreground));
+    }
+    .mobile-menu-btn:hover {
+      background: hsl(var(--muted));
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 35;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.open {
+      display: block;
+      opacity: 1;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .mobile-header {
+        display: flex;
+      }
+      .main-with-sidebar {
+        margin-left: 0;
+        padding-top: 56px;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-background text-foreground">
   ${props.body}
 </body>
 </html>
+`
+
+// Sidebar Component
+const Sidebar = (props: { activePage: string }) => html`
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard" class="flex items-center gap-2 text-lg font-semibold">
+        <span class="text-2xl">✍️</span>
+        <span>AI 写作中台</span>
+      </a>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">工作台</div>
+        <a href="/dashboard" class="sidebar-link ${props.activePage === 'dashboard' ? 'active' : ''}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          文章库
+        </a>
+        <a href="/prompts" class="sidebar-link ${props.activePage === 'prompts' ? 'active' : ''}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          提示词管理
+        </a>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">分析工具</div>
+        <a href="/reverse-logs" class="sidebar-link ${props.activePage === 'reverse-logs' ? 'active' : ''}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          逆向工程
+        </a>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <a href="/settings" class="sidebar-link ${props.activePage === 'settings' ? 'active' : ''}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          设置
+        </a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button onclick="logout()" class="sidebar-link w-full text-left" style="color: hsl(var(--danger));">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        退出登录
+      </button>
+    </div>
+  </nav>
+`
+
+// PageWithSidebar Layout
+const PageWithSidebar = (props: { activePage: string; title: string; subtitle?: string; body: unknown }) => html`
+  ${Layout({
+    title: props.title,
+    body: html`
+      <!-- Mobile Header -->
+      <div class="mobile-header">
+        <button onclick="toggleSidebar()" class="mobile-menu-btn">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <span class="font-semibold">✍️ AI 写作中台</span>
+        <button onclick="toggleTheme()" class="mobile-menu-btn">
+          <svg id="mobile-icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg id="mobile-icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sidebar Overlay -->
+      <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+      <!-- Sidebar -->
+      ${Sidebar({ activePage: props.activePage })}
+
+      <!-- Main Content -->
+      <main class="main-with-sidebar">
+        ${props.body}
+      </main>
+
+      <script>
+        function toggleSidebar() {
+          document.getElementById('sidebar').classList.toggle('open');
+          document.getElementById('sidebar-overlay').classList.toggle('open');
+        }
+        function closeSidebar() {
+          document.getElementById('sidebar').classList.remove('open');
+          document.getElementById('sidebar-overlay').classList.remove('open');
+        }
+        function logout() {
+          localStorage.removeItem('token');
+          window.location.href = '/';
+        }
+        function toggleTheme() {
+          const html = document.getElementById('html-root');
+          const isDark = html.classList.toggle('dark');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          updateThemeIcons();
+        }
+        function updateThemeIcons() {
+          const isDark = document.getElementById('html-root').classList.contains('dark');
+          document.getElementById('icon-sun')?.classList.toggle('hidden', !isDark);
+          document.getElementById('icon-moon')?.classList.toggle('hidden', isDark);
+          document.getElementById('mobile-icon-sun')?.classList.toggle('hidden', !isDark);
+          document.getElementById('mobile-icon-moon')?.classList.toggle('hidden', isDark);
+        }
+        // Initialize theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.getElementById('html-root').classList.add('dark');
+        }
+        updateThemeIcons();
+      </script>
+    `
+  })}
 `
 
 const getAuthPayload = async (c: { req: { header: (name: string) => string | undefined } }, secret: string) => {
@@ -492,7 +745,7 @@ app.onError((err, c) => {
   }
 
   if (err instanceof z.ZodError) {
-    const firstError = err.errors[0]
+    const firstError = err.issues[0]
     return c.json({ error: firstError?.message || '参数验证失败' }, 400)
   }
 
@@ -605,7 +858,8 @@ app.get('/', (c) =>
 // 仪表盘
 app.get('/dashboard', (c) =>
   c.html(
-    Layout({
+    PageWithSidebar({
+      activePage: 'dashboard',
       title: '文章列表',
       body: html`
         <div class="max-w-6xl mx-auto py-12 px-4 page-enter">
@@ -617,15 +871,6 @@ app.get('/dashboard', (c) =>
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <button onclick="openModal()" class="btn-primary">新建任务</button>
-              <button onclick="toggleTheme()" class="theme-toggle" title="切换主题">
-                <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                </svg>
-              </button>
-              <button onclick="logout()" class="btn-secondary">退出</button>
             </div>
           </div>
 
@@ -1250,7 +1495,7 @@ app.get('/dashboard', (c) =>
             document.getElementById('outputSchema').value = '';
             document.getElementById('coverPrompt').value = '';
             document.getElementById('coverRatio').value = '16:9';
-            document.getElementById('coverResolution').value = '2k';
+            document.getElementById('coverResolution').value = '1k';
             document.getElementById('coverModel').value = 'jimeng-4.5';
             document.getElementById('coverMode').value = 'text2img';
             document.getElementById('coverNegativePrompt').value = '模糊, 变形, 低质量, 水印, 文字';
@@ -1277,7 +1522,7 @@ app.get('/dashboard', (c) =>
               document.getElementById('outputSchema').value = task.outputSchema || '';
               document.getElementById('coverPrompt').value = task.coverPrompt || '';
               document.getElementById('coverRatio').value = task.coverRatio || '16:9';
-              document.getElementById('coverResolution').value = task.coverResolution || '2k';
+              document.getElementById('coverResolution').value = task.coverResolution || '1k';
               document.getElementById('coverModel').value = task.coverModel || 'jimeng-4.5';
               document.getElementById('coverMode').value = task.coverMode || 'text2img';
               document.getElementById('coverNegativePrompt').value = task.coverNegativePrompt || '模糊, 变形, 低质量, 水印, 文字';
@@ -1388,7 +1633,7 @@ app.get('/article/:id', async (c) => {
   }
   if (!payload?.id) return c.redirect('/')
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select()
     .from(tasks)
@@ -1463,7 +1708,7 @@ app.post('/api/login', async (c) => {
 
   if (!username || !code) return c.json({ error: '缺少参数' }, 400)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [user] = await db
     .select()
     .from(users)
@@ -1487,7 +1732,7 @@ app.get('/api/tasks/a2ui', async (c) => {
   const searchQuery = c.req.query('q') || ''
   const statusFilter = c.req.query('status') || ''
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
 
   // Build where conditions
   let whereCondition = eq(tasks.userId, payload.id)
@@ -1650,7 +1895,7 @@ app.get('/api/tasks/:id', async (c) => {
   const id = c.req.param('id')
   if (!id) return c.json({ error: '任务不存在' }, 404)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select()
     .from(tasks)
@@ -1667,7 +1912,7 @@ app.get('/api/tasks', async (c) => {
   const payload = await getAuthPayload(c, c.env.JWT_SECRET)
   if (!payload) return c.json([], 401)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const results = await db
     .select({
       id: tasks.id,
@@ -1713,7 +1958,7 @@ app.post('/api/tasks', async (c) => {
   const coverMode = pickBodyString(body, ['coverMode', '封面模式']) || 'text2img'
   const coverNegativePrompt = pickBodyString(body, ['coverNegativePrompt', '封面负面提示词']) || '模糊, 变形, 低质量, 水印, 文字'
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const taskId = crypto.randomUUID()
 
   await db.insert(tasks).values({
@@ -1806,7 +2051,7 @@ app.post('/api/tasks/:id/retry', async (c) => {
   const id = c.req.param('id')
   if (!id) return c.json({ error: '任务不存在' }, 404)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select()
     .from(tasks)
@@ -1870,7 +2115,7 @@ app.post('/api/tasks/:id/cancel', async (c) => {
   const id = c.req.param('id')
   if (!id) return c.json({ error: '任务不存在' }, 404)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select({ id: tasks.id, status: tasks.status })
     .from(tasks)
@@ -1897,7 +2142,7 @@ app.delete('/api/tasks/:id', async (c) => {
   const id = c.req.param('id')
   if (!id) return c.json({ error: '任务不存在' }, 404)
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select({ id: tasks.id })
     .from(tasks)
@@ -1924,7 +2169,7 @@ app.get('/api/tasks/:id/export', async (c) => {
     return c.json({ error: '不支持的导出格式' }, 400)
   }
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
   const [task] = await db
     .select()
     .from(tasks)
@@ -2029,7 +2274,7 @@ app.post('/api/tasks/batch/delete', async (c) => {
     return c.json({ error: '一次最多删除 100 个任务' }, 400)
   }
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
 
   // Delete all tasks that belong to the user
   let deleted = 0
@@ -2063,7 +2308,7 @@ app.post('/api/tasks/batch/retry', async (c) => {
     return c.json({ error: '一次最多重试 50 个任务' }, 400)
   }
 
-  const db = drizzle(c.env.DB)
+  const db = getDb(c.env.PGSQL_URL)
 
   // Get all tasks that can be retried (failed or cancelled)
   const tasksToRetry = await db
@@ -2104,7 +2349,7 @@ app.post('/api/tasks/batch/retry', async (c) => {
               outputSchema: task.outputSchema ?? '',
               coverPrompt: task.coverPrompt ?? '',
               coverRatio: task.coverRatio ?? '16:9',
-              coverResolution: task.coverResolution ?? '2k',
+              coverResolution: task.coverResolution ?? '1k',
               coverModel: task.coverModel ?? 'jimeng-4.5',
               coverMode: task.coverMode ?? 'text2img',
               coverNegativePrompt: task.coverNegativePrompt ?? '模糊, 变形, 低质量, 水印, 文字',
@@ -2144,5 +2389,1138 @@ app.post('/api/tasks/batch/retry', async (c) => {
 
   return c.json({ success: true, retried: tasksToRetry.length })
 })
+
+// =====================
+// n8n Callback - 执行记录
+// =====================
+
+app.post('/api/executions', async (c) => {
+  let body: Record<string, unknown>
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: '请求体无效' }, 400)
+  }
+
+  const executionId = body.execution_id as string
+  const taskId = body.task_id as string
+
+  if (!executionId) {
+    return c.json({ error: 'execution_id 不能为空' }, 400)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+
+  // 插入执行记录
+  await db.insert(taskExecutions).values({
+    id: executionId,
+    taskId: taskId || null,
+    n8nExecutionId: (body.n8n_execution_id as string) || null,
+    startedAt: body.started_at ? new Date(body.started_at as string) : new Date(),
+    completedAt: body.completed_at ? new Date(body.completed_at as string) : null,
+    durationMs: body.duration_ms ? Number(body.duration_ms) : null,
+    status: (body.status as string) || 'completed',
+    errorMessage: (body.error_message as string) || null,
+    inputSnapshot: (body.input_snapshot as string) || null,
+    coverUrl: (body.cover_url as string) || null,
+    coverR2Key: (body.cover_r2_key as string) || null,
+    wechatMediaId: (body.wechat_media_id as string) || null,
+    wechatDraftId: (body.wechat_draft_id as string) || null,
+    articleHtml: (body.article_html as string) || null,
+    metadata: (body.metadata as string) || null,
+  })
+
+  // 同时更新 tasks 表状态
+  if (taskId && body.title && body.description) {
+    await db.update(tasks)
+      .set({
+        status: 'completed',
+        resultTitle: body.title as string,
+        resultContent: body.description as string,
+      })
+      .where(eq(tasks.id, taskId))
+  }
+
+  return c.json({ success: true, executionId })
+})
+
+// =====================
+// Prompts Management
+// =====================
+
+app.get('/prompts', (c) =>
+  c.html(
+    PageWithSidebar({
+      activePage: 'prompts',
+      title: '提示词管理',
+      body: html`
+        <div class="max-w-6xl mx-auto py-12 px-4 page-enter">
+          <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">Prompts</p>
+              <h1 class="text-3xl font-semibold tracking-tight">提示词管理</h1>
+              <p class="text-sm text-muted-foreground">管理和维护系统提示词</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button onclick="openPromptModal()" class="btn-primary">新建提示词</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 mb-6">
+            <input
+              id="search-input"
+              type="text"
+              class="form-input flex-1"
+              placeholder="搜索提示词名称..."
+              oninput="handlePromptSearch()"
+            />
+            <select id="category-filter" class="form-input sm:w-40" onchange="handleCategoryFilter()">
+              <option value="">全部分类</option>
+            </select>
+          </div>
+
+          <div id="prompt-list" class="space-y-3">
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+          </div>
+
+          <div id="empty-state" class="hidden text-center py-16">
+            <div class="text-6xl mb-4">📝</div>
+            <h3 class="text-lg font-semibold mb-2">暂无提示词</h3>
+            <p class="text-muted-foreground mb-4">点击"新建提示词"开始添加</p>
+          </div>
+        </div>
+
+        <div id="prompt-modal" class="fixed inset-0 hidden items-center justify-center z-50 px-4 py-8 modal-overlay" role="dialog" aria-modal="true">
+          <div class="rounded-2xl shadow-2xl w-full max-w-2xl border border-border flex flex-col max-h-full modal-content">
+            <div class="px-6 py-4 border-b border-border flex justify-between items-center flex-shrink-0 modal-header">
+              <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground" id="prompt-modal-subtitle">New Prompt</p>
+                <h3 id="prompt-modal-title" class="font-semibold text-lg">新建提示词</h3>
+              </div>
+              <button onclick="closePromptModal()" class="text-muted-foreground hover:text-foreground text-2xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto min-h-0 p-6 space-y-5 modal-content">
+              <input type="hidden" id="prompt-id" />
+              <div>
+                <label class="form-label">名称 *</label>
+                <input id="prompt-name" type="text" class="form-input" placeholder="提示词名称" />
+              </div>
+              <div>
+                <label class="form-label">分类</label>
+                <input id="prompt-category" type="text" class="form-input" placeholder="如：写作、翻译、总结等" />
+              </div>
+              <div>
+                <label class="form-label">描述</label>
+                <input id="prompt-description" type="text" class="form-input" placeholder="简短描述该提示词的用途" />
+              </div>
+              <div>
+                <label class="form-label">内容 *</label>
+                <textarea id="prompt-content" rows="10" class="form-textarea" placeholder="提示词内容..."></textarea>
+              </div>
+            </div>
+            <div class="px-6 py-4 flex justify-end gap-3 border-t border-border flex-shrink-0 modal-header">
+              <button onclick="closePromptModal()" class="btn-secondary">取消</button>
+              <button onclick="savePrompt()" id="btn-save-prompt" class="btn-primary">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          const token = localStorage.getItem('token');
+          if (!token) window.location.href = '/';
+
+          let allPrompts = [];
+          let searchQuery = '';
+          let categoryFilter = '';
+
+          async function loadPrompts() {
+            const res = await fetch('/api/prompts', {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.status === 401) return logout();
+            const data = await res.json();
+            allPrompts = data.prompts || [];
+            updateCategoryOptions();
+            renderPrompts();
+          }
+
+          function updateCategoryOptions() {
+            const categories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
+            const select = document.getElementById('category-filter');
+            select.innerHTML = '<option value="">全部分类</option>' +
+              categories.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+          }
+
+          function renderPrompts() {
+            const list = document.getElementById('prompt-list');
+            const emptyState = document.getElementById('empty-state');
+
+            let filtered = allPrompts;
+            if (searchQuery) {
+              const q = searchQuery.toLowerCase();
+              filtered = filtered.filter(p =>
+                p.name.toLowerCase().includes(q) ||
+                (p.description && p.description.toLowerCase().includes(q))
+              );
+            }
+            if (categoryFilter) {
+              filtered = filtered.filter(p => p.category === categoryFilter);
+            }
+
+            if (filtered.length === 0) {
+              list.innerHTML = '';
+              emptyState.classList.remove('hidden');
+              return;
+            }
+
+            emptyState.classList.add('hidden');
+            list.innerHTML = filtered.map(p => \`
+              <div class="bg-card p-5 rounded-xl border border-border hover:shadow-lg transition cursor-pointer" onclick="editPrompt('\${p.id}')">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-2">
+                      <h3 class="font-semibold text-lg truncate">\${escapeHtml(p.name)}</h3>
+                      \${p.category ? '<span class="status-badge status-info">' + escapeHtml(p.category) + '</span>' : ''}
+                    </div>
+                    \${p.description ? '<p class="text-sm text-muted-foreground mb-2">' + escapeHtml(p.description) + '</p>' : ''}
+                    <p class="text-xs text-muted-foreground line-clamp-2">\${escapeHtml(p.content.substring(0, 150))}\${p.content.length > 150 ? '...' : ''}</p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button onclick="event.stopPropagation(); copyPrompt('\${p.id}')" class="btn-secondary text-sm px-3 py-1">复制</button>
+                    <button onclick="event.stopPropagation(); deletePrompt('\${p.id}')" class="btn-secondary text-sm px-3 py-1" style="color: hsl(var(--danger));">删除</button>
+                  </div>
+                </div>
+              </div>
+            \`).join('');
+          }
+
+          function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+          }
+
+          function handlePromptSearch() {
+            searchQuery = document.getElementById('search-input').value;
+            renderPrompts();
+          }
+
+          function handleCategoryFilter() {
+            categoryFilter = document.getElementById('category-filter').value;
+            renderPrompts();
+          }
+
+          function openPromptModal(prompt = null) {
+            document.getElementById('prompt-id').value = prompt?.id || '';
+            document.getElementById('prompt-name').value = prompt?.name || '';
+            document.getElementById('prompt-category').value = prompt?.category || '';
+            document.getElementById('prompt-description').value = prompt?.description || '';
+            document.getElementById('prompt-content').value = prompt?.content || '';
+
+            const isEdit = !!prompt;
+            document.getElementById('prompt-modal-subtitle').textContent = isEdit ? 'Edit Prompt' : 'New Prompt';
+            document.getElementById('prompt-modal-title').textContent = isEdit ? '编辑提示词' : '新建提示词';
+
+            document.getElementById('prompt-modal').classList.remove('hidden');
+            document.getElementById('prompt-modal').classList.add('flex');
+          }
+
+          function closePromptModal() {
+            document.getElementById('prompt-modal').classList.add('hidden');
+            document.getElementById('prompt-modal').classList.remove('flex');
+          }
+
+          function editPrompt(id) {
+            const prompt = allPrompts.find(p => p.id === id);
+            if (prompt) openPromptModal(prompt);
+          }
+
+          async function savePrompt() {
+            const id = document.getElementById('prompt-id').value;
+            const name = document.getElementById('prompt-name').value.trim();
+            const content = document.getElementById('prompt-content').value.trim();
+            const category = document.getElementById('prompt-category').value.trim();
+            const description = document.getElementById('prompt-description').value.trim();
+
+            if (!name || !content) {
+              alert('名称和内容不能为空');
+              return;
+            }
+
+            const btn = document.getElementById('btn-save-prompt');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+              const url = id ? '/api/prompts/' + id : '/api/prompts';
+              const method = id ? 'PUT' : 'POST';
+              const res = await fetch(url, {
+                method,
+                headers: {
+                  'Authorization': 'Bearer ' + token,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, content, category, description })
+              });
+
+              if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || '保存失败');
+              }
+
+              closePromptModal();
+              loadPrompts();
+            } catch (e) {
+              alert(e.message);
+            } finally {
+              btn.disabled = false;
+              btn.textContent = '保存';
+            }
+          }
+
+          async function deletePrompt(id) {
+            if (!confirm('确定要删除这个提示词吗？')) return;
+
+            try {
+              const res = await fetch('/api/prompts/' + id, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+              });
+              if (!res.ok) throw new Error('删除失败');
+              loadPrompts();
+            } catch (e) {
+              alert(e.message);
+            }
+          }
+
+          async function copyPrompt(id) {
+            const prompt = allPrompts.find(p => p.id === id);
+            if (prompt) {
+              await navigator.clipboard.writeText(prompt.content);
+              const btn = event.target;
+              const originalText = btn.textContent;
+              btn.textContent = '已复制';
+              setTimeout(() => btn.textContent = originalText, 1500);
+            }
+          }
+
+          function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+          }
+
+          function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcons();
+          }
+
+          function updateThemeIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+          }
+
+          updateThemeIcons();
+          loadPrompts();
+        </script>
+      `,
+    })
+  )
+)
+
+// Prompts API
+app.get('/api/prompts', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: '未授权' }, 401)
+  }
+
+  try {
+    const token = authHeader.slice(7)
+    await verify(token, c.env.JWT_SECRET)
+  } catch {
+    return c.json({ error: '无效的令牌' }, 401)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+  const allPrompts = await db.select().from(prompts).orderBy(desc(prompts.createdAt))
+
+  return c.json({ prompts: allPrompts })
+})
+
+app.post('/api/prompts', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: '未授权' }, 401)
+  }
+
+  try {
+    const token = authHeader.slice(7)
+    await verify(token, c.env.JWT_SECRET)
+  } catch {
+    return c.json({ error: '无效的令牌' }, 401)
+  }
+
+  const body = await c.req.json()
+  const { name, content, category, description } = body
+
+  if (!name || !content) {
+    return c.json({ error: '名称和内容不能为空' }, 400)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+  const id = crypto.randomUUID()
+  const now = new Date()
+
+  await db.insert(prompts).values({
+    id,
+    name,
+    content,
+    category: category || 'default',
+    description: description || null,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  return c.json({ success: true, id })
+})
+
+app.put('/api/prompts/:id', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: '未授权' }, 401)
+  }
+
+  try {
+    const token = authHeader.slice(7)
+    await verify(token, c.env.JWT_SECRET)
+  } catch {
+    return c.json({ error: '无效的令牌' }, 401)
+  }
+
+  const id = c.req.param('id')
+  const body = await c.req.json()
+  const { name, content, category, description } = body
+
+  if (!name || !content) {
+    return c.json({ error: '名称和内容不能为空' }, 400)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+  const now = new Date()
+
+  await db.update(prompts)
+    .set({
+      name,
+      content,
+      category: category || 'default',
+      description: description || null,
+      updatedAt: now,
+    })
+    .where(eq(prompts.id, id))
+
+  return c.json({ success: true })
+})
+
+app.delete('/api/prompts/:id', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: '未授权' }, 401)
+  }
+
+  try {
+    const token = authHeader.slice(7)
+    await verify(token, c.env.JWT_SECRET)
+  } catch {
+    return c.json({ error: '无效的令牌' }, 401)
+  }
+
+  const id = c.req.param('id')
+  const db = getDb(c.env.PGSQL_URL)
+
+  await db.delete(prompts).where(eq(prompts.id, id))
+
+  return c.json({ success: true })
+})
+
+// =====================
+// Reverse Engineering Logs API
+// =====================
+
+// GET /api/reverse-logs - List with pagination and filters
+app.get('/api/reverse-logs', async (c) => {
+  const payload = await getAuthPayload(c, c.env.JWT_SECRET)
+  if (!payload) return c.json({ error: '未授权' }, 401)
+
+  const db = getDb(c.env.PGSQL_URL)
+  const url = new URL(c.req.url)
+
+  const page = parseInt(url.searchParams.get('page') || '1')
+  const pageSize = Math.min(parseInt(url.searchParams.get('pageSize') || '20'), 100)
+  const search = url.searchParams.get('q') || ''
+  const genre = url.searchParams.get('genre') || ''
+  const status = url.searchParams.get('status') || ''
+
+  // Build query conditions
+  let query = db.select().from(reverseEngineeringLogs)
+  let countQuery = db.select({ count: sql<number>`count(*)` }).from(reverseEngineeringLogs)
+
+  const conditions: ReturnType<typeof eq>[] = []
+
+  if (search) {
+    conditions.push(sql`${reverseEngineeringLogs.articleTitle} LIKE ${'%' + search + '%'}`)
+  }
+  if (genre) {
+    conditions.push(eq(reverseEngineeringLogs.genreCategory, genre))
+  }
+  if (status) {
+    conditions.push(eq(reverseEngineeringLogs.status, status))
+  }
+
+  // Apply conditions
+  if (conditions.length > 0) {
+    const whereClause = sql.join(conditions, sql` AND `)
+    query = query.where(whereClause) as typeof query
+    countQuery = countQuery.where(whereClause) as typeof countQuery
+  }
+
+  // Get total count
+  const countResult = await countQuery
+  const total = countResult[0]?.count || 0
+
+  // Get paginated results
+  const logs = await query
+    .orderBy(desc(reverseEngineeringLogs.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize)
+
+  return c.json({
+    logs,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize)
+    }
+  })
+})
+
+// GET /api/reverse-logs/:id - Get single log detail
+app.get('/api/reverse-logs/:id', async (c) => {
+  const payload = await getAuthPayload(c, c.env.JWT_SECRET)
+  if (!payload) return c.json({ error: '未授权' }, 401)
+
+  const db = getDb(c.env.PGSQL_URL)
+  const id = c.req.param('id')
+
+  const result = await db.select()
+    .from(reverseEngineeringLogs)
+    .where(eq(reverseEngineeringLogs.id, id))
+    .limit(1)
+
+  if (result.length === 0) {
+    return c.json({ error: '记录不存在' }, 404)
+  }
+
+  return c.json({ log: result[0] })
+})
+
+// DELETE /api/reverse-logs/:id - Delete single log
+app.delete('/api/reverse-logs/:id', async (c) => {
+  const payload = await getAuthPayload(c, c.env.JWT_SECRET)
+  if (!payload) return c.json({ error: '未授权' }, 401)
+
+  const db = getDb(c.env.PGSQL_URL)
+  const id = c.req.param('id')
+
+  await db.delete(reverseEngineeringLogs)
+    .where(eq(reverseEngineeringLogs.id, id))
+
+  return c.json({ success: true })
+})
+
+// POST /api/reverse-logs/batch-delete - Batch delete logs
+app.post('/api/reverse-logs/batch-delete', async (c) => {
+  const payload = await getAuthPayload(c, c.env.JWT_SECRET)
+  if (!payload) return c.json({ error: '未授权' }, 401)
+
+  const body = await c.req.json<{ ids: string[] }>()
+  if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+    return c.json({ error: '请选择要删除的记录' }, 400)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+
+  // Delete each record
+  for (const id of body.ids) {
+    await db.delete(reverseEngineeringLogs)
+      .where(eq(reverseEngineeringLogs.id, id))
+  }
+
+  return c.json({ success: true, deleted: body.ids.length })
+})
+
+// GET /api/reverse-logs/export - Export logs as JSON or CSV
+app.get('/api/reverse-logs/export', async (c) => {
+  const payload = await getAuthPayload(c, c.env.JWT_SECRET)
+  if (!payload) return c.json({ error: '未授权' }, 401)
+
+  const db = getDb(c.env.PGSQL_URL)
+  const url = new URL(c.req.url)
+  const format = url.searchParams.get('format') || 'json'
+  const idsParam = url.searchParams.get('ids')
+
+  let logs
+  if (idsParam) {
+    const ids = idsParam.split(',')
+    logs = await db.select()
+      .from(reverseEngineeringLogs)
+      .where(sql`${reverseEngineeringLogs.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`,`)})`)
+      .orderBy(desc(reverseEngineeringLogs.createdAt))
+  } else {
+    logs = await db.select()
+      .from(reverseEngineeringLogs)
+      .orderBy(desc(reverseEngineeringLogs.createdAt))
+      .limit(1000) // Limit export
+  }
+
+  if (format === 'csv') {
+    const headers = ['id', 'userId', 'createdAt', 'articleTitle', 'articleUrl', 'genreCategory', 'modelName', 'totalTokens', 'status']
+    const csvRows = [headers.join(',')]
+
+    for (const log of logs) {
+      const row = headers.map(h => {
+        const value = log[h as keyof typeof log]
+        if (value === null || value === undefined) return ''
+        const str = String(value)
+        // Escape quotes and wrap in quotes if contains comma
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"'
+        }
+        return str
+      })
+      csvRows.push(row.join(','))
+    }
+
+    return new Response(csvRows.join('\n'), {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="reverse-logs.csv"'
+      }
+    })
+  }
+
+  // Default: JSON format
+  return c.json({ logs })
+})
+
+// POST /api/reverse-logs - Create new log (for n8n callback)
+app.post('/api/reverse-logs', async (c) => {
+  let body: Record<string, unknown>
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: '请求体无效' }, 400)
+  }
+
+  const db = getDb(c.env.PGSQL_URL)
+  const id = body.id as string || crypto.randomUUID()
+
+  await db.insert(reverseEngineeringLogs).values({
+    id,
+    userId: (body.user_id as string) || 'anonymous',
+    articleTitle: body.article_title as string,
+    articleUrl: body.article_url as string,
+    originalContent: body.original_content as string,
+    genreCategory: body.genre_category as string,
+    reverseResultJson: body.reverse_result_json as string,
+    finalSystemPrompt: body.final_system_prompt as string,
+    metricBurstiness: body.metric_burstiness as number,
+    metricTtr: body.metric_ttr as number,
+    metricAvgSentLen: body.metric_avg_sent_len as number,
+    modelName: body.model_name as string,
+    totalTokens: body.total_tokens as number,
+    costEstimatedUsd: body.cost_estimated_usd as number,
+    n8nExecutionId: body.n8n_execution_id as string,
+    status: (body.status as string) || 'SUCCESS',
+  })
+
+  return c.json({ success: true, id })
+})
+
+// =====================
+// Reverse Engineering Logs Page
+// =====================
+
+app.get('/reverse-logs', (c) =>
+  c.html(
+    PageWithSidebar({
+      activePage: 'reverse-logs',
+      title: '逆向工程',
+      body: html`
+        <div class="max-w-7xl mx-auto py-12 px-4 page-enter">
+          <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">Reverse Engineering</p>
+              <h1 class="text-3xl font-semibold tracking-tight">逆向工程</h1>
+              <p class="text-sm text-muted-foreground">管理和分析 Prompt 逆向工程结果</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <div id="export-dropdown" class="relative">
+                <button onclick="toggleExportMenu()" class="btn-secondary flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  导出
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-10">
+                  <button onclick="exportLogs('json', 'selected')" class="w-full px-4 py-2 text-left text-sm hover:bg-muted">导出选中 (JSON)</button>
+                  <button onclick="exportLogs('csv', 'selected')" class="w-full px-4 py-2 text-left text-sm hover:bg-muted">导出选中 (CSV)</button>
+                  <div class="border-t border-border"></div>
+                  <button onclick="exportLogs('json', 'all')" class="w-full px-4 py-2 text-left text-sm hover:bg-muted">导出全部 (JSON)</button>
+                  <button onclick="exportLogs('csv', 'all')" class="w-full px-4 py-2 text-left text-sm hover:bg-muted">导出全部 (CSV)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Batch Actions Bar -->
+          <div id="batch-bar" class="hidden mb-4 p-3 bg-card rounded-lg border border-border flex items-center gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="w-4 h-4 rounded border-border" />
+              <span class="text-sm font-medium">全选</span>
+            </label>
+            <span id="selected-count" class="text-sm text-muted-foreground">已选择 0 项</span>
+            <div class="flex-1"></div>
+            <button onclick="batchDelete()" class="btn-secondary text-sm" style="color: hsl(var(--danger));">批量删除</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="flex flex-col sm:flex-row gap-3 mb-6">
+            <input
+              id="search-input"
+              type="text"
+              class="form-input flex-1"
+              placeholder="搜索文章标题..."
+              oninput="handleSearch()"
+            />
+            <select id="genre-filter" class="form-input sm:w-40" onchange="handleFilter()">
+              <option value="">全部分类</option>
+              <option value="NARRATIVE">叙事</option>
+              <option value="ACADEMIC">学术</option>
+              <option value="COPYWRITING">文案</option>
+              <option value="NEWS">新闻</option>
+              <option value="SOCIAL">社交</option>
+            </select>
+            <select id="status-filter" class="form-input sm:w-32" onchange="handleFilter()">
+              <option value="">全部状态</option>
+              <option value="SUCCESS">成功</option>
+              <option value="FAILED">失败</option>
+            </select>
+            <button onclick="resetFilters()" class="btn-secondary">重置</button>
+          </div>
+
+          <!-- List -->
+          <div id="log-list" class="space-y-3">
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+            <div class="skeleton-card"><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="hidden text-center py-16">
+            <div class="text-6xl mb-4">🔬</div>
+            <h3 class="text-lg font-semibold mb-2">暂无逆向工程记录</h3>
+            <p class="text-muted-foreground">逆向工程结果将在这里显示</p>
+          </div>
+
+          <!-- Pagination -->
+          <div id="pagination" class="flex items-center justify-center gap-2 mt-6 hidden">
+            <button id="btn-prev" onclick="prevPage()" class="btn-secondary" disabled>上一页</button>
+            <span id="page-info" class="text-sm text-muted-foreground px-4"></span>
+            <button id="btn-next" onclick="nextPage()" class="btn-secondary">下一页</button>
+          </div>
+        </div>
+
+        <!-- Detail Modal -->
+        <div id="detail-modal" class="fixed inset-0 hidden items-center justify-center z-50 px-4 py-8 modal-overlay">
+          <div class="rounded-2xl shadow-2xl w-full max-w-4xl border border-border flex flex-col max-h-full modal-content">
+            <div class="px-6 py-4 border-b border-border flex justify-between items-center flex-shrink-0 modal-header">
+              <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">Log Detail</p>
+                <h3 id="detail-title" class="font-semibold text-lg truncate max-w-md">详情</h3>
+              </div>
+              <button onclick="closeDetailModal()" class="text-muted-foreground hover:text-foreground text-2xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto min-h-0 p-6 space-y-6 modal-content">
+              <!-- Metrics -->
+              <div class="grid grid-cols-3 gap-4">
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-primary" id="detail-burstiness">-</div>
+                  <div class="text-xs text-muted-foreground">Burstiness</div>
+                </div>
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-primary" id="detail-ttr">-</div>
+                  <div class="text-xs text-muted-foreground">TTR</div>
+                </div>
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-primary" id="detail-avglen">-</div>
+                  <div class="text-xs text-muted-foreground">Avg Sent Len</div>
+                </div>
+              </div>
+
+              <!-- System Prompt -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="form-label mb-0">生成的 System Prompt</label>
+                  <button onclick="copyPrompt()" class="btn-secondary text-xs px-2 py-1">复制</button>
+                </div>
+                <pre id="detail-prompt" class="bg-muted/50 rounded-lg p-4 text-sm overflow-x-auto whitespace-pre-wrap max-h-60 overflow-y-auto font-mono"></pre>
+              </div>
+
+              <!-- Reverse Result JSON -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="form-label mb-0">完整逆向结果 (JSON)</label>
+                  <button onclick="copyJson()" class="btn-secondary text-xs px-2 py-1">复制</button>
+                </div>
+                <pre id="detail-json" class="bg-muted/50 rounded-lg p-4 text-sm overflow-x-auto whitespace-pre-wrap max-h-80 overflow-y-auto font-mono"></pre>
+              </div>
+
+              <!-- Meta Info -->
+              <div class="text-sm text-muted-foreground space-y-1">
+                <p><span class="font-medium">URL:</span> <a id="detail-url" href="#" target="_blank" class="text-primary hover:underline"></a></p>
+                <p><span class="font-medium">模型:</span> <span id="detail-model"></span></p>
+                <p><span class="font-medium">Token 数:</span> <span id="detail-tokens"></span></p>
+                <p><span class="font-medium">创建时间:</span> <span id="detail-created"></span></p>
+              </div>
+            </div>
+            <div class="px-6 py-4 flex justify-end gap-3 border-t border-border flex-shrink-0 modal-header">
+              <button onclick="closeDetailModal()" class="btn-secondary">关闭</button>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          const token = localStorage.getItem('token');
+          if (!token) window.location.href = '/';
+
+          let currentPage = 1;
+          const pageSize = 20;
+          let totalPages = 1;
+          let searchQuery = '';
+          let genreFilter = '';
+          let statusFilter = '';
+          let searchTimeout = null;
+          let selectedLogs = new Set();
+          let allLogs = [];
+          let currentDetailLog = null;
+
+          async function loadLogs() {
+            const list = document.getElementById('log-list');
+            const emptyState = document.getElementById('empty-state');
+            const pagination = document.getElementById('pagination');
+
+            let url = '/api/reverse-logs?page=' + currentPage + '&pageSize=' + pageSize;
+            if (searchQuery) url += '&q=' + encodeURIComponent(searchQuery);
+            if (genreFilter) url += '&genre=' + genreFilter;
+            if (statusFilter) url += '&status=' + statusFilter;
+
+            const res = await fetch(url, {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (res.status === 401) return logout();
+
+            const data = await res.json();
+            allLogs = data.logs || [];
+            totalPages = data.pagination?.totalPages || 1;
+
+            if (allLogs.length === 0) {
+              list.innerHTML = '';
+              emptyState.classList.remove('hidden');
+              pagination.classList.add('hidden');
+              document.getElementById('batch-bar').classList.add('hidden');
+              return;
+            }
+
+            emptyState.classList.add('hidden');
+            document.getElementById('batch-bar').classList.remove('hidden');
+
+            list.innerHTML = allLogs.map(log => \`
+              <div class="bg-card p-4 rounded-xl border border-border hover:shadow-lg transition cursor-pointer \${selectedLogs.has(log.id) ? 'ring-2 ring-primary' : ''}" onclick="viewDetail('\${log.id}')">
+                <div class="flex items-start gap-4">
+                  <input type="checkbox" class="log-checkbox w-4 h-4 rounded border-border mt-1 flex-shrink-0" data-id="\${log.id}" \${selectedLogs.has(log.id) ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelection('\${log.id}')" />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="status-badge status-\${log.genreCategory === 'NARRATIVE' ? 'info' : log.genreCategory === 'ACADEMIC' ? 'success' : log.genreCategory === 'NEWS' ? 'warning' : 'default'}">\${log.genreCategory || 'Unknown'}</span>
+                      <h3 class="font-semibold truncate">\${escapeHtml(log.articleTitle || 'Untitled')}</h3>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <span title="Burstiness">📊 \${log.metricBurstiness?.toFixed(2) || '-'}</span>
+                      <span title="TTR">📝 \${log.metricTtr?.toFixed(2) || '-'}</span>
+                      <span title="Avg Sentence Length">📏 \${log.metricAvgSentLen?.toFixed(1) || '-'}</span>
+                      <span>🤖 \${log.modelName || '-'}</span>
+                      <span class="status-badge status-\${log.status === 'SUCCESS' ? 'success' : 'danger'}">\${log.status}</span>
+                      <span>📅 \${log.createdAt ? new Date(log.createdAt).toLocaleDateString('zh-CN') : '-'}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button onclick="event.stopPropagation(); viewDetail('\${log.id}')" class="btn-secondary text-sm px-3 py-1">查看</button>
+                    <button onclick="event.stopPropagation(); deleteLog('\${log.id}')" class="btn-secondary text-sm px-3 py-1" style="color: hsl(var(--danger));">删除</button>
+                  </div>
+                </div>
+              </div>
+            \`).join('');
+
+            // Pagination
+            pagination.classList.remove('hidden');
+            document.getElementById('page-info').textContent = \`第 \${currentPage} / \${totalPages} 页\`;
+            document.getElementById('btn-prev').disabled = currentPage <= 1;
+            document.getElementById('btn-next').disabled = currentPage >= totalPages;
+
+            updateSelectedCount();
+          }
+
+          function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+          }
+
+          function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+              searchQuery = document.getElementById('search-input').value;
+              currentPage = 1;
+              loadLogs();
+            }, 300);
+          }
+
+          function handleFilter() {
+            genreFilter = document.getElementById('genre-filter').value;
+            statusFilter = document.getElementById('status-filter').value;
+            currentPage = 1;
+            loadLogs();
+          }
+
+          function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('genre-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            searchQuery = '';
+            genreFilter = '';
+            statusFilter = '';
+            currentPage = 1;
+            loadLogs();
+          }
+
+          function prevPage() {
+            if (currentPage > 1) {
+              currentPage--;
+              loadLogs();
+            }
+          }
+
+          function nextPage() {
+            if (currentPage < totalPages) {
+              currentPage++;
+              loadLogs();
+            }
+          }
+
+          function toggleSelection(id) {
+            if (selectedLogs.has(id)) {
+              selectedLogs.delete(id);
+            } else {
+              selectedLogs.add(id);
+            }
+            updateSelectedCount();
+            loadLogs();
+          }
+
+          function toggleSelectAll() {
+            const selectAll = document.getElementById('select-all').checked;
+            if (selectAll) {
+              allLogs.forEach(log => selectedLogs.add(log.id));
+            } else {
+              selectedLogs.clear();
+            }
+            updateSelectedCount();
+            loadLogs();
+          }
+
+          function updateSelectedCount() {
+            document.getElementById('selected-count').textContent = \`已选择 \${selectedLogs.size} 项\`;
+            document.getElementById('select-all').checked = allLogs.length > 0 && selectedLogs.size === allLogs.length;
+          }
+
+          async function deleteLog(id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+
+            await fetch('/api/reverse-logs/' + id, {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            selectedLogs.delete(id);
+            loadLogs();
+          }
+
+          async function batchDelete() {
+            if (selectedLogs.size === 0) {
+              alert('请先选择要删除的记录');
+              return;
+            }
+            if (!confirm(\`确定要删除选中的 \${selectedLogs.size} 条记录吗？\`)) return;
+
+            await fetch('/api/reverse-logs/batch-delete', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ ids: Array.from(selectedLogs) })
+            });
+
+            selectedLogs.clear();
+            loadLogs();
+          }
+
+          function toggleExportMenu() {
+            document.getElementById('export-menu').classList.toggle('hidden');
+          }
+
+          function exportLogs(format, scope) {
+            let url = '/api/reverse-logs/export?format=' + format;
+            if (scope === 'selected' && selectedLogs.size > 0) {
+              url += '&ids=' + Array.from(selectedLogs).join(',');
+            }
+
+            // Create download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reverse-logs.' + format;
+
+            // Add auth header via fetch
+            fetch(url, {
+              headers: { 'Authorization': 'Bearer ' + token }
+            }).then(res => res.blob()).then(blob => {
+              const blobUrl = URL.createObjectURL(blob);
+              a.href = blobUrl;
+              a.click();
+              URL.revokeObjectURL(blobUrl);
+            });
+
+            document.getElementById('export-menu').classList.add('hidden');
+          }
+
+          async function viewDetail(id) {
+            const log = allLogs.find(l => l.id === id);
+            if (!log) {
+              // Fetch from API
+              const res = await fetch('/api/reverse-logs/' + id, {
+                headers: { 'Authorization': 'Bearer ' + token }
+              });
+              if (!res.ok) return;
+              const data = await res.json();
+              currentDetailLog = data.log;
+            } else {
+              currentDetailLog = log;
+            }
+
+            document.getElementById('detail-title').textContent = currentDetailLog.articleTitle || 'Untitled';
+            document.getElementById('detail-burstiness').textContent = currentDetailLog.metricBurstiness?.toFixed(2) || '-';
+            document.getElementById('detail-ttr').textContent = currentDetailLog.metricTtr?.toFixed(4) || '-';
+            document.getElementById('detail-avglen').textContent = currentDetailLog.metricAvgSentLen?.toFixed(1) || '-';
+            document.getElementById('detail-prompt').textContent = currentDetailLog.finalSystemPrompt || '(无)';
+
+            try {
+              const json = JSON.parse(currentDetailLog.reverseResultJson || '{}');
+              document.getElementById('detail-json').textContent = JSON.stringify(json, null, 2);
+            } catch {
+              document.getElementById('detail-json').textContent = currentDetailLog.reverseResultJson || '(无)';
+            }
+
+            document.getElementById('detail-url').href = currentDetailLog.articleUrl || '#';
+            document.getElementById('detail-url').textContent = currentDetailLog.articleUrl || '-';
+            document.getElementById('detail-model').textContent = currentDetailLog.modelName || '-';
+            document.getElementById('detail-tokens').textContent = currentDetailLog.totalTokens || '-';
+            document.getElementById('detail-created').textContent = currentDetailLog.createdAt ? new Date(currentDetailLog.createdAt).toLocaleString('zh-CN') : '-';
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+          }
+
+          function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            document.getElementById('detail-modal').classList.remove('flex');
+          }
+
+          function copyPrompt() {
+            const text = document.getElementById('detail-prompt').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+              alert('已复制到剪贴板');
+            });
+          }
+
+          function copyJson() {
+            const text = document.getElementById('detail-json').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+              alert('已复制到剪贴板');
+            });
+          }
+
+          // Close dropdown when clicking outside
+          document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('export-dropdown');
+            if (!dropdown.contains(e.target)) {
+              document.getElementById('export-menu').classList.add('hidden');
+            }
+          });
+
+          // Initialize
+          loadLogs();
+        </script>
+      `
+    })
+  )
+)
+
+// =====================
+// Settings Page (Placeholder)
+// =====================
+
+app.get('/settings', (c) =>
+  c.html(
+    PageWithSidebar({
+      activePage: 'settings',
+      title: '设置',
+      body: html`
+        <div class="max-w-4xl mx-auto py-12 px-4 page-enter">
+          <div class="space-y-2 mb-8">
+            <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">Settings</p>
+            <h1 class="text-3xl font-semibold tracking-tight">设置</h1>
+            <p class="text-sm text-muted-foreground">管理系统配置和偏好</p>
+          </div>
+
+          <div class="bg-card rounded-xl border border-border p-8 text-center">
+            <div class="text-6xl mb-4">⚙️</div>
+            <h2 class="text-lg font-semibold mb-2">功能开发中</h2>
+            <p class="text-muted-foreground">设置功能即将上线，敬请期待</p>
+          </div>
+        </div>
+
+        <script>
+          const token = localStorage.getItem('token');
+          if (!token) window.location.href = '/';
+        </script>
+      `
+    })
+  )
+)
 
 export default app

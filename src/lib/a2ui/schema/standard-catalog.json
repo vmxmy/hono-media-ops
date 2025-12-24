@@ -1,0 +1,494 @@
+{
+  "$schema": "./catalog-schema.json",
+  "id": "standard",
+  "name": "A2UI Standard Catalog",
+  "version": "0.9.0",
+  "description": "Standard A2UI component catalog with layout, content, interactive, and feedback components",
+  "components": {
+    "column": {
+      "description": "Vertical flex container",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "gap": {
+          "type": "string",
+          "description": "Gap between children",
+          "default": "0.5rem"
+        }
+      }
+    },
+    "row": {
+      "description": "Horizontal flex container",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "gap": {
+          "type": "string",
+          "description": "Gap between children",
+          "default": "0.5rem"
+        },
+        "align": {
+          "type": "string",
+          "enum": ["start", "center", "end", "stretch"],
+          "description": "Align items vertically"
+        },
+        "justify": {
+          "type": "string",
+          "enum": ["start", "center", "end", "between", "around"],
+          "description": "Justify content horizontally"
+        }
+      }
+    },
+    "container": {
+      "description": "Generic container",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {}
+    },
+    "card": {
+      "description": "Card container with optional click action",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "hoverable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable hover effect"
+        },
+        "onClick": {
+          "type": "action",
+          "description": "Click action handler"
+        }
+      }
+    },
+    "text": {
+      "description": "Text display with variants",
+      "category": "content",
+      "properties": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Text content to display"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["h1", "h2", "h3", "h4", "body", "caption", "label"],
+          "default": "body",
+          "description": "Text style variant"
+        },
+        "color": {
+          "type": "string",
+          "enum": ["foreground", "muted", "primary", "destructive", "success"],
+          "default": "foreground",
+          "description": "Text color"
+        },
+        "weight": {
+          "type": "string",
+          "enum": ["normal", "medium", "semibold", "bold"],
+          "description": "Font weight"
+        }
+      }
+    },
+    "image": {
+      "description": "Image display",
+      "category": "content",
+      "properties": {
+        "src": {
+          "type": "string",
+          "required": true,
+          "description": "Image source URL"
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alternative text"
+        },
+        "width": {
+          "type": "string",
+          "description": "Image width"
+        },
+        "height": {
+          "type": "string",
+          "description": "Image height"
+        }
+      }
+    },
+    "icon": {
+      "description": "Icon display",
+      "category": "content",
+      "properties": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Icon name or emoji"
+        },
+        "size": {
+          "type": "number",
+          "default": 16,
+          "description": "Icon size in pixels"
+        },
+        "color": {
+          "type": "string",
+          "description": "Icon color"
+        }
+      }
+    },
+    "divider": {
+      "description": "Visual separator",
+      "category": "content",
+      "properties": {
+        "orientation": {
+          "type": "string",
+          "enum": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "description": "Divider orientation"
+        }
+      }
+    },
+    "button": {
+      "description": "Clickable button",
+      "category": "interactive",
+      "properties": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Button label"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["primary", "secondary", "destructive", "ghost", "text"],
+          "default": "primary",
+          "description": "Button style variant"
+        },
+        "size": {
+          "type": "string",
+          "enum": ["sm", "md", "lg"],
+          "default": "md",
+          "description": "Button size"
+        },
+        "disabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable the button"
+        },
+        "onClick": {
+          "type": "action",
+          "description": "Click action handler"
+        }
+      }
+    },
+    "input": {
+      "description": "Text input field",
+      "category": "interactive",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Input value"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text"
+        },
+        "inputType": {
+          "type": "string",
+          "enum": ["text", "password", "email", "number"],
+          "default": "text",
+          "description": "Input type"
+        },
+        "onChange": {
+          "type": "action",
+          "description": "Change action handler"
+        }
+      }
+    },
+    "textarea": {
+      "description": "Multi-line text input",
+      "category": "interactive",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Textarea value"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text"
+        },
+        "rows": {
+          "type": "number",
+          "default": 4,
+          "description": "Number of visible rows"
+        },
+        "onChange": {
+          "type": "action",
+          "description": "Change action handler"
+        }
+      }
+    },
+    "select": {
+      "description": "Dropdown selection",
+      "category": "interactive",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Selected value"
+        },
+        "options": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          },
+          "description": "Available options"
+        },
+        "onChange": {
+          "type": "action",
+          "description": "Change action handler"
+        }
+      }
+    },
+    "checkbox": {
+      "description": "Checkbox input",
+      "category": "interactive",
+      "properties": {
+        "checked": {
+          "type": "boolean",
+          "default": false,
+          "description": "Checked state"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Associated task ID"
+        },
+        "onChange": {
+          "type": "action",
+          "description": "Change action handler"
+        }
+      }
+    },
+    "tabs": {
+      "description": "Tabbed content container",
+      "category": "interactive",
+      "properties": {
+        "tabs": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "content": { "type": "node" }
+            }
+          },
+          "description": "Tab definitions"
+        },
+        "defaultTab": {
+          "type": "number",
+          "default": 0,
+          "description": "Default active tab index"
+        }
+      }
+    },
+    "badge": {
+      "description": "Status badge",
+      "category": "feedback",
+      "properties": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Badge text"
+        },
+        "color": {
+          "type": "string",
+          "enum": ["default", "primary", "success", "warning", "destructive", "info", "pending", "processing", "completed", "failed", "cancelled"],
+          "default": "default",
+          "description": "Badge color"
+        }
+      }
+    },
+    "progress": {
+      "description": "Progress indicator",
+      "category": "feedback",
+      "properties": {
+        "status": {
+          "type": "string",
+          "required": true,
+          "enum": ["pending", "processing", "completed", "failed", "cancelled"],
+          "description": "Progress status"
+        },
+        "value": {
+          "type": "number",
+          "description": "Progress value (0-100)"
+        }
+      }
+    },
+    "modal": {
+      "description": "Modal dialog",
+      "category": "feedback",
+      "supportsChildren": true,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Modal title"
+        },
+        "open": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open state"
+        },
+        "onClose": {
+          "type": "action",
+          "description": "Close action handler"
+        }
+      }
+    },
+    "page": {
+      "description": "Page container with optional header",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Page title"
+        },
+        "maxWidth": {
+          "type": "string",
+          "enum": ["sm", "md", "lg", "xl", "2xl", "full"],
+          "default": "xl",
+          "description": "Maximum content width"
+        },
+        "centered": {
+          "type": "boolean",
+          "default": false,
+          "description": "Center content vertically and horizontally"
+        }
+      }
+    },
+    "nav": {
+      "description": "Navigation bar",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "brand": {
+          "type": "string",
+          "description": "Brand/logo text"
+        }
+      }
+    },
+    "nav-link": {
+      "description": "Navigation link",
+      "category": "layout",
+      "properties": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Link text"
+        },
+        "href": {
+          "type": "string",
+          "description": "Link URL"
+        },
+        "active": {
+          "type": "boolean",
+          "default": false,
+          "description": "Active state"
+        },
+        "onClick": {
+          "type": "action",
+          "description": "Click action handler"
+        }
+      }
+    },
+    "form": {
+      "description": "Form container with submit handling",
+      "category": "interactive",
+      "supportsChildren": true,
+      "properties": {
+        "onSubmit": {
+          "type": "action",
+          "description": "Submit action handler"
+        }
+      }
+    },
+    "form-field": {
+      "description": "Form field with label",
+      "category": "interactive",
+      "supportsChildren": true,
+      "properties": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Field label"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Required field indicator"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message"
+        }
+      }
+    },
+    "alert": {
+      "description": "Alert message",
+      "category": "feedback",
+      "properties": {
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Alert message"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["info", "success", "warning", "error"],
+          "default": "info",
+          "description": "Alert variant"
+        }
+      }
+    },
+    "link": {
+      "description": "Clickable link",
+      "category": "content",
+      "properties": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Link text"
+        },
+        "href": {
+          "type": "string",
+          "description": "Link URL"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["default", "muted", "primary"],
+          "default": "primary",
+          "description": "Link style"
+        },
+        "onClick": {
+          "type": "action",
+          "description": "Click action handler"
+        }
+      }
+    },
+    "spacer": {
+      "description": "Flexible spacer",
+      "category": "layout",
+      "properties": {
+        "size": {
+          "type": "string",
+          "description": "Fixed size (e.g., '1rem', '20px')"
+        },
+        "flex": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use flex grow"
+        }
+      }
+    }
+  }
+}

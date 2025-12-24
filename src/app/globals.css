@@ -1,0 +1,102 @@
+@import "../styles/design-tokens.css";
+@import "../styles/palettes.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+        letter-spacing: var(--tracking-normal);
+    }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: oklch(0.85 0.01 260) transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: oklch(0.85 0.01 260);
+        border-radius: 3px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: oklch(0.75 0.01 260);
+    }
+}
+
+/* Smooth page transitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+}
+
+/* Message bubble animations */
+@keyframes messageIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-message-in {
+    animation: messageIn 0.25s ease-out forwards;
+}
+
+/* Gradient text utility */
+.text-gradient-primary {
+    background: linear-gradient(
+        135deg,
+        oklch(0.55 0.18 265),
+        oklch(0.6 0.2 290)
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}

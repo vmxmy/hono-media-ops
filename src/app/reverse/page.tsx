@@ -1,0 +1,603 @@
+"use client"
+
+import { useState, useCallback } from "react"
+import { api } from "@/trpc/react"
+import { AppLayout } from "@/components/app-layout"
+import { ReverseSubmitModal } from "@/components/reverse-submit-modal"
+import { useI18n } from "@/contexts/i18n-context"
+import { useAuth } from "@/hooks/use-auth"
+import { A2UIRenderer } from "@/components/a2ui"
+import type { A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+
+interface ReverseLog {
+  id: string
+  articleTitle: string | null
+  articleUrl: string | null
+  originalContent: string | null
+  genreCategory: string | null
+  reverseResult: unknown
+  reverseResultJson: unknown
+  metrics: unknown
+  finalSystemPrompt: string | null
+  modelName: string | null
+  totalTokens: number | null
+  costEstimatedUsd: number | null
+  metricBurstiness: number | null
+  metricTtr: number | null
+  metricAvgSentLen: number | null
+  n8nExecutionId: string | null
+  status: string | null
+  createdAt: Date | null
+}
+
+// Parsed structure from reverse_result_json
+interface ReverseResultParsed {
+  style_name?: string
+  meta_profile?: {
+    archetype?: string
+    tone_keywords?: string[]
+    target_audience?: string
+  }
+  blueprint?: Array<{
+    section?: string
+    specs?: string
+  }>
+  constraints?: {
+    rhythm_instruction?: string
+    vocabulary_level?: string
+    formatting_rules?: string
+  }
+  execution_prompt?: string
+}
+
+export default function ReversePage() {
+  const { t } = useI18n()
+  const { mounted, logout } = useAuth()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedLog, setSelectedLog] = useState<ReverseLog | null>(null)
+
+  const utils = api.useUtils()
+  const { data, isLoading } = api.reverseLogs.getAll.useQuery(
+    { page: 1, pageSize: 50 },
+    { enabled: mounted }
+  )
+
+  const deleteMutation = api.reverseLogs.delete.useMutation({
+    onSuccess: () => {
+      utils.reverseLogs.getAll.invalidate()
+    },
+  })
+
+  const logs = data?.logs ?? []
+
+  const getStatusColor = (status: string): "success" | "destructive" | "warning" | "default" => {
+    switch (status) {
+      case "SUCCESS":
+        return "success"
+      case "FAILED":
+        return "destructive"
+      case "PENDING":
+        return "warning"
+      default:
+        return "default"
+    }
+  }
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case "SUCCESS":
+        return t("reverse.statusSuccess")
+      case "FAILED":
+        return t("reverse.statusFailed")
+      case "PENDING":
+        return t("reverse.statusPending")
+      default:
+        return status
+    }
+  }
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "-"
+    return new Date(date).toLocaleString()
+  }
+
+  const handleAction = useCallback(
+    (action: string, args?: unknown[]) => {
+      switch (action) {
+        case "newAnalysis":
+          setIsModalOpen(true)
+          break
+        case "viewDetail": {
+          const logId = args?.[0] as string
+          const log = logs.find((l) => l.id === logId)
+          if (log) {
+            setSelectedLog(log as ReverseLog)
+            setDetailModalOpen(true)
+          }
+          break
+        }
+        case "closeDetailModal":
+          setDetailModalOpen(false)
+          setSelectedLog(null)
+          break
+        case "deleteLog": {
+          const deleteId = args?.[0] as string
+          if (confirm(t("reverse.deleteConfirm"))) {
+            deleteMutation.mutate({ id: deleteId })
+          }
+          break
+        }
+      }
+    },
+    [logs, t, deleteMutation]
+  )
+
+  const handleSuccess = () => {
+    utils.reverseLogs.getAll.invalidate()
+  }
+
+  // Build list content
+  const buildListNode = (): A2UINode => {
+    if (isLoading) {
+      return { type: "text", text: t("common.loading"), color: "muted" }
+    }
+
+    if (logs.length === 0) {
+      return {
+        type: "card",
+        hoverable: false,
+        style: { padding: "2rem", textAlign: "center" },
+        children: [{ type: "text", text: t("reverse.noRecords"), color: "muted" }],
+      }
+    }
+
+    const logCards: A2UINode[] = logs.map((log) => {
+      const metrics = log.metrics as { burstiness?: number; ttr?: number; avgSentLen?: number } | null
+      const reverseResult = log.reverseResult as { genre?: string; tone?: string; structure?: string; vocabulary?: string[] } | null
+
+      // Basic info tab content
+      const basicTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: [
+          ...(log.articleUrl
+            ? [
+                {
+                  type: "column" as const,
+                  gap: "0.25rem",
+                  children: [
+                    { type: "text" as const, text: t("reverse.articleUrl"), variant: "caption" as const, color: "muted" as const },
+                    { type: "text" as const, text: log.articleUrl, style: { wordBreak: "break-all" as const, fontSize: "0.875rem" } },
+                  ],
+                },
+              ]
+            : []),
+          {
+            type: "text",
+            text: `${t("reverse.createdAt")}: ${formatDate(log.createdAt)}`,
+            variant: "caption",
+            color: "muted",
+          },
+        ],
+      }
+
+      // Metrics tab content
+      const hasMetrics = metrics && (metrics.burstiness != null || metrics.ttr != null || metrics.avgSentLen != null)
+      const metricsTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasMetrics
+          ? [
+              {
+                type: "row",
+                gap: "1.5rem",
+                style: { flexWrap: "wrap" },
+                children: [
+                  ...(metrics.burstiness != null
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("insights.burstiness"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: metrics.burstiness.toFixed(2), variant: "h4" as const },
+                          ],
+                        },
+                      ]
+                    : []),
+                  ...(metrics.ttr != null
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("insights.ttr"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: metrics.ttr.toFixed(2), variant: "h4" as const },
+                          ],
+                        },
+                      ]
+                    : []),
+                  ...(metrics.avgSentLen != null
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("insights.avgSentLen"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: metrics.avgSentLen.toFixed(1), variant: "h4" as const },
+                          ],
+                        },
+                      ]
+                    : []),
+                ],
+              },
+            ]
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // Analysis tab content
+      const hasAnalysis = reverseResult && (reverseResult.tone || reverseResult.structure || (reverseResult.vocabulary && reverseResult.vocabulary.length > 0))
+      const analysisTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasAnalysis
+          ? [
+              ...(reverseResult.tone
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.125rem",
+                      children: [
+                        { type: "text" as const, text: t("reverse.tone"), variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: reverseResult.tone },
+                      ],
+                    },
+                  ]
+                : []),
+              ...(reverseResult.structure
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.125rem",
+                      children: [
+                        { type: "text" as const, text: t("reverse.structure"), variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: reverseResult.structure },
+                      ],
+                    },
+                  ]
+                : []),
+              ...(reverseResult.vocabulary && reverseResult.vocabulary.length > 0
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.25rem",
+                      children: [
+                        { type: "text" as const, text: t("reverse.vocabulary"), variant: "caption" as const, color: "muted" as const },
+                        {
+                          type: "row" as const,
+                          gap: "0.25rem",
+                          style: { flexWrap: "wrap" as const },
+                          children: reverseResult.vocabulary.slice(0, 8).map((v) => ({ type: "badge" as const, text: v, color: "default" as const })),
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+            ]
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // Model tab content
+      const hasModelInfo = log.modelName || log.totalTokens || log.costEstimatedUsd
+      const modelTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasModelInfo
+          ? [
+              {
+                type: "row",
+                gap: "1.5rem",
+                style: { flexWrap: "wrap" },
+                children: [
+                  ...(log.modelName
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("reverse.modelName"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: log.modelName },
+                          ],
+                        },
+                      ]
+                    : []),
+                  ...(log.totalTokens
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("reverse.totalTokens"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: log.totalTokens.toLocaleString() },
+                          ],
+                        },
+                      ]
+                    : []),
+                  ...(log.costEstimatedUsd
+                    ? [
+                        {
+                          type: "column" as const,
+                          gap: "0.125rem",
+                          children: [
+                            { type: "text" as const, text: t("reverse.cost"), variant: "caption" as const, color: "muted" as const },
+                            { type: "text" as const, text: `$${log.costEstimatedUsd.toFixed(4)}` },
+                          ],
+                        },
+                      ]
+                    : []),
+                ],
+              },
+            ]
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      return {
+        type: "card",
+        id: `log-${log.id}`,
+        hoverable: false,
+        children: [
+          {
+            type: "column",
+            gap: "0.75rem",
+            children: [
+              // Header row with title, badges and delete button
+              {
+                type: "row",
+                justify: "between",
+                align: "start",
+                children: [
+                  {
+                    type: "column",
+                    gap: "0.5rem",
+                    style: { flex: 1 },
+                    children: [
+                      {
+                        type: "text",
+                        text: log.articleTitle || log.articleUrl?.slice(0, 50) || t("reverse.untitled"),
+                        variant: "h4",
+                        style: { cursor: "pointer" },
+                        onClick: { action: "viewDetail", args: [log.id] },
+                      },
+                      {
+                        type: "row",
+                        gap: "0.5rem",
+                        children: [
+                          { type: "badge", text: getStatusLabel(log.status ?? "PENDING"), color: getStatusColor(log.status ?? "PENDING") },
+                          ...(log.genreCategory ? [{ type: "badge" as const, text: log.genreCategory, color: "default" as const }] : []),
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    type: "button",
+                    text: t("common.delete"),
+                    variant: "destructive",
+                    size: "sm",
+                    onClick: { action: "deleteLog", args: [log.id], stopPropagation: true },
+                  },
+                ],
+              } as A2UIRowNode,
+              // Tabs for detailed info
+              {
+                type: "tabs",
+                tabs: [
+                  { label: t("reverse.tabBasic"), content: basicTabContent },
+                  { label: t("reverse.tabMetrics"), content: metricsTabContent },
+                  { label: t("reverse.tabAnalysis"), content: analysisTabContent },
+                  { label: t("reverse.tabModel"), content: modelTabContent },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+    })
+
+    return { type: "column", gap: "0.75rem", children: logCards }
+  }
+
+  // Build detail modal content
+  const buildDetailModalNode = (): A2UINode | null => {
+    if (!selectedLog) return null
+
+    const metrics = selectedLog.metrics as { burstiness?: number; ttr?: number; avgSentLen?: number } | null
+    const reverseResult = selectedLog.reverseResult as { genre?: string; tone?: string; structure?: string; vocabulary?: string[] } | null
+
+    const detailItems: A2UINode[] = [
+      // Header with status
+      {
+        type: "row",
+        gap: "0.5rem",
+        children: [
+          { type: "badge", text: getStatusLabel(selectedLog.status ?? "PENDING"), color: getStatusColor(selectedLog.status ?? "PENDING") },
+          ...(selectedLog.genreCategory ? [{ type: "badge" as const, text: selectedLog.genreCategory, color: "default" as const }] : []),
+        ],
+      },
+    ]
+
+    // Article URL
+    if (selectedLog.articleUrl) {
+      detailItems.push({
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          { type: "text", text: t("reverse.articleUrl"), variant: "caption", color: "muted" },
+          { type: "text", text: selectedLog.articleUrl, style: { wordBreak: "break-all" } },
+        ],
+      })
+    }
+
+    // Metrics
+    if (metrics && (metrics.burstiness || metrics.ttr || metrics.avgSentLen)) {
+      detailItems.push({
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          { type: "text", text: t("reverse.metrics"), variant: "caption", color: "muted" },
+          {
+            type: "row",
+            gap: "1rem",
+            children: [
+              ...(metrics.burstiness != null ? [{ type: "text" as const, text: `${t("insights.burstiness")}: ${metrics.burstiness.toFixed(2)}` }] : []),
+              ...(metrics.ttr != null ? [{ type: "text" as const, text: `${t("insights.ttr")}: ${metrics.ttr.toFixed(2)}` }] : []),
+              ...(metrics.avgSentLen != null ? [{ type: "text" as const, text: `${t("insights.avgSentLen")}: ${metrics.avgSentLen.toFixed(1)}` }] : []),
+            ],
+          },
+        ],
+      })
+    }
+
+    // Reverse Result
+    if (reverseResult) {
+      const resultChildren: A2UINode[] = [
+        { type: "text", text: t("reverse.reverseResult"), variant: "caption", color: "muted" },
+      ]
+
+      if (reverseResult.tone) {
+        resultChildren.push({ type: "text", text: `${t("reverse.tone")}: ${reverseResult.tone}` })
+      }
+      if (reverseResult.structure) {
+        resultChildren.push({ type: "text", text: `${t("reverse.structure")}: ${reverseResult.structure}` })
+      }
+      if (reverseResult.vocabulary && reverseResult.vocabulary.length > 0) {
+        resultChildren.push({
+          type: "row",
+          gap: "0.5rem",
+          style: { flexWrap: "wrap" },
+          children: [
+            { type: "text", text: `${t("reverse.vocabulary")}: ` },
+            ...reverseResult.vocabulary.slice(0, 10).map((v) => ({ type: "badge" as const, text: v, color: "default" as const })),
+          ],
+        })
+      }
+
+      if (resultChildren.length > 1) {
+        detailItems.push({ type: "column", gap: "0.25rem", children: resultChildren })
+      }
+    }
+
+    // Model info
+    if (selectedLog.modelName || selectedLog.totalTokens || selectedLog.costEstimatedUsd) {
+      detailItems.push({
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          { type: "text", text: t("reverse.modelName"), variant: "caption", color: "muted" },
+          {
+            type: "row",
+            gap: "1rem",
+            children: [
+              ...(selectedLog.modelName ? [{ type: "text" as const, text: selectedLog.modelName }] : []),
+              ...(selectedLog.totalTokens ? [{ type: "text" as const, text: `${t("reverse.totalTokens")}: ${selectedLog.totalTokens}` }] : []),
+              ...(selectedLog.costEstimatedUsd ? [{ type: "text" as const, text: `${t("reverse.cost")}: $${selectedLog.costEstimatedUsd.toFixed(4)}` }] : []),
+            ],
+          },
+        ],
+      })
+    }
+
+    // System Prompt
+    if (selectedLog.finalSystemPrompt) {
+      detailItems.push({
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          { type: "text", text: t("reverse.viewPrompt"), variant: "caption", color: "muted" },
+          {
+            type: "text",
+            text: selectedLog.finalSystemPrompt,
+            style: { whiteSpace: "pre-wrap", maxHeight: "200px", overflow: "auto", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", fontSize: "0.875rem" },
+          },
+        ],
+      })
+    }
+
+    // Original Content
+    if (selectedLog.originalContent) {
+      detailItems.push({
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          { type: "text", text: t("reverse.originalContent"), variant: "caption", color: "muted" },
+          {
+            type: "text",
+            text: selectedLog.originalContent.length > 500 ? selectedLog.originalContent.slice(0, 500) + "..." : selectedLog.originalContent,
+            style: { whiteSpace: "pre-wrap", maxHeight: "150px", overflow: "auto", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", fontSize: "0.875rem" },
+          },
+        ],
+      })
+    }
+
+    // Timestamps
+    detailItems.push({
+      type: "text",
+      text: `${t("reverse.createdAt")}: ${formatDate(selectedLog.createdAt)}`,
+      variant: "caption",
+      color: "muted",
+    })
+
+    // Close button
+    detailItems.push({
+      type: "row",
+      justify: "end",
+      style: { marginTop: "0.5rem" },
+      children: [{ type: "button", text: t("common.cancel"), variant: "secondary", onClick: { action: "closeDetailModal" } }],
+    })
+
+    return {
+      type: "modal",
+      open: detailModalOpen,
+      title: selectedLog.articleTitle || t("reverse.detail"),
+      onClose: { action: "closeDetailModal" },
+      children: [
+        {
+          type: "column",
+          gap: "1rem",
+          style: { maxHeight: "70vh", overflow: "auto" },
+          children: detailItems,
+        },
+      ],
+    }
+  }
+
+  // Build page structure
+  const pageNode: A2UIColumnNode = {
+    type: "column",
+    gap: "1.5rem",
+    children: [
+      {
+        type: "row",
+        justify: "between",
+        align: "center",
+        children: [
+          { type: "text", text: t("reverse.title"), variant: "h2" },
+          { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
+        ],
+      },
+      buildListNode(),
+    ],
+  }
+
+  const detailModalNode = buildDetailModalNode()
+
+  if (!mounted) return null
+
+  return (
+    <AppLayout onLogout={logout}>
+      <A2UIRenderer node={pageNode} onAction={handleAction} />
+      {detailModalOpen && detailModalNode && <A2UIRenderer node={detailModalNode} onAction={handleAction} />}
+      <ReverseSubmitModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={handleSuccess} />
+    </AppLayout>
+  )
+}

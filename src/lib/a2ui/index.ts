@@ -1,0 +1,99 @@
+// A2UI Library
+// Declarative JSON-based UI protocol for agent-generated interfaces
+//
+// ARCHITECTURE: Schema-First
+// - Source of Truth: src/lib/a2ui/schema/standard-catalog.json
+// - Generated Code:  src/lib/a2ui/generated/
+// - Run: npm run a2ui:generate
+
+// ============================================================================
+// Generated Types (from schema)
+// ============================================================================
+export type {
+  A2UINode,
+  A2UIBaseNode,
+  A2UIAction,
+  A2UIActionHandler,
+  A2UIResponse,
+  // Layout
+  A2UIColumnNode,
+  A2UIRowNode,
+  A2UIContainerNode,
+  A2UICardNode,
+  A2UIPageNode,
+  A2UINavNode,
+  A2UINavLinkNode,
+  A2UISpacerNode,
+  // Content
+  A2UITextNode,
+  A2UIImageNode,
+  A2UIIconNode,
+  A2UIDividerNode,
+  A2UILinkNode,
+  // Interactive
+  A2UIButtonNode,
+  A2UIInputNode,
+  A2UITextareaNode,
+  A2UISelectNode,
+  A2UICheckboxNode,
+  A2UITabsNode,
+  A2UIFormNode,
+  A2UIFormFieldNode,
+  // Feedback
+  A2UIBadgeNode,
+  A2UIProgressNode,
+  A2UIModalNode,
+  A2UIAlertNode,
+} from "./generated/types"
+
+export {
+  CATALOG_ID,
+  CATALOG_NAME,
+  CATALOG_VERSION,
+  COMPONENT_DEFINITIONS,
+  COMPONENT_TYPES,
+  createGeneratedCatalog,
+  type ComponentType,
+} from "./generated/catalog"
+
+// ============================================================================
+// Catalog System
+// ============================================================================
+export {
+  type A2UICatalog,
+  type A2UIComponentDefinition,
+  type A2UIPropertyDefinition,
+  createCatalog,
+  addComponentToCatalog,
+  catalogHasComponent,
+  getComponentDefinition,
+  mergeCatalogs,
+} from "./catalog"
+
+// Create standard catalog using generated definitions
+export { createGeneratedCatalog as createStandardCatalog } from "./generated/catalog"
+
+// ============================================================================
+// Registry System
+// ============================================================================
+export {
+  type A2UIComponent,
+  type A2UIComponentProps,
+  A2UIRegistry,
+  createRegistry,
+  getDefaultRegistry,
+  setDefaultRegistry,
+  registerComponent,
+  overrideComponent,
+} from "./registry"
+
+// ============================================================================
+// Transformers (only complex list transformations)
+// ============================================================================
+export * from "./task-transformer"
+
+// ============================================================================
+// Legacy Compatibility
+// Keep the old type name for backward compatibility
+// ============================================================================
+export type { A2UIDividerNode as A2UIDeviderNode } from "./generated/types"

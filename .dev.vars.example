@@ -1,2 +1,3 @@
+DATABASE_URL=postgresql://media-ops:your-password@localhost:5432/media-ops
 JWT_SECRET=change-me
 N8N_WEBHOOK_URL=https://n8n.rn.ziikoo.com/webhook/media-ops

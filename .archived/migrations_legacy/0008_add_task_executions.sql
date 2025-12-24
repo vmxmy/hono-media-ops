@@ -2,7 +2,7 @@
 
 CREATE TABLE task_executions (
   id TEXT PRIMARY KEY,
-  task_id TEXT NOT NULL,
+  task_id TEXT,
   n8n_execution_id TEXT,
 
   -- 时间信息
@@ -25,9 +25,7 @@ CREATE TABLE task_executions (
   article_html TEXT,
 
   -- 扩展元数据 (JSON格式)
-  metadata TEXT,
-
-  FOREIGN KEY (task_id) REFERENCES tasks(id)
+  metadata TEXT
 );
 
 -- 索引
