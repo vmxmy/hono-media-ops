@@ -231,10 +231,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         // Navigation
         "nav.dashboard": "Dashboard",
         "nav.prompts": "Prompts",
-        "nav.tasks": "Writing Tasks",
+        "nav.tasks": "Write",
         "nav.settings": "Settings",
         // Tasks
-        "tasks.title": "Writing Tasks",
+        "tasks.title": "Write Something",
         "tasks.newTask": "New Task",
         "tasks.noTasks": "No tasks yet",
         "tasks.created": "Created",
@@ -416,10 +416,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         // Navigation
         "nav.dashboard": "仪表盘",
         "nav.prompts": "提示词",
-        "nav.tasks": "写作任务",
+        "nav.tasks": "写点东西",
         "nav.settings": "设置",
         // Tasks
-        "tasks.title": "写作任务",
+        "tasks.title": "写点东西",
         "tasks.newTask": "新建任务",
         "tasks.noTasks": "暂无任务",
         "tasks.created": "创建时间",
