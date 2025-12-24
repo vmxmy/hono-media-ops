@@ -65,81 +65,76 @@ export function ThemeSwitcher() {
 
       {isOpen && (
         <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-popover p-3 shadow-lg">
-          {/* Language */}
-          <div className="mb-3">
-            <div className="mb-2 text-xs font-medium text-muted-foreground">
-              {t("settings.language")}
-            </div>
-            <div className="flex gap-1">
+          {/* Language & Appearance */}
+          <div className="mb-3 flex items-center justify-between">
+            {/* Language */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setLocale("zh-CN")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
                   locale === "zh-CN"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
+                title="中文"
               >
-                中文
+                <span className="text-sm font-medium">中</span>
               </button>
               <button
                 onClick={() => setLocale("en")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
                   locale === "en"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
+                title="English"
               >
-                English
+                <span className="text-sm font-medium">En</span>
               </button>
             </div>
-          </div>
 
-          {/* Appearance */}
-          <div className="mb-3">
-            <div className="mb-2 text-xs font-medium text-muted-foreground">
-              {t("settings.appearance")}
-            </div>
-            <div className="flex gap-1">
+            {/* Appearance */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setAppearance("light")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
                   appearance === "light"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
+                title={t("settings.light")}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="4" />
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
                 </svg>
-                {t("settings.light")}
               </button>
               <button
                 onClick={() => setAppearance("dark")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
                   appearance === "dark"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
+                title={t("settings.dark")}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
-                {t("settings.dark")}
               </button>
               <button
                 onClick={() => setAppearance("system")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
                   appearance === "system"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
+                title={t("settings.auto")}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="3" width="20" height="14" rx="2" />
                   <path d="M8 21h8M12 17v4" />
                 </svg>
-                {t("settings.auto")}
               </button>
             </div>
           </div>
