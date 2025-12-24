@@ -1,0 +1,8 @@
+name = "hono-media-ops"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "media_ops"
+database_id = "edf32cd3-0af5-48a0-902e-66d62346e854"
