@@ -9,7 +9,26 @@ export function ThemeSwitcher() {
   const { appearance, palette, setAppearance, setPalette } = useTheme()
   const { locale, setLocale, t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
+  const [isDark, setIsDark] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Determine if we're in dark mode
+  useEffect(() => {
+    const checkDark = () => {
+      if (appearance === "dark") return true
+      if (appearance === "light") return false
+      // system mode - check media query
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+    }
+    setIsDark(checkDark())
+
+    if (appearance === "system") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
+      mediaQuery.addEventListener("change", handler)
+      return () => mediaQuery.removeEventListener("change", handler)
+    }
+  }, [appearance])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -160,7 +179,7 @@ export function ThemeSwitcher() {
                       : "hover:bg-secondary"
                   }`}
                 >
-                  <ThemePreview themeName={theme.name} />
+                  <ThemePreview themeName={theme.name} isDark={isDark} />
                   {theme.title}
                 </button>
               ))}
@@ -172,9 +191,11 @@ export function ThemeSwitcher() {
   )
 }
 
-function ThemePreview({ themeName }: { themeName: string }) {
+function ThemePreview({ themeName, isDark }: { themeName: string; isDark: boolean }) {
+  // Need both theme class AND light/dark class for CSS variables to apply
+  const themeClass = `theme-${themeName} ${isDark ? "dark" : "light"}`
   return (
-    <div className={`theme-${themeName} flex gap-0.5`} style={{ isolation: "isolate" }}>
+    <div className={`${themeClass} flex gap-0.5`} style={{ isolation: "isolate" }}>
       <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-primary)" }} />
       <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-secondary)" }} />
       <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-accent)" }} />
