@@ -161,6 +161,7 @@ export type I18nKey =
     | "reverse.noRecords"
     | "reverse.articleTitle"
     | "reverse.articleUrl"
+    | "reverse.readOriginal"
     | "reverse.genre"
     | "reverse.status"
     | "reverse.createdAt"
@@ -356,6 +357,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.noRecords": "No analysis records yet",
         "reverse.articleTitle": "Article Title",
         "reverse.articleUrl": "Article URL",
+        "reverse.readOriginal": "Read Original",
         "reverse.genre": "Genre",
         "reverse.status": "Status",
         "reverse.createdAt": "Created",
@@ -540,6 +542,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.noRecords": "暂无分析记录",
         "reverse.articleTitle": "文章标题",
         "reverse.articleUrl": "文章链接",
+        "reverse.readOriginal": "阅读原文",
         "reverse.genre": "文体",
         "reverse.status": "状态",
         "reverse.createdAt": "创建时间",

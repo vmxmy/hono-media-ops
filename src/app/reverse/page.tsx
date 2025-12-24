@@ -338,7 +338,7 @@ export default function ReversePage() {
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
       }
 
-      // Prompt tab - the actionable output
+      // Prompt tab - the actionable output (full text with scroll)
       const hasPrompt = parsed?.execution_prompt || log.finalSystemPrompt
       const promptText = parsed?.execution_prompt || log.finalSystemPrompt || ""
       const promptTabContent: A2UINode = {
@@ -348,23 +348,17 @@ export default function ReversePage() {
           ? [
               {
                 type: "text",
-                text: promptText.length > 300 ? promptText.slice(0, 300) + "..." : promptText,
+                text: promptText,
                 style: {
                   whiteSpace: "pre-wrap",
                   fontSize: "0.75rem",
-                  lineHeight: "1.4",
-                  padding: "0.5rem",
+                  lineHeight: "1.5",
+                  padding: "0.75rem",
                   backgroundColor: "var(--muted)",
                   borderRadius: "0.375rem",
-                  maxHeight: "120px",
+                  maxHeight: "300px",
                   overflow: "auto",
                 },
-              },
-              {
-                type: "text",
-                text: t("reverse.clickToViewFull"),
-                variant: "caption",
-                color: "muted",
               },
             ]
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
@@ -409,15 +403,15 @@ export default function ReversePage() {
                           ...(log.modelName ? [{ type: "badge" as const, text: log.modelName, color: "default" as const }] : []),
                         ],
                       },
-                      // Show URL if different from title
-                      ...(log.articleUrl && log.articleUrl !== parsed?.style_name
+                      // Show "Read Original" link if URL exists
+                      ...(log.articleUrl
                         ? [
                             {
-                              type: "text" as const,
-                              text: log.articleUrl.length > 40 ? log.articleUrl.slice(0, 40) + "..." : log.articleUrl,
-                              variant: "caption" as const,
-                              color: "muted" as const,
-                              style: { wordBreak: "break-all" as const, fontSize: "0.7rem" },
+                              type: "link" as const,
+                              text: t("reverse.readOriginal"),
+                              href: log.articleUrl,
+                              variant: "primary" as const,
+                              style: { fontSize: "0.75rem" },
                             },
                           ]
                         : []),
@@ -477,7 +471,7 @@ export default function ReversePage() {
         gap: "0.25rem",
         children: [
           { type: "text", text: t("reverse.articleUrl"), variant: "caption", color: "muted" },
-          { type: "text", text: selectedLog.articleUrl, style: { wordBreak: "break-all" } },
+          { type: "link", text: t("reverse.readOriginal"), href: selectedLog.articleUrl, variant: "primary" },
         ],
       })
     }

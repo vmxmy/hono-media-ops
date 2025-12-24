@@ -613,8 +613,15 @@ export function A2UILink({ node, onAction }: A2UIComponentProps<A2UILinkNode>) {
   const className = `text-sm ${variantClasses[node.variant ?? "primary"]}`
 
   if (node.href && !node.onClick) {
+    // External links open in new window
+    const isExternal = node.href.startsWith("http://") || node.href.startsWith("https://")
     return (
-      <a href={node.href} className={className} style={node.style}>
+      <a
+        href={node.href}
+        className={className}
+        style={node.style}
+        {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      >
         {node.text}
       </a>
     )
