@@ -194,7 +194,7 @@ export default function TasksPage() {
         { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
         {
           type: "button",
-          text: "✨",
+          text: "✏️",
           variant: "primary",
           size: "md",
           onClick: { action: "newTask" },
