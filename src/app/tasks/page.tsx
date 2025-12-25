@@ -192,7 +192,14 @@ export default function TasksPage() {
       style: { marginBottom: "1rem" },
       children: [
         { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
-        { type: "button", text: t("tasks.newTask"), variant: "primary", size: "md", onClick: { action: "newTask" } },
+        {
+          type: "button",
+          text: "✨",
+          variant: "primary",
+          size: "md",
+          onClick: { action: "newTask" },
+          style: { width: "40px", height: "40px", padding: 0, fontSize: "1.25rem" },
+        },
       ],
     }
 
