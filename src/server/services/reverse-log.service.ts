@@ -380,7 +380,7 @@ export const reverseLogService = {
       .orderBy(sql`count(*) desc`)
       .limit(5);
 
-    // 聚合词汇特征 (从 vocabulary 数组中提取高频词)
+    // 聚合词汇特征 (从 meta_profile.tone_keywords 中提取高频词)
     const vocabularyResult = await db
       .select({
         vocabulary: reverseEngineeringLogs.reverseResult,
@@ -389,16 +389,17 @@ export const reverseLogService = {
       .where(and(
         baseConditions,
         eq(reverseEngineeringLogs.status, "SUCCESS"),
-        sql`${reverseEngineeringLogs.reverseResult}->'vocabulary' IS NOT NULL`
+        sql`${reverseEngineeringLogs.reverseResult}->'meta_profile'->'tone_keywords' IS NOT NULL`
       ))
       .limit(20);
 
-    // 统计词频
+    // 统计词频 (从 meta_profile.tone_keywords 提取)
     const wordFrequency: Record<string, number> = {};
     for (const row of vocabularyResult) {
       const result = row.vocabulary as ReverseResult | null;
-      if (result?.vocabulary) {
-        for (const word of result.vocabulary) {
+      const toneKeywords = result?.meta_profile?.tone_keywords;
+      if (Array.isArray(toneKeywords)) {
+        for (const word of toneKeywords) {
           wordFrequency[word] = (wordFrequency[word] ?? 0) + 1;
         }
       }

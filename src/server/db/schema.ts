@@ -151,42 +151,90 @@ export const taskExecutionsRelations = relations(taskExecutions, ({ one }) => ({
   }),
 }));
 
-// ==================== Prompts Table ====================
+// ==================== Image Prompts Table ====================
 
-export const prompts = pgTable(
-  "prompts",
+// Source enum for image prompts
+export const imagePromptSourceEnum = pgEnum("image_prompt_source", [
+  "manual",    // 手动创建
+  "ai",        // AI 生成
+  "imported",  // 导入
+]);
+
+export const imagePrompts = pgTable(
+  "image_prompts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    name: text("name").notNull(),
-    content: text("content").notNull(),
-    category: text("category").default("default"),
-    description: text("description"),
-    // Metadata as JSONB for extensibility
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    // 基础信息
+    title: text("title").notNull(),
+    prompt: text("prompt").notNull(),
+    negativePrompt: text("negative_prompt"),
+    // 生成参数
+    model: text("model").default("jimeng-4.5"),
+    ratio: text("ratio").default("1:1"),
+    resolution: text("resolution").default("2k"),
+    // 分类标签
+    category: text("category").default("general"),
+    tags: jsonb("tags").$type<string[]>(),
+    // 预览图
+    previewUrl: text("preview_url"),
+    previewR2Key: text("preview_r2_key"),
+    // 使用统计
+    useCount: integer("use_count").default(0).notNull(),
+    lastUsedAt: timestamp("last_used_at"),
+    // 来源追踪
+    source: imagePromptSourceEnum("source").default("manual"),
+    sourceRef: text("source_ref"),
+    // 公开/私有 & 评分
+    isPublic: integer("is_public").default(0).notNull(), // 0=私有, 1=公开
+    rating: integer("rating").default(0).notNull(), // 0-5 星评分
+    // 扩展
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
-    // Timestamps
+    // 时间戳
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     deletedAt: timestamp("deleted_at"),
   },
   (table) => ({
-    categoryIdx: index("idx_prompts_category").on(table.category),
-    nameIdx: index("idx_prompts_name").on(table.name),
-    // Composite index for category listing
-    categoryNameIdx: index("idx_prompts_category_name").on(
-      table.category,
-      table.name
+    userIdIdx: index("idx_image_prompts_user_id").on(table.userId),
+    categoryIdx: index("idx_image_prompts_category").on(table.category),
+    isPublicIdx: index("idx_image_prompts_is_public").on(table.isPublic),
+    useCountIdx: index("idx_image_prompts_use_count").on(table.useCount),
+    createdAtIdx: index("idx_image_prompts_created_at").on(table.createdAt),
+    // 复合索引
+    userCategoryIdx: index("idx_image_prompts_user_category").on(
+      table.userId,
+      table.category
     ),
   })
 );
 
 // ==================== Reverse Engineering Logs Table ====================
 
-// Reverse result JSON type
+// Reverse result JSON types (from n8n clean_result)
+export type ReverseResultMetaProfile = {
+  archetype?: string;
+  tone_keywords?: string[];
+  target_audience?: string;
+};
+
+export type ReverseResultBlueprint = {
+  section: string;
+  specs: string;
+};
+
+export type ReverseResultConstraints = {
+  rhythm_instruction?: string;
+  vocabulary_level?: string;
+  formatting_rules?: string;
+};
+
 export type ReverseResult = {
-  genre?: string;
-  tone?: string;
-  structure?: string;
-  vocabulary?: string[];
+  style_name?: string;
+  meta_profile?: ReverseResultMetaProfile;
+  blueprint?: ReverseResultBlueprint[];
+  constraints?: ReverseResultConstraints;
+  execution_prompt?: string;
   [key: string]: unknown;
 };
 
@@ -219,6 +267,12 @@ export const reverseEngineeringLogs = pgTable(
     finalSystemPrompt: text("final_system_prompt"),
     modelName: text("model_name"),
     status: reverseLogStatusEnum("status").default("SUCCESS"),
+    // Parsed clean result from n8n (structured reverse analysis)
+    cleanResult: jsonb("clean_result").$type<ReverseResult>(),
+    // Extracted fields for querying and display
+    styleName: text("style_name"),
+    archetype: text("archetype"),
+    targetAudience: text("target_audience"),
     // Timestamps
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -230,6 +284,7 @@ export const reverseEngineeringLogs = pgTable(
     createdAtIdx: index("idx_re_logs_created_at").on(table.createdAt),
     statusIdx: index("idx_re_logs_status").on(table.status),
     articleUrlIdx: index("idx_re_logs_article_url").on(table.articleUrl),
+    styleNameIdx: index("idx_re_logs_style_name").on(table.styleName),
     // Composite indexes
     userCreatedIdx: index("idx_re_logs_user_created").on(
       table.userId,
@@ -263,8 +318,8 @@ export type NewTask = typeof tasks.$inferInsert;
 export type TaskExecution = typeof taskExecutions.$inferSelect;
 export type NewTaskExecution = typeof taskExecutions.$inferInsert;
 
-export type Prompt = typeof prompts.$inferSelect;
-export type NewPrompt = typeof prompts.$inferInsert;
+export type ImagePrompt = typeof imagePrompts.$inferSelect;
+export type NewImagePrompt = typeof imagePrompts.$inferInsert;
 
 export type ReverseEngineeringLog = typeof reverseEngineeringLogs.$inferSelect;
 export type NewReverseEngineeringLog = typeof reverseEngineeringLogs.$inferInsert;
