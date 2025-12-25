@@ -21,30 +21,22 @@ const getAllInputSchema = z.object({
 const createInputSchema = z.object({
   topic: z.string().min(1),
   keywords: z.string().optional(),
-  templateId: z.string().optional(),
-  refUrl: z.string().optional(),
-  style: z.string().optional(),
-  openingExample: z.string().optional(),
-  structureGuide: z.string().optional(),
-  outputSchema: z.string().optional(),
   coverPrompt: z.string().optional(),
   coverRatio: z.string().default("16:9"),
   coverResolution: z.string().default("1k"),
   coverModel: z.string().default("jimeng-4.5"),
   coverMode: z.string().default("text2img"),
   coverNegativePrompt: z.string().default("模糊, 变形, 低质量, 水印, 文字"),
+  // Reference material fields
+  refMaterialId: z.string().optional(),
+  refGenreCategory: z.string().optional(),
+  refReverseResult: z.record(z.unknown()).optional(),
 });
 
 const updateInputSchema = z.object({
   id: z.string(),
   topic: z.string().min(1).optional(),
   keywords: z.string().optional(),
-  templateId: z.string().optional(),
-  refUrl: z.string().optional(),
-  style: z.string().optional(),
-  openingExample: z.string().optional(),
-  structureGuide: z.string().optional(),
-  outputSchema: z.string().optional(),
   coverPrompt: z.string().optional(),
   coverRatio: z.string().optional(),
   coverResolution: z.string().optional(),
@@ -56,8 +48,6 @@ const updateInputSchema = z.object({
 const updateStatusSchema = z.object({
   id: z.string(),
   status: taskStatusEnum,
-  resultTitle: z.string().optional(),
-  resultContent: z.string().optional(),
 });
 
 const idSchema = z.object({ id: z.string() });
@@ -200,7 +190,6 @@ export const tasksRouter = createTRPCRouter({
           "topic",
           "keywords",
           "status",
-          "resultTitle",
           "createdAt",
         ];
 
@@ -209,7 +198,6 @@ export const tasksRouter = createTRPCRouter({
           task.topic ?? "",
           task.keywords ?? "",
           task.status ?? "",
-          task.resultTitle ?? "",
           task.createdAt?.toISOString() ?? "",
         ]);
 

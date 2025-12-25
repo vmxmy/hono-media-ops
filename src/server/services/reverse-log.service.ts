@@ -65,22 +65,16 @@ export interface CreateReverseLogInput {
   articleUrl?: string;
   originalContent?: string;
   genreCategory?: string;
-  // Raw data - complete n8n response before parsing
-  rawData?: Record<string, unknown>;
-  // JSONB fields (parsed from rawData or provided directly)
+  // JSONB fields
   reverseResult?: ReverseResult;
   metrics?: ReverseMetrics;
-  // Legacy support - will be converted to JSONB
+  // n8n writes to these columns
   reverseResultJson?: string;
   metricBurstiness?: number;
   metricTtr?: number;
   metricAvgSentLen?: number;
-  // Other fields
   finalSystemPrompt?: string;
   modelName?: string;
-  totalTokens?: number;
-  costEstimatedUsd?: number;
-  n8nExecutionId?: string;
   status?: ReverseLogStatus;
 }
 
@@ -206,19 +200,15 @@ export const reverseLogService = {
       articleUrl: input.articleUrl,
       originalContent: input.originalContent,
       genreCategory: input.genreCategory,
-      rawData: input.rawData,
       reverseResult,
       metrics,
-      // Legacy columns - store original values for compatibility
+      // n8n writes to these columns
       reverseResultJson: input.reverseResultJson ? JSON.parse(input.reverseResultJson) : undefined,
       metricBurstiness: input.metricBurstiness,
       metricTtr: input.metricTtr,
       metricAvgSentLen: input.metricAvgSentLen,
       finalSystemPrompt: input.finalSystemPrompt,
       modelName: input.modelName,
-      totalTokens: input.totalTokens,
-      costEstimatedUsd: input.costEstimatedUsd,
-      n8nExecutionId: input.n8nExecutionId,
       status: input.status ?? "SUCCESS",
     }).returning();
 

@@ -33,22 +33,16 @@ const createInputSchema = z.object({
   articleUrl: z.string().optional(),
   originalContent: z.string().optional(),
   genreCategory: z.string().optional(),
-  // Raw data - complete n8n response before parsing
-  rawData: z.record(z.unknown()).optional(),
-  // JSONB fields (parsed from rawData or provided directly)
+  // JSONB fields
   reverseResult: reverseResultSchema,
   metrics: metricsSchema,
-  // Legacy support - will be converted to JSONB in service
+  // n8n writes to these columns
   reverseResultJson: z.string().optional(),
   metricBurstiness: z.number().optional(),
   metricTtr: z.number().optional(),
   metricAvgSentLen: z.number().optional(),
-  // Other fields
   finalSystemPrompt: z.string().optional(),
   modelName: z.string().optional(),
-  totalTokens: z.number().optional(),
-  costEstimatedUsd: z.number().optional(),
-  n8nExecutionId: z.string().optional(),
   status: reverseLogStatusEnum.optional(),
 });
 
@@ -99,7 +93,10 @@ const statisticsSchema = z.object({
 export const reverseLogsRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(getAllInputSchema)
-    .query(({ ctx, input }) => ctx.services.reverseLog.getAll(input)),
+    .query(({ ctx, input }) => ctx.services.reverseLog.getAll({
+      ...input,
+      userId: ctx.user.id, // Filter by current user
+    })),
 
   getById: protectedProcedure
     .input(idSchema)
@@ -138,8 +135,6 @@ export const reverseLogsRouter = createTRPCRouter({
           "metricTtr",
           "metricAvgSentLen",
           "modelName",
-          "totalTokens",
-          "costEstimatedUsd",
           "status",
           "createdAt",
         ];
@@ -157,8 +152,6 @@ export const reverseLogsRouter = createTRPCRouter({
             metrics?.ttr?.toString() ?? "",
             metrics?.avgSentLen?.toString() ?? "",
             log.modelName ?? "",
-            log.totalTokens?.toString() ?? "",
-            log.costEstimatedUsd?.toString() ?? "",
             log.status ?? "",
             log.createdAt?.toISOString() ?? "",
           ];

@@ -20,12 +20,9 @@ interface ReverseLog {
   metrics: unknown
   finalSystemPrompt: string | null
   modelName: string | null
-  totalTokens: number | null
-  costEstimatedUsd: number | null
   metricBurstiness: number | null
   metricTtr: number | null
   metricAvgSentLen: number | null
-  n8nExecutionId: string | null
   status: string | null
   createdAt: Date | null
 }
@@ -442,7 +439,15 @@ export default function ReversePage() {
       }
     })
 
-    return { type: "column", gap: "0.75rem", children: logCards }
+    return {
+      type: "container",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+        gap: "0.75rem",
+      },
+      children: logCards,
+    }
   }
 
   // Build detail modal content
@@ -526,21 +531,13 @@ export default function ReversePage() {
     }
 
     // Model info
-    if (selectedLog.modelName || selectedLog.totalTokens || selectedLog.costEstimatedUsd) {
+    if (selectedLog.modelName) {
       detailItems.push({
         type: "column",
         gap: "0.25rem",
         children: [
           { type: "text", text: t("reverse.modelName"), variant: "caption", color: "muted" },
-          {
-            type: "row",
-            gap: "1rem",
-            children: [
-              ...(selectedLog.modelName ? [{ type: "text" as const, text: selectedLog.modelName }] : []),
-              ...(selectedLog.totalTokens ? [{ type: "text" as const, text: `${t("reverse.totalTokens")}: ${selectedLog.totalTokens}` }] : []),
-              ...(selectedLog.costEstimatedUsd ? [{ type: "text" as const, text: `${t("reverse.cost")}: $${selectedLog.costEstimatedUsd.toFixed(4)}` }] : []),
-            ],
-          },
+          { type: "text", text: selectedLog.modelName },
         ],
       })
     }
