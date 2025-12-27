@@ -6,45 +6,157 @@ import { AppLayout } from "@/components/app-layout"
 import { ReverseSubmitModal } from "@/components/reverse-submit-modal"
 import { useI18n } from "@/contexts/i18n-context"
 import { useAuth } from "@/hooks/use-auth"
-import { A2UIRenderer } from "@/components/a2ui"
+import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type { A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 
-interface ReverseLog {
-  id: string
-  articleTitle: string | null
-  articleUrl: string | null
-  originalContent: string | null
-  genreCategory: string | null
-  reverseResult: unknown
-  reverseResultJson: unknown
-  metrics: unknown
-  finalSystemPrompt: string | null
-  modelName: string | null
-  metricBurstiness: number | null
-  metricTtr: number | null
-  metricAvgSentLen: number | null
-  status: string | null
-  createdAt: Date | null
+// v7.3 Schema Types
+interface StyleIdentityData {
+  persona_description?: string
+  persona_desc?: string // 实际数据字段
+  voice_traits?: {
+    formality?: string
+    energy?: string
+    warmth?: string
+    confidence?: string
+  }
+  style_name?: string
+  archetype?: string
+  implied_reader?: string
+  // v7.0 实际数据字段
+  energy_level?: string
+  formality_score?: string
+  voice_distance?: string
+  tone_keywords?: string // 实际为字符串而非数组
 }
 
-// Parsed structure from reverse_result_json
-interface ReverseResultParsed {
-  style_name?: string
-  meta_profile?: {
-    archetype?: string
-    tone_keywords?: string[]
-    target_audience?: string
-  }
-  blueprint?: Array<{
-    section?: string
-    specs?: string
+interface MetricsConstraintsData {
+  avg_sentence_length?: number
+  sentence_length_std?: number
+  sentence_length_target?: number
+  avg_paragraph_length?: number
+}
+
+interface LexicalLogicData {
+  vocabulary_tier?: string
+  preferred_terms?: string[]
+  banned_terms?: string[]
+  tone_keywords?: string[]
+  // v7.0 实际数据字段
+  must_use?: string[]
+  must_avoid?: string[]
+  adj_style?: string
+  verb_style?: string
+}
+
+interface RhetoricLogicData {
+  preferred_devices?: string[]
+  device_frequency?: Record<string, unknown>
+  sentence_templates?: Array<Record<string, unknown>>
+  // v7.0 实际数据字段
+  dominant_device?: string
+  opening_pattern?: string
+  closing_pattern?: string
+  arg_style?: string
+  device_sample?: string
+}
+
+interface GoldenSampleData {
+  samples?: Array<{
+    text?: string
+    why?: string
   }>
-  constraints?: {
-    rhythm_instruction?: string
-    vocabulary_level?: string
-    formatting_rules?: string
-  }
-  execution_prompt?: string
+  // v7.0 实际数据字段 (单个对象而非数组)
+  paragraph?: string
+  reason?: string
+  tech_list?: string[]
+}
+
+interface TransferDemoData {
+  before_after_pairs?: Array<{
+    before?: string
+    after?: string
+    explanation?: string
+  }>
+  // v7.0 实际数据字段
+  new_text?: string
+  new_topic?: string
+  preserved_elements?: string
+}
+
+interface BlueprintItem {
+  // 新版字段 (v7.3)
+  p_id?: string
+  action?: string
+  strategy?: string
+  guidelines?: string
+  pattern_sample?: string
+  pattern_template?: string
+  // 旧版字段 (兼容)
+  section?: string
+  section_position?: string
+  position?: string
+  word_count_target?: number
+  word_percentage?: string
+  function?: string
+  internal_logic?: Record<string, unknown>
+  techniques?: Array<Record<string, unknown>>
+  sentence_patterns?: Record<string, unknown>
+  do_list?: string[]
+  dont_list?: string[]
+}
+
+interface CoreRuleItem {
+  rule_id?: string
+  rule_text?: string
+  importance?: string
+  examples?: string[]
+  priority?: number
+  feature?: string
+  // v7.0 实际数据字段
+  rule?: string
+  impact?: string
+  example?: string
+  evidence?: string
+  test_method?: string
+}
+
+interface AntiPatternItem {
+  pattern?: string
+  severity?: string
+  example?: string
+  fix_suggestion?: string
+  // v7.0 实际数据字段
+  forbidden?: string
+  bad_case?: string
+}
+
+interface StyleAnalysis {
+  id: string
+  userId: string
+  sourceUrl: string | null
+  sourceTitle: string | null
+  styleName: string | null
+  primaryType: string | null
+  analysisVersion: string | null
+  executionPrompt: string | null
+  wordCount: number | null
+  paraCount: number | null
+  metricsBurstiness: number | null
+  metricsTtr: number | null
+  styleIdentityData: StyleIdentityData | null
+  metricsConstraintsData: MetricsConstraintsData | null
+  lexicalLogicData: LexicalLogicData | null
+  rhetoricLogicData: RhetoricLogicData | null
+  goldenSampleData: GoldenSampleData | null
+  transferDemoData: TransferDemoData | null
+  coreRulesData: CoreRuleItem[] | null
+  blueprintData: BlueprintItem[] | null
+  antiPatternsData: AntiPatternItem[] | null
+  rawJsonFull: Record<string, unknown> | null
+  status: "PENDING" | "SUCCESS" | "FAILED"
+  createdAt: Date | null
+  updatedAt: Date | null
+  deletedAt: Date | null
 }
 
 export default function ReversePage() {
@@ -52,7 +164,7 @@ export default function ReversePage() {
   const { mounted, logout } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
-  const [selectedLog, setSelectedLog] = useState<ReverseLog | null>(null)
+  const [selectedAnalysis, setSelectedAnalysis] = useState<StyleAnalysis | null>(null)
 
   const utils = api.useUtils()
   const { data, isLoading } = api.reverseLogs.getAll.useQuery(
@@ -67,32 +179,6 @@ export default function ReversePage() {
   })
 
   const logs = data?.logs ?? []
-
-  const getStatusColor = (status: string): "success" | "destructive" | "warning" | "default" => {
-    switch (status) {
-      case "SUCCESS":
-        return "success"
-      case "FAILED":
-        return "destructive"
-      case "PENDING":
-        return "warning"
-      default:
-        return "default"
-    }
-  }
-
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case "SUCCESS":
-        return t("reverse.statusSuccess")
-      case "FAILED":
-        return t("reverse.statusFailed")
-      case "PENDING":
-        return t("reverse.statusPending")
-      default:
-        return status
-    }
-  }
 
   const formatDate = (date: Date | null) => {
     if (!date) return "-"
@@ -109,19 +195,53 @@ export default function ReversePage() {
           const logId = args?.[0] as string
           const log = logs.find((l) => l.id === logId)
           if (log) {
-            setSelectedLog(log as ReverseLog)
+            setSelectedAnalysis(log as StyleAnalysis)
             setDetailModalOpen(true)
           }
           break
         }
         case "closeDetailModal":
           setDetailModalOpen(false)
-          setSelectedLog(null)
+          setSelectedAnalysis(null)
           break
         case "deleteLog": {
           const deleteId = args?.[0] as string
-          if (confirm(t("reverse.deleteConfirm"))) {
-            deleteMutation.mutate({ id: deleteId })
+          const log = logs.find((l) => l.id === deleteId) as StyleAnalysis | undefined
+          const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
+
+          a2uiToast.warning(t("reverse.deleteConfirm"), {
+            description: title,
+            duration: 5000,
+            action: {
+              label: t("common.delete"),
+              onClick: () => {
+                deleteMutation.mutate(
+                  { id: deleteId },
+                  {
+                    onSuccess: () => {
+                      a2uiToast.success(t("reverse.deleteSuccess"))
+                    },
+                    onError: () => {
+                      a2uiToast.error(t("reverse.deleteFailed"))
+                    },
+                  }
+                )
+              },
+            },
+          })
+          break
+        }
+        case "copyPrompt": {
+          const logId = args?.[0] as string
+          const log = logs.find((l) => l.id === logId) as StyleAnalysis | undefined
+          if (log?.executionPrompt) {
+            navigator.clipboard.writeText(log.executionPrompt).then(() => {
+              a2uiToast.success(t("reverse.copySuccess"))
+            }).catch(() => {
+              a2uiToast.error(t("reverse.copyFailed"))
+            })
+          } else {
+            a2uiToast.warning(t("reverse.noPromptToCopy"))
           }
           break
         }
@@ -150,99 +270,702 @@ export default function ReversePage() {
     }
 
     const logCards: A2UINode[] = logs.map((log) => {
-      // Parse reverse_result_json - it might be a string or object
-      let parsed: ReverseResultParsed | null = null
-      if (log.reverseResultJson) {
-        try {
-          if (typeof log.reverseResultJson === "string") {
-            parsed = JSON.parse(log.reverseResultJson)
-          } else if (typeof log.reverseResultJson === "object") {
-            const obj = log.reverseResultJson as { text?: string }
-            if (obj.text) {
-              parsed = JSON.parse(obj.text)
-            } else {
-              parsed = log.reverseResultJson as ReverseResultParsed
-            }
-          }
-        } catch {
-          parsed = null
-        }
-      }
+      const analysis = log as StyleAnalysis
 
-      // Use legacy metric fields if JSONB metrics not available
-      const burstiness = log.metricBurstiness
-      const ttr = log.metricTtr
-      const avgSentLen = log.metricAvgSentLen
+      // Extract from JSONB fields
+      const styleIdentity = analysis.styleIdentityData
+      const metricsConstraints = analysis.metricsConstraintsData
+      const lexicalLogic = analysis.lexicalLogicData
+      const rhetoricLogic = analysis.rhetoricLogicData
 
-      // Style profile tab - most valuable info
-      const hasStyleInfo = parsed?.style_name || parsed?.meta_profile
+      // Style identity data - 兼容 v7.0 和 v7.3 字段名
+      const styleName = analysis.styleName || styleIdentity?.style_name || analysis.sourceTitle || ""
+      const archetype = styleIdentity?.archetype
+      const impliedReader = styleIdentity?.implied_reader
+      const personaDescription = styleIdentity?.persona_description || styleIdentity?.persona_desc
+      const voiceTraits = styleIdentity?.voice_traits
+
+      // Voice traits - 兼容 v7.0 (顶层字段) 和 v7.3 (嵌套字段)
+      const voiceFormality = voiceTraits?.formality || styleIdentity?.formality_score
+      const voiceEnergy = voiceTraits?.energy || styleIdentity?.energy_level
+      const voiceWarmth = voiceTraits?.warmth
+      const voiceConfidence = voiceTraits?.confidence
+      const voiceDistance = styleIdentity?.voice_distance
+      const hasVoiceTraits = voiceFormality || voiceEnergy || voiceWarmth || voiceConfidence || voiceDistance
+
+      // Tone keywords - 可能是 style_identity_data 中的字符串，或 lexical_logic_data 中的数组
+      const toneKeywordsRaw = styleIdentity?.tone_keywords || lexicalLogic?.tone_keywords
+      const toneKeywords: string[] = Array.isArray(toneKeywordsRaw)
+        ? toneKeywordsRaw
+        : typeof toneKeywordsRaw === "string"
+          ? toneKeywordsRaw.split(/[,、，]/).map(s => s.trim()).filter(Boolean)
+          : []
+
+      // Metrics
+      const wordCount = analysis.wordCount
+      const paraCount = analysis.paraCount
+      const burstiness = analysis.metricsBurstiness
+      const ttr = analysis.metricsTtr
+      const avgSentLen = metricsConstraints?.avg_sentence_length
+      const avgParaLen = metricsConstraints?.avg_paragraph_length
+
+      // Rhetoric logic data
+      const sentenceTemplates = rhetoricLogic?.sentence_templates
+
+      // Array data
+      const blueprintSections = analysis.blueprintData
+      const coreRules = analysis.coreRulesData
+      const antiPatterns = analysis.antiPatternsData
+
+      // Golden samples and transfer demo - 兼容 v7.0 和 v7.3 格式
+      const goldenSampleData = analysis.goldenSampleData
+      const goldenSamples = goldenSampleData?.samples ?? (
+        goldenSampleData?.paragraph
+          ? [{ text: goldenSampleData.paragraph, why: goldenSampleData.reason, tech_list: goldenSampleData.tech_list }]
+          : []
+      )
+      const transferDemoData = analysis.transferDemoData
+      const transferPairs = transferDemoData?.before_after_pairs ?? (
+        transferDemoData?.new_text
+          ? [{ before: undefined, after: transferDemoData.new_text, explanation: transferDemoData.preserved_elements, topic: transferDemoData.new_topic }]
+          : []
+      )
+
+      // Extended lexical logic - 兼容 v7.0 字段名
+      const vocabularyTier = lexicalLogic?.vocabulary_tier
+      const preferredTerms = lexicalLogic?.preferred_terms ?? lexicalLogic?.must_use ?? []
+      const bannedTerms = lexicalLogic?.banned_terms ?? lexicalLogic?.must_avoid ?? []
+      const adjStyle = lexicalLogic?.adj_style
+      const verbStyle = lexicalLogic?.verb_style
+
+      // Extended rhetoric logic - 兼容 v7.0 字段名
+      const preferredDevices = rhetoricLogic?.preferred_devices ?? (rhetoricLogic?.dominant_device ? [rhetoricLogic.dominant_device] : [])
+      const deviceFrequency = rhetoricLogic?.device_frequency
+      const openingPattern = rhetoricLogic?.opening_pattern
+      const closingPattern = rhetoricLogic?.closing_pattern
+      const argStyle = rhetoricLogic?.arg_style
+      const deviceSample = rhetoricLogic?.device_sample
+
+      // Execution prompt and version
+      const executionPrompt = analysis.executionPrompt
+      const analysisVersion = analysis.analysisVersion
+
+      // Primary type
+      const primaryType = analysis.primaryType
+
+      // === STYLE TAB (整合 Voice) ===
+      const hasStyleInfo = styleName || archetype || impliedReader || personaDescription || hasVoiceTraits || toneKeywords.length > 0
       const styleTabContent: A2UINode = {
         type: "column",
         gap: "0.75rem",
         children: hasStyleInfo
           ? [
-              // Style name - prominent display
-              ...(parsed?.style_name
+              // Style name with archetype
+              ...(styleName
+                ? [
+                    {
+                      type: "row" as const,
+                      gap: "1rem",
+                      align: "center" as const,
+                      children: [
+                        { type: "text" as const, text: styleName, variant: "h4" as const },
+                        ...(archetype ? [{ type: "badge" as const, text: archetype, color: "info" as const }] : []),
+                      ],
+                    },
+                  ]
+                : []),
+              // Persona description
+              ...(personaDescription
                 ? [
                     {
                       type: "column" as const,
                       gap: "0.25rem",
                       children: [
-                        { type: "text" as const, text: t("reverse.styleName"), variant: "caption" as const, color: "muted" as const },
-                        { type: "text" as const, text: parsed.style_name, variant: "h4" as const },
+                        { type: "text" as const, text: t("reverse.personaDescription"), variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: personaDescription, style: { fontSize: "0.8rem", lineHeight: "1.5" } },
                       ],
                     },
                   ]
                 : []),
-              // Meta profile
-              ...(parsed?.meta_profile
+              // Voice traits (integrated from Voice Tab) - 横向排列
+              ...(hasVoiceTraits
                 ? [
                     {
                       type: "row" as const,
-                      gap: "1.5rem",
+                      gap: "1rem",
                       style: { flexWrap: "wrap" as const },
                       children: [
-                        ...(parsed.meta_profile.archetype
+                        ...(voiceFormality
                           ? [
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
+                                style: { minWidth: "70px" },
                                 children: [
-                                  { type: "text" as const, text: t("reverse.archetype"), variant: "caption" as const, color: "muted" as const },
-                                  { type: "text" as const, text: parsed.meta_profile.archetype, style: { fontSize: "0.875rem" } },
+                                  { type: "text" as const, text: t("reverse.voiceFormality"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "badge" as const, text: voiceFormality, color: "primary" as const },
                                 ],
                               },
                             ]
                           : []),
-                        ...(parsed.meta_profile.target_audience
+                        ...(voiceEnergy
                           ? [
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
+                                style: { minWidth: "70px" },
                                 children: [
-                                  { type: "text" as const, text: t("reverse.targetAudience"), variant: "caption" as const, color: "muted" as const },
-                                  { type: "text" as const, text: parsed.meta_profile.target_audience, style: { fontSize: "0.875rem" } },
+                                  { type: "text" as const, text: t("reverse.voiceEnergy"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "badge" as const, text: voiceEnergy, color: "success" as const },
                                 ],
                               },
                             ]
                           : []),
+                        ...(voiceWarmth
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { minWidth: "70px" },
+                                children: [
+                                  { type: "text" as const, text: t("reverse.voiceWarmth"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "badge" as const, text: voiceWarmth, color: "warning" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(voiceConfidence
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { minWidth: "70px" },
+                                children: [
+                                  { type: "text" as const, text: t("reverse.voiceConfidence"), variant: "caption" as const, color: "muted" as const },
+                                  { type: "badge" as const, text: voiceConfidence, color: "default" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(voiceDistance
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { minWidth: "70px" },
+                                children: [
+                                  { type: "text" as const, text: "距离", variant: "caption" as const, color: "muted" as const },
+                                  { type: "badge" as const, text: voiceDistance, color: "default" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                      ],
+                    },
+                  ]
+                : []),
+              // Target audience
+              ...(impliedReader
+                ? [
+                    {
+                      type: "row" as const,
+                      gap: "0.5rem",
+                      align: "center" as const,
+                      children: [
+                        { type: "text" as const, text: t("reverse.targetAudience") + ":", variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: impliedReader, style: { fontSize: "0.8rem" } },
                       ],
                     },
                   ]
                 : []),
               // Tone keywords
-              ...(parsed?.meta_profile?.tone_keywords && parsed.meta_profile.tone_keywords.length > 0
+              ...(toneKeywords.length > 0
                 ? [
                     {
-                      type: "column" as const,
+                      type: "row" as const,
                       gap: "0.25rem",
+                      style: { flexWrap: "wrap" as const },
+                      align: "center" as const,
                       children: [
-                        { type: "text" as const, text: t("reverse.toneKeywords"), variant: "caption" as const, color: "muted" as const },
+                        { type: "text" as const, text: t("reverse.toneKeywords") + ":", variant: "caption" as const, color: "muted" as const },
+                        ...toneKeywords.map((k) => ({ type: "badge" as const, text: k, color: "default" as const })),
+                      ],
+                    },
+                  ]
+                : []),
+            ]
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // === hasMetrics flag (用于 Prompt Tab) ===
+      const hasMetrics = wordCount != null || paraCount != null || burstiness != null || ttr != null || avgSentLen != null || avgParaLen != null
+
+      // === BLUEPRINT TAB ===
+      const hasBlueprint = blueprintSections && blueprintSections.length > 0
+      // 检测数据格式：新版有 p_id/strategy/action，旧版有 section/function
+      const isNewFormat = hasBlueprint && blueprintSections[0]?.p_id !== undefined
+
+      const blueprintTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasBlueprint
+          ? blueprintSections.map((section, idx) => {
+              if (isNewFormat) {
+                // 新版格式 (v7.3): p_id, strategy, action, guidelines, pattern_sample, pattern_template
+                const pId = section.p_id || `${idx + 1}`
+                const strategy = section.strategy || ""
+                const action = section.action || ""
+                const guidelines = section.guidelines || ""
+                const patternSample = section.pattern_sample || ""
+                const patternTemplate = section.pattern_template || ""
+
+                // 预览内容 (始终可见): guidelines
+                const previewChildren: A2UINode[] = []
+
+                // Guidelines (指南) - 始终显示
+                if (guidelines) {
+                  previewChildren.push({
+                    type: "text" as const,
+                    text: guidelines,
+                    variant: "caption" as const,
+                    style: {
+                      fontSize: "0.8rem",
+                      padding: "0.5rem",
+                      backgroundColor: guidelines.startsWith("✅") ? "rgba(34, 197, 94, 0.1)" : guidelines.startsWith("❌") ? "rgba(239, 68, 68, 0.1)" : "var(--muted)",
+                      borderRadius: "0.25rem",
+                      borderLeft: guidelines.startsWith("✅") ? "3px solid var(--success)" : guidelines.startsWith("❌") ? "3px solid var(--destructive)" : "none",
+                    },
+                  })
+                }
+
+                // 展开后显示的详细内容: pattern_sample + pattern_template
+                const expandableChildren: A2UINode[] = []
+
+                // Pattern sample (示例)
+                if (patternSample) {
+                  expandableChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "示例", variant: "caption" as const, color: "muted" as const },
+                      {
+                        type: "text" as const,
+                        text: `"${patternSample}"`,
+                        style: {
+                          fontSize: "0.8rem",
+                          fontStyle: "italic",
+                          padding: "0.5rem",
+                          backgroundColor: "var(--muted)",
+                          borderRadius: "0.25rem",
+                          borderLeft: "3px solid var(--ds-primary)",
+                        },
+                      },
+                    ],
+                  })
+                }
+
+                // Pattern template (模板)
+                if (patternTemplate) {
+                  expandableChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "句式模板", variant: "caption" as const, color: "muted" as const },
+                      {
+                        type: "text" as const,
+                        text: patternTemplate,
+                        style: {
+                          fontSize: "0.75rem",
+                          fontFamily: "monospace",
+                          padding: "0.5rem",
+                          backgroundColor: "var(--muted)",
+                          borderRadius: "0.25rem",
+                        },
+                      },
+                    ],
+                  })
+                }
+
+                return {
+                  type: "collapsible" as const,
+                  title: `${pId}. ${strategy}`,
+                  summary: action || undefined, // action 作为摘要始终显示（空字符串转为undefined）
+                  previewChildren: previewChildren.length > 0 ? previewChildren : undefined,
+                  defaultOpen: idx === 0,
+                  badges: [],
+                  children: expandableChildren.length > 0
+                    ? [{ type: "column" as const, gap: "0.75rem", children: expandableChildren }]
+                    : undefined,
+                }
+              } else {
+                // 旧版格式: section, function, techniques, do_list, dont_list
+                const sectionName = section.section || ""
+                const position = section.position || section.section_position || ""
+                const wordTarget = section.word_count_target
+                const wordPct = section.word_percentage || ""
+                const func = section.function || ""
+                const techniques = section.techniques
+                const doList = section.do_list
+                const dontList = section.dont_list
+                const internalLogic = section.internal_logic
+                const sentencePatterns = section.sentence_patterns
+
+                // Build badges array for collapsible header
+                const badges: Array<{ text: string; color: string }> = []
+                if (position) badges.push({ text: position, color: "default" })
+                if (wordTarget) badges.push({ text: `${wordTarget}字`, color: "info" })
+                if (wordPct) badges.push({ text: wordPct, color: "primary" })
+
+                // Build collapsible children content
+                const collapsibleChildren: A2UINode[] = []
+
+                // Techniques section
+                if (techniques && techniques.length > 0) {
+                  collapsibleChildren.push({
+                    type: "column" as const,
+                    gap: "0.375rem",
+                    children: [
+                      { type: "text" as const, text: "写作技巧", variant: "label" as const, color: "muted" as const },
+                      {
+                        type: "row" as const,
+                        gap: "0.375rem",
+                        style: { flexWrap: "wrap" as const },
+                        children: techniques.map((tech) => ({
+                          type: "badge" as const,
+                          text: (tech.name as string) || (tech.technique as string) || JSON.stringify(tech).slice(0, 30),
+                          color: "success" as const,
+                        })),
+                      },
+                    ],
+                  })
+                }
+
+                // Do list
+                if (doList && doList.length > 0) {
+                  collapsibleChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "✓ 推荐做法", variant: "label" as const, style: { color: "var(--success)" } },
+                      ...doList.map((item) => ({
+                        type: "text" as const,
+                        text: `• ${item}`,
+                        variant: "caption" as const,
+                        style: { fontSize: "0.8rem", paddingLeft: "0.5rem" },
+                      })),
+                    ],
+                  })
+                }
+
+                // Don't list
+                if (dontList && dontList.length > 0) {
+                  collapsibleChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "✗ 避免做法", variant: "label" as const, style: { color: "var(--destructive)" } },
+                      ...dontList.map((item) => ({
+                        type: "text" as const,
+                        text: `• ${item}`,
+                        variant: "caption" as const,
+                        style: { fontSize: "0.8rem", paddingLeft: "0.5rem" },
+                      })),
+                    ],
+                  })
+                }
+
+                // Internal logic
+                if (internalLogic && Object.keys(internalLogic).length > 0) {
+                  const logicText = typeof internalLogic === "string"
+                    ? internalLogic
+                    : (internalLogic.description as string) || (internalLogic.logic as string) || JSON.stringify(internalLogic, null, 2)
+                  collapsibleChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "内部逻辑", variant: "label" as const, color: "muted" as const },
+                      {
+                        type: "text" as const,
+                        text: logicText,
+                        variant: "caption" as const,
+                        style: { fontSize: "0.75rem", whiteSpace: "pre-wrap", backgroundColor: "var(--muted)", padding: "0.5rem", borderRadius: "0.25rem" },
+                      },
+                    ],
+                  })
+                }
+
+                // Sentence patterns
+                if (sentencePatterns && Object.keys(sentencePatterns).length > 0) {
+                  const patternText = typeof sentencePatterns === "string"
+                    ? sentencePatterns
+                    : JSON.stringify(sentencePatterns, null, 2)
+                  collapsibleChildren.push({
+                    type: "column" as const,
+                    gap: "0.25rem",
+                    children: [
+                      { type: "text" as const, text: "句式模式", variant: "label" as const, color: "muted" as const },
+                      {
+                        type: "text" as const,
+                        text: patternText,
+                        variant: "caption" as const,
+                        style: { fontSize: "0.75rem", whiteSpace: "pre-wrap", backgroundColor: "var(--muted)", padding: "0.5rem", borderRadius: "0.25rem" },
+                      },
+                    ],
+                  })
+                }
+
+                // If no detailed content, show function description
+                if (collapsibleChildren.length === 0 && func) {
+                  collapsibleChildren.push({
+                    type: "text" as const,
+                    text: func,
+                    variant: "caption" as const,
+                    color: "muted" as const,
+                  })
+                }
+
+                return {
+                  type: "collapsible" as const,
+                  title: `${idx + 1}. ${sectionName}`,
+                  subtitle: func,
+                  defaultOpen: idx === 0,
+                  badges,
+                  children: collapsibleChildren.length > 0
+                    ? [{ type: "column" as const, gap: "0.75rem", children: collapsibleChildren }]
+                    : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+                }
+              }
+            })
+          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      }
+
+      // === RULES TAB (合并 Core Rules + Lexical + Rhetoric + Anti-patterns) ===
+      const hasSentenceTemplates = sentenceTemplates && sentenceTemplates.length > 0
+      const hasAntiPatterns = antiPatterns && antiPatterns.length > 0
+      const hasCoreRules = coreRules && coreRules.length > 0
+      const hasLexicalContent = vocabularyTier || preferredTerms.length > 0 || bannedTerms.length > 0 || adjStyle || verbStyle
+      const hasRhetoricContent = preferredDevices.length > 0 || openingPattern || closingPattern || argStyle || deviceSample
+      const hasRulesContent = hasCoreRules || hasLexicalContent || hasRhetoricContent || hasAntiPatterns || hasSentenceTemplates
+
+      const rulesTabContent: A2UINode = {
+        type: "column",
+        gap: "0.5rem",
+        children: hasRulesContent
+          ? [
+              // 核心规则 Collapsible
+              ...(hasCoreRules
+                ? [
+                    {
+                      type: "collapsible" as const,
+                      title: t("reverse.coreRulesSection"),
+                      subtitle: `${coreRules!.length} 条规则`,
+                      defaultOpen: true,
+                      children: [
                         {
-                          type: "row" as const,
-                          gap: "0.25rem",
-                          style: { flexWrap: "wrap" as const },
-                          children: parsed.meta_profile.tone_keywords.map((k) => ({ type: "badge" as const, text: k, color: "default" as const })),
+                          type: "column" as const,
+                          gap: "0.5rem",
+                          children: coreRules!.slice(0, 5).map((rule) => ({
+                            type: "column" as const,
+                            gap: "0.25rem",
+                            style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem", borderLeft: "3px solid var(--ds-primary)" },
+                            children: [
+                              {
+                                type: "row" as const,
+                                justify: "between" as const,
+                                children: [
+                                  { type: "text" as const, text: rule.rule || rule.rule_text || rule.feature || "规则", style: { fontSize: "0.85rem", fontWeight: 500 } },
+                                  ...(rule.impact ? [{ type: "badge" as const, text: `影响: ${rule.impact}`, color: "info" as const }] : []),
+                                ],
+                              },
+                              ...(rule.evidence ? [{ type: "text" as const, text: rule.evidence, variant: "caption" as const, style: { fontSize: "0.75rem" } }] : []),
+                              ...(rule.example ? [{ type: "text" as const, text: `示例: ${rule.example}`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                            ],
+                          })),
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+              // 词汇约束 Collapsible
+              ...(hasLexicalContent
+                ? [
+                    {
+                      type: "collapsible" as const,
+                      title: t("reverse.lexicalSection"),
+                      defaultOpen: false,
+                      children: [
+                        {
+                          type: "column" as const,
+                          gap: "0.5rem",
+                          children: [
+                            // Vocabulary tier
+                            ...(vocabularyTier
+                              ? [
+                                  {
+                                    type: "row" as const,
+                                    gap: "0.5rem",
+                                    align: "center" as const,
+                                    children: [
+                                      { type: "text" as const, text: t("reverse.vocabularyTier") + ":", variant: "caption" as const, color: "muted" as const },
+                                      { type: "badge" as const, text: vocabularyTier, color: "primary" as const },
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Preferred terms (必用词)
+                            ...(preferredTerms.length > 0
+                              ? [
+                                  {
+                                    type: "column" as const,
+                                    gap: "0.25rem",
+                                    children: [
+                                      { type: "text" as const, text: t("reverse.preferredTerms"), variant: "caption" as const, color: "muted" as const },
+                                      {
+                                        type: "row" as const,
+                                        gap: "0.25rem",
+                                        style: { flexWrap: "wrap" as const },
+                                        children: preferredTerms.slice(0, 12).map((term) => ({
+                                          type: "badge" as const,
+                                          text: term,
+                                          color: "success" as const,
+                                        })),
+                                      },
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Banned terms (禁用词)
+                            ...(bannedTerms.length > 0
+                              ? [
+                                  {
+                                    type: "column" as const,
+                                    gap: "0.25rem",
+                                    children: [
+                                      { type: "text" as const, text: t("reverse.bannedTerms"), variant: "caption" as const, color: "muted" as const },
+                                      {
+                                        type: "row" as const,
+                                        gap: "0.25rem",
+                                        style: { flexWrap: "wrap" as const },
+                                        children: bannedTerms.slice(0, 12).map((term) => ({
+                                          type: "badge" as const,
+                                          text: term,
+                                          color: "destructive" as const,
+                                        })),
+                                      },
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Adjective & Verb style
+                            ...(adjStyle
+                              ? [{ type: "text" as const, text: `形容词: ${adjStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              : []),
+                            ...(verbStyle
+                              ? [{ type: "text" as const, text: `动词: ${verbStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              : []),
+                          ],
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+              // 修辞模式 Collapsible
+              ...(hasRhetoricContent
+                ? [
+                    {
+                      type: "collapsible" as const,
+                      title: t("reverse.rhetoricSection"),
+                      defaultOpen: false,
+                      children: [
+                        {
+                          type: "column" as const,
+                          gap: "0.5rem",
+                          children: [
+                            // Preferred devices
+                            ...(preferredDevices.length > 0
+                              ? [
+                                  {
+                                    type: "row" as const,
+                                    gap: "0.25rem",
+                                    style: { flexWrap: "wrap" as const },
+                                    children: [
+                                      { type: "text" as const, text: t("reverse.preferredDevices") + ":", variant: "caption" as const, color: "muted" as const },
+                                      ...preferredDevices.slice(0, 8).map((device) => ({
+                                        type: "badge" as const,
+                                        text: device,
+                                        color: "info" as const,
+                                      })),
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Opening pattern
+                            ...(openingPattern
+                              ? [
+                                  {
+                                    type: "column" as const,
+                                    gap: "0.125rem",
+                                    children: [
+                                      { type: "text" as const, text: "开场模式:", variant: "caption" as const, color: "muted" as const },
+                                      { type: "text" as const, text: openingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Closing pattern
+                            ...(closingPattern
+                              ? [
+                                  {
+                                    type: "column" as const,
+                                    gap: "0.125rem",
+                                    children: [
+                                      { type: "text" as const, text: "收尾模式:", variant: "caption" as const, color: "muted" as const },
+                                      { type: "text" as const, text: closingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                                    ],
+                                  },
+                                ]
+                              : []),
+                            // Argument style
+                            ...(argStyle
+                              ? [{ type: "text" as const, text: `论证风格: ${argStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              : []),
+                            // Device sample
+                            ...(deviceSample
+                              ? [
+                                  {
+                                    type: "text" as const,
+                                    text: `示例: "${deviceSample}"`,
+                                    style: { fontSize: "0.8rem", fontStyle: "italic", padding: "0.25rem 0.5rem", backgroundColor: "rgba(59, 130, 246, 0.1)", borderRadius: "0.25rem" },
+                                  },
+                                ]
+                              : []),
+                          ],
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+              // 反面模式 Collapsible
+              ...(hasAntiPatterns
+                ? [
+                    {
+                      type: "collapsible" as const,
+                      title: t("reverse.antiPatternsSection"),
+                      subtitle: `${antiPatterns!.length} 条`,
+                      defaultOpen: false,
+                      children: [
+                        {
+                          type: "column" as const,
+                          gap: "0.375rem",
+                          children: antiPatterns!.slice(0, 5).map((ap) => ({
+                            type: "column" as const,
+                            gap: "0.125rem",
+                            style: { padding: "0.375rem 0.5rem", backgroundColor: "rgba(255,0,0,0.05)", borderRadius: "0.25rem", borderLeft: "2px solid var(--destructive)" },
+                            children: [
+                              { type: "text" as const, text: `⚠️ ${ap.forbidden || ap.pattern || ""}`, style: { fontSize: "0.8rem", color: "var(--destructive)" } },
+                              ...(ap.bad_case ? [{ type: "text" as const, text: `反例: "${ap.bad_case}"`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                            ],
+                          })),
                         },
                       ],
                     },
@@ -252,64 +975,234 @@ export default function ReversePage() {
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
       }
 
-      // Metrics tab - quantitative data
-      const hasMetrics = burstiness != null || ttr != null || avgSentLen != null
-      const metricsTabContent: A2UINode = {
+      // === SAMPLES TAB (合并 Golden Samples + Transfer Demo) ===
+      const hasGoldenSamples = goldenSamples && goldenSamples.length > 0
+      const hasTransferDemo = transferPairs && transferPairs.length > 0
+      const hasSamplesContent = hasGoldenSamples || hasTransferDemo
+
+      const samplesTabContent: A2UINode = {
         type: "column",
         gap: "0.5rem",
-        children: hasMetrics
+        children: hasSamplesContent
           ? [
-              {
-                type: "row",
-                gap: "1.5rem",
-                style: { flexWrap: "wrap" },
-                children: [
-                  ...(burstiness != null
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("insights.burstiness"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: burstiness.toFixed(2), variant: "h4" as const },
-                          ],
-                        },
-                      ]
-                    : []),
-                  ...(ttr != null
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("insights.ttr"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: ttr.toFixed(2), variant: "h4" as const },
-                          ],
-                        },
-                      ]
-                    : []),
-                  ...(avgSentLen != null
-                    ? [
-                        {
-                          type: "column" as const,
-                          gap: "0.125rem",
-                          children: [
-                            { type: "text" as const, text: t("insights.avgSentLen"), variant: "caption" as const, color: "muted" as const },
-                            { type: "text" as const, text: avgSentLen.toFixed(1), variant: "h4" as const },
-                          ],
-                        },
-                      ]
-                    : []),
-                ],
-              },
-              // Model info inline
-              ...(log.modelName
+              // 黄金样本 Collapsible
+              ...(hasGoldenSamples
                 ? [
                     {
+                      type: "collapsible" as const,
+                      title: t("reverse.goldenSamplesSection"),
+                      subtitle: `${goldenSamples.length} 个样本`,
+                      defaultOpen: true,
+                      children: [
+                        {
+                          type: "column" as const,
+                          gap: "0.5rem",
+                          children: goldenSamples.map((sample, idx) => ({
+                            type: "column" as const,
+                            gap: "0.375rem",
+                            style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", borderLeft: "3px solid var(--success)" },
+                            children: [
+                              ...(sample.text
+                                ? [
+                                    {
+                                      type: "text" as const,
+                                      text: sample.text,
+                                      style: { fontSize: "0.85rem", lineHeight: "1.6", whiteSpace: "pre-wrap" },
+                                    },
+                                  ]
+                                : []),
+                              ...(sample.why
+                                ? [
+                                    {
+                                      type: "text" as const,
+                                      text: `入选理由: ${sample.why}`,
+                                      style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--success)" },
+                                    },
+                                  ]
+                                : []),
+                              // Tech list (v7.0)
+                              ...((sample as { tech_list?: string[] }).tech_list && (sample as { tech_list?: string[] }).tech_list!.length > 0
+                                ? [
+                                    {
+                                      type: "row" as const,
+                                      gap: "0.25rem",
+                                      style: { flexWrap: "wrap" as const },
+                                      children: [
+                                        { type: "text" as const, text: "技巧:", variant: "caption" as const, color: "muted" as const },
+                                        ...(sample as { tech_list?: string[] }).tech_list!.map((tech) => ({
+                                          type: "badge" as const,
+                                          text: tech,
+                                          color: "info" as const,
+                                        })),
+                                      ],
+                                    },
+                                  ]
+                                : []),
+                            ],
+                          })),
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+              // 风格迁移 Collapsible
+              ...(hasTransferDemo
+                ? [
+                    {
+                      type: "collapsible" as const,
+                      title: t("reverse.transferDemoSection"),
+                      subtitle: `${transferPairs.length} 个示例`,
+                      defaultOpen: !hasGoldenSamples,
+                      children: [
+                        {
+                          type: "column" as const,
+                          gap: "0.5rem",
+                          children: transferPairs.map((pair) => {
+                            const pairWithTopic = pair as { before?: string; after?: string; explanation?: string; topic?: string }
+                            return {
+                              type: "column" as const,
+                              gap: "0.375rem",
+                              style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                              children: [
+                                // Topic
+                                ...(pairWithTopic.topic
+                                  ? [{ type: "text" as const, text: pairWithTopic.topic, style: { fontSize: "0.85rem", fontWeight: 500 } }]
+                                  : []),
+                                // After text (迁移后的文本)
+                                ...(pair.after
+                                  ? [
+                                      {
+                                        type: "text" as const,
+                                        text: pair.after,
+                                        style: { fontSize: "0.85rem", lineHeight: "1.5", backgroundColor: "rgba(0,255,0,0.05)", padding: "0.5rem", borderRadius: "0.25rem", whiteSpace: "pre-wrap" },
+                                      },
+                                    ]
+                                  : []),
+                                // Explanation (保留元素)
+                                ...(pair.explanation
+                                  ? [
+                                      {
+                                        type: "text" as const,
+                                        text: `保留元素: ${pair.explanation}`,
+                                        style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--muted-foreground)" },
+                                      },
+                                    ]
+                                  : []),
+                              ],
+                            }
+                          }),
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+            ]
+          : [{ type: "text" as const, text: t("reverse.noSamples"), color: "muted" as const }],
+      }
+
+      // === PROMPT TAB (合并 Metrics + Constraints + Execution Prompt) ===
+      const hasExecutionPrompt = executionPrompt && executionPrompt.trim().length > 0
+      const hasPromptContent = hasMetrics || hasExecutionPrompt
+
+      const promptTabContent: A2UINode = {
+        type: "column",
+        gap: "0.75rem",
+        children: hasPromptContent
+          ? [
+              // 量化指标 (横向排列，紧凑)
+              ...(hasMetrics
+                ? [
+                    {
+                      type: "row" as const,
+                      gap: "1rem",
+                      style: { flexWrap: "wrap" as const, padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                      children: [
+                        ...(wordCount != null
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                children: [
+                                  { type: "text" as const, text: wordCount.toString(), variant: "h4" as const },
+                                  { type: "text" as const, text: "字", variant: "caption" as const, color: "muted" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(paraCount != null
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                children: [
+                                  { type: "text" as const, text: paraCount.toString(), variant: "h4" as const },
+                                  { type: "text" as const, text: "段", variant: "caption" as const, color: "muted" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(ttr != null
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                children: [
+                                  { type: "text" as const, text: (ttr * 100).toFixed(0) + "%", variant: "h4" as const },
+                                  { type: "text" as const, text: "TTR", variant: "caption" as const, color: "muted" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(burstiness != null
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                children: [
+                                  { type: "text" as const, text: (burstiness * 100).toFixed(0) + "%", variant: "h4" as const },
+                                  { type: "text" as const, text: "突变度", variant: "caption" as const, color: "muted" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                        ...(avgSentLen != null
+                          ? [
+                              {
+                                type: "column" as const,
+                                gap: "0.125rem",
+                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                children: [
+                                  { type: "text" as const, text: avgSentLen.toFixed(0), variant: "h4" as const },
+                                  { type: "text" as const, text: "句长", variant: "caption" as const, color: "muted" as const },
+                                ],
+                              },
+                            ]
+                          : []),
+                      ],
+                    },
+                  ]
+                : []),
+              // 执行提示词
+              ...(hasExecutionPrompt
+                ? [
+                    { type: "divider" as const },
+                    { type: "text" as const, text: t("reverse.executionPromptLabel"), variant: "label" as const, color: "muted" as const },
+                    {
                       type: "text" as const,
-                      text: `${t("reverse.modelName")}: ${log.modelName}`,
-                      variant: "caption" as const,
-                      color: "muted" as const,
+                      text: executionPrompt,
+                      style: {
+                        fontSize: "0.85rem",
+                        lineHeight: "1.6",
+                        whiteSpace: "pre-wrap",
+                        backgroundColor: "var(--muted)",
+                        padding: "0.75rem",
+                        borderRadius: "0.375rem",
+                        fontFamily: "monospace",
+                      },
                     },
                   ]
                 : []),
@@ -317,53 +1210,26 @@ export default function ReversePage() {
           : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
       }
 
-      // Blueprint tab - structure guide
-      const hasBlueprint = parsed?.blueprint && parsed.blueprint.length > 0
-      const blueprintTabContent: A2UINode = {
-        type: "column",
-        gap: "0.5rem",
-        children: hasBlueprint
-          ? parsed!.blueprint!.map((section, idx) => ({
-              type: "column" as const,
-              gap: "0.125rem",
-              style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
-              children: [
-                { type: "text" as const, text: `${idx + 1}. ${section.section || ""}`, variant: "body" as const, style: { fontWeight: 600 } },
-                { type: "text" as const, text: section.specs || "", variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem" } },
-              ],
-            }))
-          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      // Build tabs array - 5 个 Tab 结构
+      const tabs: Array<{ label: string; content: A2UINode }> = [
+        { label: t("reverse.tabStyle"), content: styleTabContent },
+      ]
+      if (hasRulesContent) {
+        tabs.push({ label: t("reverse.tabRules"), content: rulesTabContent })
       }
-
-      // Prompt tab - the actionable output (full text with scroll)
-      const hasPrompt = parsed?.execution_prompt || log.finalSystemPrompt
-      const promptText = parsed?.execution_prompt || log.finalSystemPrompt || ""
-      const promptTabContent: A2UINode = {
-        type: "column",
-        gap: "0.5rem",
-        children: hasPrompt
-          ? [
-              {
-                type: "text",
-                text: promptText,
-                style: {
-                  whiteSpace: "pre-wrap",
-                  fontSize: "0.75rem",
-                  lineHeight: "1.5",
-                  padding: "0.75rem",
-                  backgroundColor: "var(--muted)",
-                  borderRadius: "0.375rem",
-                  maxHeight: "300px",
-                  overflow: "auto",
-                },
-              },
-            ]
-          : [{ type: "text" as const, text: t("reverse.noContent"), color: "muted" as const }],
+      if (hasBlueprint) {
+        tabs.push({ label: t("reverse.tabBlueprint"), content: blueprintTabContent })
+      }
+      if (hasSamplesContent) {
+        tabs.push({ label: t("reverse.tabSamples"), content: samplesTabContent })
+      }
+      if (hasPromptContent) {
+        tabs.push({ label: t("reverse.tabPrompt"), content: promptTabContent })
       }
 
       return {
         type: "card",
-        id: `log-${log.id}`,
+        id: `log-${analysis.id}`,
         hoverable: false,
         children: [
           {
@@ -385,53 +1251,79 @@ export default function ReversePage() {
                     children: [
                       {
                         type: "link",
-                        text: parsed?.style_name || log.articleTitle || t("reverse.untitled"),
+                        text: styleName || analysis.sourceTitle || t("reverse.untitled"),
                         variant: "default",
                         style: { fontSize: "1rem", fontWeight: 600, cursor: "pointer", wordBreak: "break-word" },
-                        onClick: { action: "viewDetail", args: [log.id] },
+                        onClick: { action: "viewDetail", args: [analysis.id] },
                       },
+                      // Show "Read Original" link with article title above badges
+                      ...(analysis.sourceUrl
+                        ? [
+                            {
+                              type: "row" as const,
+                              gap: "0.25rem",
+                              align: "center" as const,
+                              children: [
+                                { type: "icon" as const, name: "eye", size: 14, color: "var(--ds-primary)" },
+                                {
+                                  type: "link" as const,
+                                  text: analysis.sourceTitle && styleName && styleName !== analysis.sourceTitle
+                                    ? `${t("reverse.readOriginal")}《${analysis.sourceTitle}》`
+                                    : t("reverse.readOriginal"),
+                                  href: analysis.sourceUrl,
+                                  variant: "primary" as const,
+                                  style: { fontSize: "0.75rem" },
+                                },
+                              ],
+                            },
+                          ]
+                        : []),
                       {
                         type: "row",
                         gap: "0.375rem",
                         wrap: true,
                         children: [
-                          { type: "badge", text: getStatusLabel(log.status ?? "PENDING"), color: getStatusColor(log.status ?? "PENDING") },
-                          ...(log.genreCategory ? [{ type: "badge" as const, text: log.genreCategory, color: "default" as const }] : []),
-                          ...(log.modelName ? [{ type: "badge" as const, text: log.modelName, color: "default" as const }] : []),
+                          ...(primaryType ? [{ type: "badge" as const, text: primaryType, color: "primary" as const }] : []),
+                          ...(analysis.status ? [{ type: "badge" as const, text: analysis.status, color: analysis.status === "SUCCESS" ? "success" as const : analysis.status === "FAILED" ? "destructive" as const : "pending" as const }] : []),
+                          ...(analysisVersion ? [{ type: "badge" as const, text: `v${analysisVersion}`, color: "default" as const }] : []),
+                          ...(wordCount != null ? [{ type: "badge" as const, text: `${wordCount} ${t("reverse.totalWords")}`, color: "info" as const }] : []),
                         ],
                       },
-                      // Show "Read Original" link if URL exists
-                      ...(log.articleUrl
-                        ? [
-                            {
-                              type: "link" as const,
-                              text: t("reverse.readOriginal"),
-                              href: log.articleUrl,
-                              variant: "primary" as const,
-                              style: { fontSize: "0.75rem" },
-                            },
-                          ]
-                        : []),
                     ],
                   },
                   {
-                    type: "button",
-                    text: t("common.delete"),
-                    variant: "destructive",
-                    size: "sm",
-                    onClick: { action: "deleteLog", args: [log.id], stopPropagation: true },
-                  },
+                    type: "row",
+                    gap: "0.5rem",
+                    align: "center",
+                    children: [
+                      // Copy Prompt button (only show if has execution prompt)
+                      ...(analysis.executionPrompt
+                        ? [
+                            {
+                              type: "button" as const,
+                              text: "📋",
+                              variant: "ghost" as const,
+                              size: "sm" as const,
+                              style: { padding: "0.25rem 0.5rem", minWidth: "auto" },
+                              onClick: { action: "copyPrompt", args: [analysis.id], stopPropagation: true },
+                            },
+                          ]
+                        : []),
+                      {
+                        type: "button" as const,
+                        text: t("common.delete"),
+                        variant: "destructive" as const,
+                        size: "sm" as const,
+                        onClick: { action: "deleteLog", args: [analysis.id], stopPropagation: true },
+                      },
+                    ],
+                  } as A2UIRowNode,
                 ],
               } as A2UIRowNode,
-              // Tabs for detailed info - reordered by value
+              // Tabs for detailed info - dynamically generated based on content
               {
                 type: "tabs",
-                tabs: [
-                  { label: t("reverse.tabStyle"), content: styleTabContent },
-                  { label: t("reverse.tabPrompt"), content: promptTabContent },
-                  { label: t("reverse.tabBlueprint"), content: blueprintTabContent },
-                  { label: t("reverse.tabMetrics"), content: metricsTabContent },
-                ],
+                tabs,
               },
             ],
           },
@@ -443,7 +1335,7 @@ export default function ReversePage() {
       type: "container",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(550px, 1fr))",
         gap: "0.75rem",
       },
       children: logCards,
@@ -452,37 +1344,40 @@ export default function ReversePage() {
 
   // Build detail modal content
   const buildDetailModalNode = (): A2UINode | null => {
-    if (!selectedLog) return null
+    if (!selectedAnalysis) return null
 
-    const metrics = selectedLog.metrics as { burstiness?: number; ttr?: number; avgSentLen?: number } | null
-    const reverseResult = selectedLog.reverseResult as { genre?: string; tone?: string; structure?: string; vocabulary?: string[] } | null
+    const styleIdentity = selectedAnalysis.styleIdentityData
+    const lexicalLogic = selectedAnalysis.lexicalLogicData
+    const toneKeywords = lexicalLogic?.tone_keywords ?? []
 
     const detailItems: A2UINode[] = [
-      // Header with status
+      // Header with type and status badges
       {
         type: "row",
         gap: "0.5rem",
         children: [
-          { type: "badge", text: getStatusLabel(selectedLog.status ?? "PENDING"), color: getStatusColor(selectedLog.status ?? "PENDING") },
-          ...(selectedLog.genreCategory ? [{ type: "badge" as const, text: selectedLog.genreCategory, color: "default" as const }] : []),
+          ...(selectedAnalysis.primaryType ? [{ type: "badge" as const, text: selectedAnalysis.primaryType, color: "primary" as const }] : []),
+          ...(selectedAnalysis.status ? [{ type: "badge" as const, text: selectedAnalysis.status, color: selectedAnalysis.status === "SUCCESS" ? "success" as const : "default" as const }] : []),
         ],
       },
     ]
 
     // Article URL
-    if (selectedLog.articleUrl) {
+    if (selectedAnalysis.sourceUrl) {
       detailItems.push({
         type: "column",
         gap: "0.25rem",
         children: [
           { type: "text", text: t("reverse.articleUrl"), variant: "caption", color: "muted" },
-          { type: "link", text: t("reverse.readOriginal"), href: selectedLog.articleUrl, variant: "primary" },
+          { type: "link", text: t("reverse.readOriginal"), href: selectedAnalysis.sourceUrl, variant: "primary" },
         ],
       })
     }
 
     // Metrics
-    if (metrics && (metrics.burstiness || metrics.ttr || metrics.avgSentLen)) {
+    const metricsConstraints = selectedAnalysis.metricsConstraintsData
+    const hasMetrics = selectedAnalysis.wordCount != null || selectedAnalysis.paraCount != null
+    if (hasMetrics) {
       detailItems.push({
         type: "column",
         gap: "0.25rem",
@@ -492,92 +1387,48 @@ export default function ReversePage() {
             type: "row",
             gap: "1rem",
             children: [
-              ...(metrics.burstiness != null ? [{ type: "text" as const, text: `${t("insights.burstiness")}: ${metrics.burstiness.toFixed(2)}` }] : []),
-              ...(metrics.ttr != null ? [{ type: "text" as const, text: `${t("insights.ttr")}: ${metrics.ttr.toFixed(2)}` }] : []),
-              ...(metrics.avgSentLen != null ? [{ type: "text" as const, text: `${t("insights.avgSentLen")}: ${metrics.avgSentLen.toFixed(1)}` }] : []),
+              ...(selectedAnalysis.wordCount != null ? [{ type: "text" as const, text: `${t("reverse.totalWords")}: ${selectedAnalysis.wordCount}` }] : []),
+              ...(selectedAnalysis.paraCount != null ? [{ type: "text" as const, text: `${t("reverse.paragraphCount")}: ${selectedAnalysis.paraCount}` }] : []),
+              ...(metricsConstraints?.avg_sentence_length != null ? [{ type: "text" as const, text: `${t("insights.avgSentLen")}: ${metricsConstraints.avg_sentence_length.toFixed(1)}` }] : []),
             ],
           },
         ],
       })
     }
 
-    // Reverse Result
-    if (reverseResult) {
-      const resultChildren: A2UINode[] = [
-        { type: "text", text: t("reverse.reverseResult"), variant: "caption", color: "muted" },
+    // Style identity
+    if (styleIdentity?.archetype || styleIdentity?.implied_reader || toneKeywords.length > 0) {
+      const metaChildren: A2UINode[] = [
+        { type: "text", text: t("reverse.metaProfile"), variant: "caption", color: "muted" },
       ]
 
-      if (reverseResult.tone) {
-        resultChildren.push({ type: "text", text: `${t("reverse.tone")}: ${reverseResult.tone}` })
+      if (styleIdentity?.archetype) {
+        metaChildren.push({ type: "text", text: `${t("reverse.archetype")}: ${styleIdentity.archetype}` })
       }
-      if (reverseResult.structure) {
-        resultChildren.push({ type: "text", text: `${t("reverse.structure")}: ${reverseResult.structure}` })
+      if (styleIdentity?.implied_reader) {
+        metaChildren.push({ type: "text", text: `${t("reverse.targetAudience")}: ${styleIdentity.implied_reader}` })
       }
-      if (reverseResult.vocabulary && reverseResult.vocabulary.length > 0) {
-        resultChildren.push({
+      if (toneKeywords.length > 0) {
+        metaChildren.push({
           type: "row",
           gap: "0.5rem",
           style: { flexWrap: "wrap" },
           children: [
-            { type: "text", text: `${t("reverse.vocabulary")}: ` },
-            ...reverseResult.vocabulary.slice(0, 10).map((v) => ({ type: "badge" as const, text: v, color: "default" as const })),
+            { type: "text", text: `${t("reverse.toneKeywords")}: ` },
+            ...toneKeywords.slice(0, 10).map((k) => ({ type: "badge" as const, text: k, color: "default" as const })),
           ],
         })
       }
 
-      if (resultChildren.length > 1) {
-        detailItems.push({ type: "column", gap: "0.25rem", children: resultChildren })
+      if (metaChildren.length > 1) {
+        detailItems.push({ type: "column", gap: "0.25rem", children: metaChildren })
       }
-    }
-
-    // Model info
-    if (selectedLog.modelName) {
-      detailItems.push({
-        type: "column",
-        gap: "0.25rem",
-        children: [
-          { type: "text", text: t("reverse.modelName"), variant: "caption", color: "muted" },
-          { type: "text", text: selectedLog.modelName },
-        ],
-      })
-    }
-
-    // System Prompt
-    if (selectedLog.finalSystemPrompt) {
-      detailItems.push({
-        type: "column",
-        gap: "0.25rem",
-        children: [
-          { type: "text", text: t("reverse.viewPrompt"), variant: "caption", color: "muted" },
-          {
-            type: "text",
-            text: selectedLog.finalSystemPrompt,
-            style: { whiteSpace: "pre-wrap", maxHeight: "200px", overflow: "auto", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", fontSize: "0.875rem" },
-          },
-        ],
-      })
-    }
-
-    // Original Content
-    if (selectedLog.originalContent) {
-      detailItems.push({
-        type: "column",
-        gap: "0.25rem",
-        children: [
-          { type: "text", text: t("reverse.originalContent"), variant: "caption", color: "muted" },
-          {
-            type: "text",
-            text: selectedLog.originalContent.length > 500 ? selectedLog.originalContent.slice(0, 500) + "..." : selectedLog.originalContent,
-            style: { whiteSpace: "pre-wrap", maxHeight: "150px", overflow: "auto", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", fontSize: "0.875rem" },
-          },
-        ],
-      })
     }
 
     // Timestamps
     detailItems.push({
       type: "text",
-      text: `${t("reverse.createdAt")}: ${formatDate(selectedLog.createdAt)}`,
+      text: `${t("reverse.createdAt")}: ${formatDate(selectedAnalysis.createdAt)}`,
       variant: "caption",
       color: "muted",
     })
@@ -593,7 +1444,7 @@ export default function ReversePage() {
     return {
       type: "modal",
       open: detailModalOpen,
-      title: selectedLog.articleTitle || t("reverse.detail"),
+      title: selectedAnalysis.sourceTitle || t("reverse.detail"),
       onClose: { action: "closeDetailModal" },
       children: [
         {

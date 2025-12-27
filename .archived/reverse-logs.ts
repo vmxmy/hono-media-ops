@@ -1,49 +1,69 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
-// Status enum matching database
-const reverseLogStatusEnum = z.enum(["SUCCESS", "FAILED", "PENDING"]);
-
-// JSONB schemas
-const reverseResultSchema = z.object({
-  genre: z.string().optional(),
-  tone: z.string().optional(),
-  structure: z.string().optional(),
-  vocabulary: z.array(z.string()).optional(),
+// StyleBlueprint JSONB schema (passthrough for complex nested structure)
+const styleBlueprintSchema = z.object({
+  meta: z.record(z.unknown()).optional(),
+  style_name: z.string().optional(),
+  category: z.string().optional(),
+  style_fingerprint: z.array(z.record(z.unknown())).optional(),
+  minimum_viable_replication: z.record(z.unknown()).optional(),
+  style_stability: z.record(z.unknown()).optional(),
+  meta_profile: z.record(z.unknown()).optional(),
+  deep_analysis: z.record(z.unknown()).optional(),
+  type_specific_profile: z.record(z.unknown()).optional(),
+  blueprint: z.array(z.record(z.unknown())).optional(),
+  style_enforcement: z.record(z.unknown()).optional(),
+  sentence_templates: z.array(z.record(z.unknown())).optional(),
+  voice_demonstration: z.array(z.record(z.unknown())).optional(),
+  transformation_examples: z.array(z.record(z.unknown())).optional(),
+  anti_patterns: z.array(z.record(z.unknown())).optional(),
+  validation_checklist: z.array(z.record(z.unknown())).optional(),
 }).passthrough().optional();
 
-const metricsSchema = z.object({
-  burstiness: z.number().optional(),
-  ttr: z.number().optional(),
-  avgSentLen: z.number().optional(),
+// Metadata JSONB schema
+const metadataSchema = z.object({
+  parse_success: z.boolean().optional(),
+  parse_error: z.string().nullable().optional(),
+  raw_length: z.number().optional(),
 }).optional();
 
 // Input validation schemas
 const getAllInputSchema = z.object({
   page: z.number().min(1).default(1),
   pageSize: z.number().min(1).max(100).default(20),
-  genreCategory: z.string().optional(),
-  status: reverseLogStatusEnum.optional(),
+  category: z.string().optional(),
+  styleName: z.string().optional(),
   search: z.string().optional(),
 });
 
 const createInputSchema = z.object({
   userId: z.string(),
-  articleTitle: z.string().optional(),
-  articleUrl: z.string().optional(),
-  originalContent: z.string().optional(),
-  genreCategory: z.string().optional(),
-  // JSONB fields
-  reverseResult: reverseResultSchema,
-  metrics: metricsSchema,
-  // n8n writes to these columns
-  reverseResultJson: z.string().optional(),
-  metricBurstiness: z.number().optional(),
-  metricTtr: z.number().optional(),
-  metricAvgSentLen: z.number().optional(),
-  finalSystemPrompt: z.string().optional(),
-  modelName: z.string().optional(),
-  status: reverseLogStatusEnum.optional(),
+  inputContent: z.string().optional(),
+  title: z.string().optional(),
+  contentText: z.string().optional(),
+  // Metrics
+  metricsBurstiness: z.number().optional(),
+  metricsTtr: z.number().optional(),
+  metricsAvgSentLen: z.number().optional(),
+  metricsAvgParaLen: z.number().optional(),
+  metricsWordCount: z.number().optional(),
+  metricsSentenceCount: z.number().optional(),
+  metricsParagraphCount: z.number().optional(),
+  // Style blueprint (consolidated JSONB)
+  styleBlueprint: styleBlueprintSchema,
+  // Execution prompt
+  executionPrompt: z.string().optional(),
+  // Parse metadata
+  metadata: metadataSchema,
+});
+
+const updateInputSchema = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  styleBlueprint: styleBlueprintSchema,
+  executionPrompt: z.string().optional(),
+  metadata: metadataSchema,
 });
 
 const idSchema = z.object({ id: z.string() });
@@ -63,7 +83,7 @@ const userStyleProfileSchema = z.object({
 });
 
 const promptSuggestionsSchema = z.object({
-  genreCategory: z.string(),
+  category: z.string(),
   limit: z.number().min(1).max(20).default(5),
 });
 
@@ -72,17 +92,12 @@ const metricsTrendSchema = z.object({
   days: z.number().min(1).max(365).default(30),
 });
 
-const similarArticlesSchema = z.object({
-  articleId: z.string(),
-  limit: z.number().min(1).max(20).default(5),
-});
-
 const topPromptsSchema = z.object({
   limit: z.number().min(1).max(50).default(10),
 });
 
-const genreInsightsSchema = z.object({
-  genreCategory: z.string(),
+const categoryInsightsSchema = z.object({
+  category: z.string(),
 });
 
 const statisticsSchema = z.object({
@@ -102,10 +117,23 @@ export const reverseLogsRouter = createTRPCRouter({
     .input(idSchema)
     .query(({ ctx, input }) => ctx.services.reverseLog.getById(input.id)),
 
+  getByInputContent: protectedProcedure
+    .input(z.object({ inputContent: z.string() }))
+    .query(({ ctx, input }) => ctx.services.reverseLog.getByInputContent(input.inputContent)),
+
   // Public endpoint for n8n webhook callbacks
   create: publicProcedure
     .input(createInputSchema)
     .mutation(({ ctx, input }) => ctx.services.reverseLog.create(input)),
+
+  // Public endpoint for n8n webhook callbacks (upsert by inputContent)
+  upsert: publicProcedure
+    .input(createInputSchema)
+    .mutation(({ ctx, input }) => ctx.services.reverseLog.upsert(input)),
+
+  update: protectedProcedure
+    .input(updateInputSchema)
+    .mutation(({ ctx, input }) => ctx.services.reverseLog.update(input)),
 
   delete: protectedProcedure
     .input(idSchema)
@@ -115,8 +143,11 @@ export const reverseLogsRouter = createTRPCRouter({
     .input(batchDeleteSchema)
     .mutation(({ ctx, input }) => ctx.services.reverseLog.batchDelete(input.ids)),
 
-  getGenreCategories: protectedProcedure
-    .query(({ ctx }) => ctx.services.reverseLog.getGenreCategories()),
+  getCategories: protectedProcedure
+    .query(({ ctx }) => ctx.services.reverseLog.getCategories()),
+
+  getStyleNames: protectedProcedure
+    .query(({ ctx }) => ctx.services.reverseLog.getStyleNames()),
 
   export: protectedProcedure
     .input(exportSchema)
@@ -128,31 +159,40 @@ export const reverseLogsRouter = createTRPCRouter({
         const headers = [
           "id",
           "userId",
-          "articleTitle",
-          "articleUrl",
-          "genreCategory",
-          "metricBurstiness",
-          "metricTtr",
-          "metricAvgSentLen",
-          "modelName",
-          "status",
+          "title",
+          "inputContent",
+          "category",
+          "styleName",
+          "metricsBurstiness",
+          "metricsTtr",
+          "metricsAvgSentLen",
+          "metricsAvgParaLen",
+          "metricsWordCount",
+          "metricsSentenceCount",
+          "metricsParagraphCount",
           "createdAt",
         ];
 
         const rows = logs.map((log) => {
-          // Extract metrics from JSONB
-          const metrics = log.metrics as { burstiness?: number; ttr?: number; avgSentLen?: number } | null;
+          // Extract category and styleName from styleBlueprint
+          const blueprint = log.styleBlueprint as Record<string, unknown> | null;
+          const category = blueprint?.category as string | undefined;
+          const styleName = blueprint?.style_name as string | undefined;
+
           return [
             log.id,
             log.userId,
-            log.articleTitle ?? "",
-            log.articleUrl ?? "",
-            log.genreCategory ?? "",
-            metrics?.burstiness?.toString() ?? "",
-            metrics?.ttr?.toString() ?? "",
-            metrics?.avgSentLen?.toString() ?? "",
-            log.modelName ?? "",
-            log.status ?? "",
+            log.title ?? "",
+            log.inputContent ?? "",
+            category ?? "",
+            styleName ?? "",
+            log.metricsBurstiness?.toString() ?? "",
+            log.metricsTtr?.toString() ?? "",
+            log.metricsAvgSentLen?.toString() ?? "",
+            log.metricsAvgParaLen?.toString() ?? "",
+            log.metricsWordCount?.toString() ?? "",
+            log.metricsSentenceCount?.toString() ?? "",
+            log.metricsParagraphCount?.toString() ?? "",
             log.createdAt?.toISOString() ?? "",
           ];
         });
@@ -181,10 +221,10 @@ export const reverseLogsRouter = createTRPCRouter({
   getMyStyleProfile: protectedProcedure
     .query(({ ctx }) => ctx.services.reverseLog.getUserStyleProfile(ctx.user.id)),
 
-  /** 获取特定文体的 Prompt 建议 */
+  /** 获取特定分类的 Prompt 建议 */
   getPromptSuggestions: protectedProcedure
     .input(promptSuggestionsSchema)
-    .query(({ ctx, input }) => ctx.services.reverseLog.getPromptSuggestions(input.genreCategory, input.limit)),
+    .query(({ ctx, input }) => ctx.services.reverseLog.getPromptSuggestions(input.category, input.limit)),
 
   /** 获取用户指标趋势 */
   getMetricsTrend: protectedProcedure
@@ -196,20 +236,15 @@ export const reverseLogsRouter = createTRPCRouter({
     .input(z.object({ days: z.number().min(1).max(365).default(30) }))
     .query(({ ctx, input }) => ctx.services.reverseLog.getMetricsTrend(ctx.user.id, input.days)),
 
-  /** 查找相似文章 */
-  findSimilarArticles: protectedProcedure
-    .input(similarArticlesSchema)
-    .query(({ ctx, input }) => ctx.services.reverseLog.findSimilarArticles(input.articleId, input.limit)),
-
   /** 获取高质量 Prompt 排行 */
   getTopPrompts: protectedProcedure
     .input(topPromptsSchema)
     .query(({ ctx, input }) => ctx.services.reverseLog.getTopPrompts(input.limit)),
 
-  /** 获取文体分析洞察 */
-  getGenreInsights: protectedProcedure
-    .input(genreInsightsSchema)
-    .query(({ ctx, input }) => ctx.services.reverseLog.getGenreInsights(input.genreCategory)),
+  /** 获取分类分析洞察 */
+  getCategoryInsights: protectedProcedure
+    .input(categoryInsightsSchema)
+    .query(({ ctx, input }) => ctx.services.reverseLog.getCategoryInsights(input.category)),
 
   /** 获取统计信息 */
   getStatistics: protectedProcedure

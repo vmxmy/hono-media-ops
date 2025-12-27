@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useI18n } from "@/contexts/i18n-context"
+import { A2UIToaster } from "@/components/a2ui"
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -134,6 +135,9 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
         {/* Page content - responsive padding */}
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
+
+      {/* A2UI Toast Provider */}
+      <A2UIToaster />
     </div>
   )
 }

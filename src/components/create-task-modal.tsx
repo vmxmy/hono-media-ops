@@ -12,15 +12,42 @@ interface DetailTab {
   content: React.ReactNode
 }
 
+// v7.3 JSONB types for material card
+interface StyleIdentityData {
+  persona_description?: string
+  voice_traits?: {
+    formality?: string
+    energy?: string
+    warmth?: string
+    confidence?: string
+  }
+  style_name?: string
+  archetype?: string
+  implied_reader?: string
+}
+
+interface LexicalLogicData {
+  tone_keywords?: string[]
+}
+
+interface MetricsConstraintsData {
+  avg_sentence_length?: number
+  avg_paragraph_length?: number
+}
+
 // Material card with swipeable detail tabs
 interface MaterialCardProps {
   material: {
     id: string
-    articleTitle: string | null
-    genreCategory: string | null
-    reverseResult: unknown
-    metrics: unknown
-    finalSystemPrompt: string | null
+    sourceTitle: string | null
+    primaryType: string | null
+    wordCount: number | null
+    paraCount: number | null
+    metricsBurstiness: number | null
+    metricsTtr: number | null
+    styleIdentityData: StyleIdentityData | null
+    lexicalLogicData: LexicalLogicData | null
+    metricsConstraintsData: MetricsConstraintsData | null
   }
   isSelected: boolean
   isExpanded: boolean
@@ -30,73 +57,95 @@ interface MaterialCardProps {
 }
 
 function MaterialCard({ material, isSelected, isExpanded, onSelect, onToggleExpand, t }: MaterialCardProps) {
-  const reverseResult = material.reverseResult as Record<string, unknown> | null
-  const metrics = material.metrics as Record<string, number> | null
+  // Extract style info from JSONB fields (v7.3)
+  const styleIdentity = material.styleIdentityData
+  const lexicalLogic = material.lexicalLogicData
+  const metricsConstraints = material.metricsConstraintsData
+
+  const styleName = styleIdentity?.style_name || material.sourceTitle || ""
+  const archetype = styleIdentity?.archetype
+  const targetAudience = styleIdentity?.implied_reader
+  const toneKeywords = lexicalLogic?.tone_keywords ?? []
+  const primaryType = material.primaryType
+
+  // Get metrics
+  const avgSentLen = metricsConstraints?.avg_sentence_length
+  const avgParaLen = metricsConstraints?.avg_paragraph_length
+  const wordCount = material.wordCount
+  const ttr = material.metricsTtr
+  const burstiness = material.metricsBurstiness
 
   // Build tabs for expanded content
   const detailTabs: DetailTab[] = []
 
-  if (reverseResult?.tone) {
+  // Style tab - archetype, target audience, tone keywords
+  if (archetype || targetAudience || toneKeywords.length > 0) {
     detailTabs.push({
-      label: t("reverse.tone"),
+      label: t("reverse.tabStyle"),
       content: (
-        <div className="text-sm text-muted-foreground" style={{ wordBreak: "break-word" }}>
-          {String(reverseResult.tone)}
+        <div className="flex flex-col gap-2 text-sm">
+          {archetype && (
+            <div>
+              <span className="text-xs text-muted-foreground">{t("reverse.archetype")}</span>
+              <div className="text-foreground">{archetype}</div>
+            </div>
+          )}
+          {targetAudience && (
+            <div>
+              <span className="text-xs text-muted-foreground">{t("reverse.targetAudience")}</span>
+              <div className="text-foreground">{targetAudience}</div>
+            </div>
+          )}
+          {toneKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {toneKeywords.map((k, i) => (
+                <span key={i} className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {k}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       ),
     })
   }
 
-  if (reverseResult?.structure) {
-    detailTabs.push({
-      label: t("reverse.structure"),
-      content: (
-        <div className="text-sm text-muted-foreground" style={{ wordBreak: "break-word" }}>
-          {String(reverseResult.structure)}
-        </div>
-      ),
-    })
-  }
-
-  if (metrics && (metrics.burstiness != null || metrics.ttr != null || metrics.avgSentLen != null)) {
+  // Metrics tab (v7.3 compatible)
+  if (wordCount != null || avgSentLen != null || avgParaLen != null || ttr != null || burstiness != null) {
     detailTabs.push({
       label: t("insights.metrics"),
       content: (
         <div className="flex flex-wrap gap-3 text-sm">
-          {metrics.burstiness != null && (
+          {wordCount != null && (
             <div>
-              <span className="font-medium">{t("insights.burstiness")}:</span>{" "}
-              <span className="text-muted-foreground">{Number(metrics.burstiness).toFixed(1)}</span>
+              <span className="font-medium">{t("reverse.totalWords")}:</span>{" "}
+              <span className="text-muted-foreground">{wordCount}</span>
             </div>
           )}
-          {metrics.ttr != null && (
-            <div>
-              <span className="font-medium">TTR:</span>{" "}
-              <span className="text-muted-foreground">{(Number(metrics.ttr) * 100).toFixed(0)}%</span>
-            </div>
-          )}
-          {metrics.avgSentLen != null && (
+          {avgSentLen != null && (
             <div>
               <span className="font-medium">{t("insights.avgSentLen")}:</span>{" "}
-              <span className="text-muted-foreground">{Number(metrics.avgSentLen).toFixed(1)}</span>
+              <span className="text-muted-foreground">{avgSentLen.toFixed(1)}</span>
             </div>
           )}
-        </div>
-      ),
-    })
-  }
-
-  if (material.finalSystemPrompt) {
-    detailTabs.push({
-      label: t("reverse.tabPrompt"),
-      content: (
-        <div
-          className="text-sm text-muted-foreground"
-          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.4 }}
-        >
-          {material.finalSystemPrompt.length > 200
-            ? material.finalSystemPrompt.substring(0, 200) + "..."
-            : material.finalSystemPrompt}
+          {avgParaLen != null && (
+            <div>
+              <span className="font-medium">{t("insights.avgParaLen")}:</span>{" "}
+              <span className="text-muted-foreground">{avgParaLen.toFixed(1)}</span>
+            </div>
+          )}
+          {ttr != null && (
+            <div>
+              <span className="font-medium">TTR:</span>{" "}
+              <span className="text-muted-foreground">{(ttr * 100).toFixed(1)}%</span>
+            </div>
+          )}
+          {burstiness != null && (
+            <div>
+              <span className="font-medium">Burstiness:</span>{" "}
+              <span className="text-muted-foreground">{(burstiness * 100).toFixed(1)}%</span>
+            </div>
+          )}
         </div>
       ),
     })
@@ -125,12 +174,25 @@ function MaterialCard({ material, isSelected, isExpanded, onSelect, onToggleExpa
         >
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">
-              {material.articleTitle ?? t("reverse.untitled")}
+              {styleName || material.sourceTitle || t("reverse.untitled")}
             </div>
-            {material.genreCategory && (
-              <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                {material.genreCategory}
-              </span>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {primaryType && (
+                <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  {primaryType}
+                </span>
+              )}
+              {archetype && (
+                <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                  {archetype}
+                </span>
+              )}
+            </div>
+            {/* Show title with book title marks if styleName exists and differs */}
+            {styleName && material.sourceTitle && styleName !== material.sourceTitle && (
+              <div className="mt-1 truncate text-xs text-muted-foreground">
+                《{material.sourceTitle}》
+              </div>
             )}
           </div>
           <span className="flex-shrink-0 text-xs text-muted-foreground">
@@ -241,6 +303,78 @@ function SwipeableDetailTabs({ tabs, materialId }: { tabs: DetailTab[]; material
   )
 }
 
+// Cover prompt card component for step 3
+interface CoverPromptCardProps {
+  prompt: {
+    id: string
+    title: string
+    prompt: string
+    negativePrompt: string | null
+    model: string | null
+    ratio: string | null
+    resolution: string | null
+    category: string | null
+    previewUrl: string | null
+  }
+  isSelected: boolean
+  onSelect: () => void
+  t: (key: I18nKey) => string
+}
+
+function CoverPromptCard({ prompt, isSelected, onSelect, t }: CoverPromptCardProps) {
+  return (
+    <div
+      onClick={onSelect}
+      className={`cursor-pointer rounded-lg p-3 transition-colors ${
+        isSelected
+          ? "border-2 border-primary bg-accent"
+          : "border border-border bg-card hover:bg-accent/50"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <input
+          type="radio"
+          checked={isSelected}
+          onChange={onSelect}
+          className="mt-1 h-4 w-4 cursor-pointer"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{prompt.title}</div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {prompt.category && (
+              <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                {prompt.category}
+              </span>
+            )}
+            {prompt.model && (
+              <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                {prompt.model}
+              </span>
+            )}
+            {prompt.ratio && (
+              <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                {prompt.ratio}
+              </span>
+            )}
+          </div>
+          <div className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+            {prompt.prompt}
+          </div>
+          {prompt.previewUrl && (
+            <div className="mt-2">
+              <img
+                src={prompt.previewUrl}
+                alt={prompt.title}
+                className="h-16 w-16 rounded object-cover"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
@@ -248,35 +382,20 @@ interface CreateTaskModalProps {
   initialData?: {
     topic?: string
     keywords?: string
-    style?: string
-    structureGuide?: string
-    outputSchema?: string
-    coverPrompt?: string
-    coverRatio?: string
-    coverResolution?: string
-    coverModel?: string
-    coverMode?: string
-    coverNegativePrompt?: string
+    coverPromptId?: string
   }
   isRegenerate?: boolean
 }
 
-const DEFAULT_COVER_PROMPT =
-  "大师级排版,孟菲斯风格矢量插画，色彩艳丽对比强烈，采用非对称图形的样式，以及点线面的随机组合，故意扭曲变形，极具视觉冲击力。丝网印刷、半调图案，噪点"
-
 const defaultFormData = {
   topic: "",
   keywords: "",
+  totalWordCount: 4000,
   style: "",
   structureGuide: "",
   outputSchema: "",
-  coverPrompt: DEFAULT_COVER_PROMPT,
-  coverRatio: "16:9",
-  coverResolution: "1k",
-  coverModel: "jimeng-4.5",
-  coverMode: "text2img",
-  coverNegativePrompt: "模糊, 变形, 低质量, 水印, 文字",
   selectedMaterialId: null as string | null,
+  selectedCoverPromptId: null as string | null,
 }
 
 export function CreateTaskModal({
@@ -294,8 +413,15 @@ export function CreateTaskModal({
   // Fetch materials for step 2
   const { data: materialsData, isLoading: materialsLoading } =
     api.reverseLogs.getAll.useQuery(
-      { page: 1, pageSize: 50, status: "SUCCESS" },
+      { page: 1, pageSize: 50 },
       { enabled: isOpen && currentStep === 2 }
+    )
+
+  // Fetch image prompts for step 3
+  const { data: imagePromptsData, isLoading: imagePromptsLoading } =
+    api.imagePrompts.getAll.useQuery(
+      { page: 1, pageSize: 50 },
+      { enabled: isOpen && currentStep === 3 }
     )
 
   const createMutation = api.tasks.create.useMutation({
@@ -310,17 +436,12 @@ export function CreateTaskModal({
       setFormData({
         topic: initialData.topic ?? "",
         keywords: initialData.keywords ?? "",
-        style: initialData.style ?? "",
-        structureGuide: initialData.structureGuide ?? "",
-        outputSchema: initialData.outputSchema ?? "",
-        coverPrompt: initialData.coverPrompt ?? DEFAULT_COVER_PROMPT,
-        coverRatio: initialData.coverRatio ?? "16:9",
-        coverResolution: initialData.coverResolution ?? "1k",
-        coverModel: initialData.coverModel ?? "jimeng-4.5",
-        coverMode: initialData.coverMode ?? "text2img",
-        coverNegativePrompt:
-          initialData.coverNegativePrompt ?? "模糊, 变形, 低质量, 水印, 文字",
+        totalWordCount: 4000,
+        style: "",
+        structureGuide: "",
+        outputSchema: "",
         selectedMaterialId: null,
+        selectedCoverPromptId: initialData.coverPromptId ?? null,
       })
     } else if (isOpen) {
       setFormData(defaultFormData)
@@ -351,40 +472,35 @@ export function CreateTaskModal({
   const handleSubmit = () => {
     if (!formData.topic.trim()) return
 
-    // Get selected material data if any
-    const selectedMaterial = formData.selectedMaterialId
-      ? materialsData?.logs.find((m) => m.id === formData.selectedMaterialId)
-      : null
-
     createMutation.mutate({
       topic: formData.topic,
       keywords: formData.keywords || undefined,
-      coverPrompt: formData.coverPrompt || undefined,
-      coverRatio: formData.coverRatio,
-      coverResolution: formData.coverResolution,
-      coverModel: formData.coverModel,
-      coverMode: formData.coverMode,
-      coverNegativePrompt: formData.coverNegativePrompt,
-      // Reference material fields
-      refMaterialId: selectedMaterial?.id,
-      refGenreCategory: selectedMaterial?.genreCategory ?? undefined,
-      refReverseResult: selectedMaterial?.reverseResult as Record<string, unknown> ?? undefined,
+      totalWordCount: formData.totalWordCount,
+      // Cover prompt (n8n queries image_prompts by this ID)
+      coverPromptId: formData.selectedCoverPromptId || undefined,
+      // Reference material (n8n queries reverse_engineering_logs by this ID)
+      refMaterialId: formData.selectedMaterialId || undefined,
     })
   }
 
   const handleSelectMaterial = (materialId: string) => {
     const material = materialsData?.logs.find((m) => m.id === materialId)
     if (material) {
-      // Extract style info from reverseResult
-      const reverseResult = material.reverseResult as Record<string, unknown> | null
-
+      const styleIdentity = material.styleIdentityData as StyleIdentityData | null
       setFormData((prev) => ({
         ...prev,
         selectedMaterialId: materialId,
-        style: reverseResult?.tone as string ?? prev.style,
-        structureGuide: reverseResult?.structure as string ?? prev.structureGuide,
+        style: styleIdentity?.archetype ?? prev.style,
+        structureGuide: prev.structureGuide,
       }))
     }
+  }
+
+  const handleSelectCoverPrompt = (promptId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedCoverPromptId: promptId,
+    }))
   }
 
   const handleAction = useCallback(
@@ -411,6 +527,9 @@ export function CreateTaskModal({
         case "setKeywords":
           setFormData((prev) => ({ ...prev, keywords: args?.[0] as string }))
           break
+        case "setTotalWordCount":
+          setFormData((prev) => ({ ...prev, totalWordCount: parseInt(args?.[0] as string) || 4000 }))
+          break
         case "selectMaterial":
           handleSelectMaterial(args?.[0] as string)
           break
@@ -419,8 +538,8 @@ export function CreateTaskModal({
             prev === (args?.[0] as string) ? null : (args?.[0] as string)
           )
           break
-        case "setCoverPrompt":
-          setFormData((prev) => ({ ...prev, coverPrompt: args?.[0] as string }))
+        case "selectCoverPrompt":
+          handleSelectCoverPrompt(args?.[0] as string)
           break
       }
     },
@@ -534,6 +653,20 @@ export function CreateTaskModal({
           },
         ],
       },
+      {
+        type: "form-field",
+        label: t("taskForm.totalWordCount"),
+        children: [
+          {
+            type: "input",
+            id: "totalWordCount",
+            inputType: "number",
+            value: String(formData.totalWordCount),
+            placeholder: "4000",
+            onChange: { action: "setTotalWordCount" },
+          },
+        ],
+      },
     ],
   }
 
@@ -577,33 +710,38 @@ export function CreateTaskModal({
     children: [{ type: "text", text: "" }],
   }
 
-  // Step 3: Cover style prompt
+  // Step 3: React-based cover prompts list
+  const Step3Content = () => (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("taskForm.step3Title")}</h3>
+        <p className="mb-2 text-xs text-muted-foreground">{t("taskForm.selectCoverPrompt")}</p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {imagePromptsLoading ? (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : !imagePromptsData?.items.length ? (
+          <p className="text-sm text-muted-foreground">{t("taskForm.noMaterials")}</p>
+        ) : (
+          imagePromptsData.items.map((prompt) => (
+            <CoverPromptCard
+              key={prompt.id}
+              prompt={prompt}
+              isSelected={formData.selectedCoverPromptId === prompt.id}
+              onSelect={() => handleSelectCoverPrompt(prompt.id)}
+              t={t}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+
+  // Placeholder A2UI node for step 3 (won't be used, replaced by React component)
   const step3Content: A2UINode = {
     type: "column",
     gap: "1rem",
-    children: [
-      {
-        type: "text",
-        text: t("taskForm.step3Title"),
-        variant: "h3",
-        weight: "semibold",
-        style: { marginBottom: "0.5rem" },
-      },
-      {
-        type: "form-field",
-        label: t("taskForm.coverStylePrompt"),
-        children: [
-          {
-            type: "textarea",
-            id: "coverPrompt",
-            value: formData.coverPrompt,
-            placeholder: t("taskForm.coverStylePromptPlaceholder"),
-            rows: 6,
-            onChange: { action: "setCoverPrompt" },
-          },
-        ],
-      },
-    ],
+    children: [{ type: "text", text: "" }],
   }
 
   // Get current step content
@@ -644,19 +782,28 @@ export function CreateTaskModal({
 
     // Next/Submit button
     if (currentStep < 3) {
+      // Step 1: require topic; Step 2: require material selection
+      const isNextDisabled =
+        (currentStep === 1 && !formData.topic.trim()) ||
+        (currentStep === 2 && !formData.selectedMaterialId)
       buttons.push({
         type: "button",
         text: t("taskForm.next"),
         variant: "primary",
-        disabled: currentStep === 1 && !formData.topic.trim(),
+        disabled: isNextDisabled,
         onClick: { action: "nextStep" },
       })
     } else {
+      // Step 3: require cover prompt selection
+      const isSubmitDisabled =
+        createMutation.isPending ||
+        !formData.topic.trim() ||
+        !formData.selectedCoverPromptId
       buttons.push({
         type: "button",
         text: createMutation.isPending ? t("taskForm.submitting") : t("taskForm.submit"),
         variant: "primary",
-        disabled: createMutation.isPending || !formData.topic.trim(),
+        disabled: isSubmitDisabled,
         onClick: { action: "submit" },
       })
     }
@@ -670,8 +817,8 @@ export function CreateTaskModal({
     }
   }
 
-  // For step 2, we render React components directly for swipeable tabs support
-  // For steps 1 and 3, we use A2UI nodes
+  // For steps 2 and 3, we render React components directly
+  // For step 1, we use A2UI nodes
   if (!isOpen) return null
 
   return (
@@ -703,6 +850,8 @@ export function CreateTaskModal({
           {/* Step content */}
           {currentStep === 2 ? (
             <Step2Content />
+          ) : currentStep === 3 ? (
+            <Step3Content />
           ) : (
             <A2UIRenderer node={getCurrentStepContent()} onAction={handleAction} />
           )}

@@ -36,6 +36,14 @@
           "type": "string",
           "enum": ["start", "center", "end", "between", "around"],
           "description": "Justify content horizontally"
+        },
+        "wrap": {
+          "type": "boolean",
+          "description": "Enable flex wrap"
+        },
+        "responsive": {
+          "type": "boolean",
+          "description": "Enable responsive behavior (stack on mobile)"
         }
       }
     },
@@ -487,6 +495,47 @@
           "type": "boolean",
           "default": true,
           "description": "Use flex grow"
+        }
+      }
+    },
+    "collapsible": {
+      "description": "Collapsible content section with expand/collapse toggle. Shows summary when collapsed, full children when expanded.",
+      "category": "interactive",
+      "supportsChildren": true,
+      "properties": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Header title text"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Optional subtitle text shown in header"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Summary text shown when collapsed (always visible)"
+        },
+        "previewChildren": {
+          "type": "array",
+          "items": { "type": "node" },
+          "description": "Children nodes always visible (shown when collapsed and expanded)"
+        },
+        "defaultOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Initial open state"
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "color": { "type": "string" }
+            }
+          },
+          "description": "Optional badges to display in header"
         }
       }
     }

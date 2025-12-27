@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-24T18:02:52.980Z
+// Generated at: 2025-12-27T06:31:35.773Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"
 
@@ -44,6 +44,14 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "string",
         description: "Justify content horizontally",
         enum: ["start","center","end","between","around"],
+      },
+      wrap: {
+        type: "boolean",
+        description: "Enable flex wrap",
+      },
+      responsive: {
+        type: "boolean",
+        description: "Enable responsive behavior (stack on mobile)",
       },
     },
   },
@@ -508,6 +516,40 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       },
     },
   },
+  {
+    type: "collapsible",
+    description: "Collapsible content section with expand/collapse toggle. Shows summary when collapsed, full children when expanded.",
+    category: "interactive",
+    supportsChildren: true,
+    properties: {
+      title: {
+        type: "string",
+        required: true,
+        description: "Header title text",
+      },
+      subtitle: {
+        type: "string",
+        description: "Optional subtitle text shown in header",
+      },
+      summary: {
+        type: "string",
+        description: "Summary text shown when collapsed (always visible)",
+      },
+      previewChildren: {
+        type: "array",
+        description: "Children nodes always visible (shown when collapsed and expanded)",
+      },
+      defaultOpen: {
+        type: "boolean",
+        description: "Initial open state",
+        default: false,
+      },
+      badges: {
+        type: "array",
+        description: "Optional badges to display in header",
+      },
+    },
+  },
 ]
 
 // Create the standard catalog
@@ -528,5 +570,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer"] as const
+export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

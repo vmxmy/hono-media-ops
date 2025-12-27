@@ -1,0 +1,79 @@
+{
+  "spec_version": "1.0",
+  "doc_type": "writing_task_spec",
+  "metadata": {
+    "title": "写作任务规范文档",
+    "created_at": "待填写",
+    "owner": "待填写",
+    "priority": "P2",
+    "due_date": "待填写",
+    "locale": "zh-CN"
+  },
+  "input": {
+    "task_description": "待填写：写作任务描述原文",
+    "context": "待填写：业务背景或使用场景",
+    "materials": [],
+    "constraints": []
+  },
+  "goals": {
+    "primary": "待填写：核心目标",
+    "secondary": []
+  },
+  "audience": {
+    "primary": "待填写：主要读者",
+    "knowledge_level": "待填写：初学/进阶/专家",
+    "pain_points": []
+  },
+  "tone_style": {
+    "tone": "待填写：正式/轻松/专业/营销等",
+    "style": "待填写：叙述/说明/对比/案例等",
+    "voice": "待填写：第一人称/第三人称",
+    "avoid": []
+  },
+  "deliverable": {
+    "type": "待填写：文章/报告/脚本/邮件等",
+    "format": "待填写：markdown/docx/html等",
+    "language": "zh-CN",
+    "length": {
+      "word_count": 0,
+      "section_count": 0
+    },
+    "structure": []
+  },
+  "content_requirements": {
+    "key_points": [],
+    "must_include": [],
+    "must_avoid": [],
+    "examples": []
+  },
+  "seo": {
+    "title_candidates": [],
+    "keywords": [],
+    "meta_description": "待填写"
+  },
+  "sources": {
+    "required": [],
+    "optional": [],
+    "citation_style": "待填写：APA/MLA/无引用等"
+  },
+  "quality": {
+    "acceptance_criteria": [],
+    "review_checklist": []
+  },
+  "risk_questions": {
+    "open_questions": [],
+    "assumptions": []
+  },
+  "workflow": {
+    "steps": [
+      "理解需求与目标",
+      "梳理结构与要点",
+      "完成初稿",
+      "自检并交付"
+    ],
+    "delivery": {
+      "file_naming": "待填写",
+      "handoff_notes": "待填写"
+    }
+  }
+}

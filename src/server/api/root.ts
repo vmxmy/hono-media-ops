@@ -1,12 +1,14 @@
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 import { tasksRouter } from "./routers/tasks";
 import { imagePromptsRouter } from "./routers/image-prompts";
-import { reverseLogsRouter } from "./routers/reverse-logs";
+import { styleAnalysesRouter } from "./routers/style-analyses";
 
 export const appRouter = createTRPCRouter({
   tasks: tasksRouter,
   imagePrompts: imagePromptsRouter,
-  reverseLogs: reverseLogsRouter,
+  styleAnalyses: styleAnalysesRouter,
+  // Backwards compatibility
+  reverseLogs: styleAnalysesRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -21,28 +21,19 @@ const getAllInputSchema = z.object({
 const createInputSchema = z.object({
   topic: z.string().min(1),
   keywords: z.string().optional(),
-  coverPrompt: z.string().optional(),
-  coverRatio: z.string().default("16:9"),
-  coverResolution: z.string().default("1k"),
-  coverModel: z.string().default("jimeng-4.5"),
-  coverMode: z.string().default("text2img"),
-  coverNegativePrompt: z.string().default("模糊, 变形, 低质量, 水印, 文字"),
-  // Reference material fields
+  totalWordCount: z.number().min(100).max(50000).default(4000),
+  // Cover prompt (link to image_prompts)
+  coverPromptId: z.string().optional(),
+  // Reference material (link to reverse_engineering_logs)
   refMaterialId: z.string().optional(),
-  refGenreCategory: z.string().optional(),
-  refReverseResult: z.record(z.unknown()).optional(),
 });
 
 const updateInputSchema = z.object({
   id: z.string(),
   topic: z.string().min(1).optional(),
   keywords: z.string().optional(),
-  coverPrompt: z.string().optional(),
-  coverRatio: z.string().optional(),
-  coverResolution: z.string().optional(),
-  coverModel: z.string().optional(),
-  coverMode: z.string().optional(),
-  coverNegativePrompt: z.string().optional(),
+  // Cover prompt (link to image_prompts)
+  coverPromptId: z.string().optional(),
 });
 
 const updateStatusSchema = z.object({
@@ -146,7 +137,7 @@ export const tasksRouter = createTRPCRouter({
 
   retry: protectedProcedure
     .input(idSchema)
-    .mutation(({ ctx, input }) => ctx.services.task.retry(input.id)),
+    .mutation(({ ctx, input }) => ctx.services.task.retry(input.id, "trigger")),
 
   cancel: protectedProcedure
     .input(idSchema)
@@ -168,7 +159,7 @@ export const tasksRouter = createTRPCRouter({
 
   batchRetry: protectedProcedure
     .input(idsSchema)
-    .mutation(({ ctx, input }) => ctx.services.task.batchRetry(input.ids)),
+    .mutation(({ ctx, input }) => ctx.services.task.batchRetry(input.ids, "trigger")),
 
   batchCancel: protectedProcedure
     .input(idsSchema)

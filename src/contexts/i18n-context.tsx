@@ -66,6 +66,7 @@ export type I18nKey =
     | "taskForm.topicPlaceholder"
     | "taskForm.keywords"
     | "taskForm.keywordsPlaceholder"
+    | "taskForm.totalWordCount"
     | "taskForm.style"
     | "taskForm.stylePlaceholder"
     | "taskForm.openingExample"
@@ -96,6 +97,17 @@ export type I18nKey =
     | "taskForm.modeText2img"
     | "taskForm.modeSingleImg2img"
     | "taskForm.modeMultiImg2img"
+    // Wizard steps
+    | "taskForm.step1Title"
+    | "taskForm.step2Title"
+    | "taskForm.step2Desc"
+    | "taskForm.step3Title"
+    | "taskForm.selectCoverPrompt"
+    | "taskForm.coverStylePrompt"
+    | "taskForm.coverStylePromptPlaceholder"
+    | "taskForm.noMaterials"
+    | "taskForm.prev"
+    | "taskForm.next"
     // Prompts
     | "prompts.title"
     | "prompts.createPrompt"
@@ -124,9 +136,13 @@ export type I18nKey =
     | "insights.successRate"
     | "insights.topGenres"
     | "insights.averageMetrics"
+    | "insights.metrics"
     | "insights.burstiness"
     | "insights.ttr"
     | "insights.avgSentLen"
+    | "insights.avgParaLen"
+    | "insights.wordCount"
+    | "insights.toneKeywords"
     | "insights.commonVocabulary"
     | "insights.lastAnalysis"
     | "insights.metricsTrend"
@@ -140,6 +156,12 @@ export type I18nKey =
     | "insights.statistics"
     | "insights.byStatus"
     | "insights.byGenre"
+    | "insights.topCategories"
+    | "insights.selectCategory"
+    | "insights.categoryInsights"
+    | "insights.byCategory"
+    | "insights.byStyleName"
+    | "insights.byTextType"
     // Reverse
     | "nav.reverse"
     | "reverse.title"
@@ -192,6 +214,60 @@ export type I18nKey =
     | "reverse.targetAudience"
     | "reverse.toneKeywords"
     | "reverse.clickToViewFull"
+    | "reverse.totalWords"
+    | "reverse.metaProfile"
+    | "reverse.personaDescription"
+    | "reverse.voiceTraits"
+    | "reverse.voiceFormality"
+    | "reverse.voiceEnergy"
+    | "reverse.voiceWarmth"
+    | "reverse.voiceConfidence"
+    | "reverse.sentenceCount"
+    | "reverse.paragraphCount"
+    | "reverse.analysisConfidence"
+    | "reverse.styleStability"
+    | "reverse.styleConsistency"
+    | "reverse.coreRulesCount"
+    | "reverse.topRuleFeature"
+    | "reverse.tabVoice"
+    | "reverse.tabCoreRules"
+    | "reverse.sentenceTemplates"
+    | "reverse.antiPatterns"
+    | "reverse.secondaryTraits"
+    | "reverse.textTypeRationale"
+    | "reverse.tabGoldenSamples"
+    | "reverse.tabTransferDemo"
+    | "reverse.tabLexicalRhetoric"
+    | "reverse.tabExecutionPrompt"
+    | "reverse.goldenSample"
+    | "reverse.sampleText"
+    | "reverse.sampleReason"
+    | "reverse.transferBefore"
+    | "reverse.transferAfter"
+    | "reverse.transferExplanation"
+    | "reverse.vocabularyTier"
+    | "reverse.preferredTerms"
+    | "reverse.bannedTerms"
+    | "reverse.preferredDevices"
+    | "reverse.deviceFrequency"
+    | "reverse.executionPrompt"
+    | "reverse.analysisVersion"
+    | "reverse.noSamples"
+    | "reverse.noTransferDemo"
+    | "reverse.tabRules"
+    | "reverse.tabSamples"
+    | "reverse.coreRulesSection"
+    | "reverse.lexicalSection"
+    | "reverse.rhetoricSection"
+    | "reverse.antiPatternsSection"
+    | "reverse.goldenSamplesSection"
+    | "reverse.transferDemoSection"
+    | "reverse.executionPromptLabel"
+    | "reverse.deleteSuccess"
+    | "reverse.deleteFailed"
+    | "reverse.copySuccess"
+    | "reverse.copyFailed"
+    | "reverse.noPromptToCopy"
     // App
     | "app.title"
     | "app.description"
@@ -262,6 +338,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.topicPlaceholder": "Enter article topic",
         "taskForm.keywords": "Keywords",
         "taskForm.keywordsPlaceholder": "Separate keywords with commas",
+        "taskForm.totalWordCount": "Total Word Count",
         "taskForm.style": "Writing Style",
         "taskForm.stylePlaceholder": "Leave empty to use default style template",
         "taskForm.openingExample": "Opening Example",
@@ -292,6 +369,17 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.modeText2img": "Text to Image",
         "taskForm.modeSingleImg2img": "Single Image to Image",
         "taskForm.modeMultiImg2img": "Multi Image to Image",
+        // Wizard steps
+        "taskForm.step1Title": "What do you want to write?",
+        "taskForm.step2Title": "Choose a style reference",
+        "taskForm.step2Desc": "Select a material to use its writing style (optional)",
+        "taskForm.step3Title": "Cover image style",
+        "taskForm.selectCoverPrompt": "Select a cover image style prompt (optional)",
+        "taskForm.coverStylePrompt": "Style prompt",
+        "taskForm.coverStylePromptPlaceholder": "Describe the visual style for the cover image...",
+        "taskForm.noMaterials": "No materials available. Add some in the Material Library first.",
+        "taskForm.prev": "Previous",
+        "taskForm.next": "Next",
         // Prompts
         "prompts.title": "Prompt Management",
         "prompts.createPrompt": "Create Prompt",
@@ -320,9 +408,13 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.successRate": "Success Rate",
         "insights.topGenres": "Top Genres",
         "insights.averageMetrics": "Average Metrics",
+        "insights.metrics": "Metrics",
         "insights.burstiness": "Burstiness",
         "insights.ttr": "TTR (Type-Token Ratio)",
         "insights.avgSentLen": "Avg Sentence Length",
+        "insights.avgParaLen": "Avg Paragraph Length",
+        "insights.wordCount": "Word Count",
+        "insights.toneKeywords": "Tone Keywords",
         "insights.commonVocabulary": "Common Vocabulary",
         "insights.lastAnalysis": "Last Analysis",
         "insights.metricsTrend": "Metrics Trend",
@@ -336,6 +428,12 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.statistics": "Statistics",
         "insights.byStatus": "By Status",
         "insights.byGenre": "By Genre",
+        "insights.topCategories": "Top Categories",
+        "insights.selectCategory": "Select a category",
+        "insights.categoryInsights": "Category Insights",
+        "insights.byCategory": "By Category",
+        "insights.byStyleName": "By Style Name",
+        "insights.byTextType": "By Text Type",
         // Materials (formerly Reverse)
         "nav.reverse": "Materials",
         "reverse.title": "Material Library",
@@ -388,6 +486,60 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.targetAudience": "Target Audience",
         "reverse.toneKeywords": "Tone Keywords",
         "reverse.clickToViewFull": "Click title to view full details",
+        "reverse.totalWords": "Total Words",
+        "reverse.metaProfile": "Meta Profile",
+        "reverse.personaDescription": "Persona Description",
+        "reverse.voiceTraits": "Voice Traits",
+        "reverse.voiceFormality": "Formality",
+        "reverse.voiceEnergy": "Energy",
+        "reverse.voiceWarmth": "Warmth",
+        "reverse.voiceConfidence": "Confidence",
+        "reverse.sentenceCount": "Sentences",
+        "reverse.paragraphCount": "Paragraphs",
+        "reverse.analysisConfidence": "Analysis Confidence",
+        "reverse.styleStability": "Style Stability",
+        "reverse.styleConsistency": "Consistency",
+        "reverse.coreRulesCount": "Core Rules",
+        "reverse.topRuleFeature": "Top Feature",
+        "reverse.tabVoice": "Voice",
+        "reverse.tabCoreRules": "Core Rules",
+        "reverse.sentenceTemplates": "Sentence Templates",
+        "reverse.antiPatterns": "Anti-Patterns",
+        "reverse.secondaryTraits": "Secondary Traits",
+        "reverse.textTypeRationale": "Type Rationale",
+        "reverse.tabGoldenSamples": "Golden Samples",
+        "reverse.tabTransferDemo": "Transfer Demo",
+        "reverse.tabLexicalRhetoric": "Lexical & Rhetoric",
+        "reverse.tabExecutionPrompt": "Execution Prompt",
+        "reverse.goldenSample": "Golden Sample",
+        "reverse.sampleText": "Sample Text",
+        "reverse.sampleReason": "Why It's Good",
+        "reverse.transferBefore": "Before",
+        "reverse.transferAfter": "After",
+        "reverse.transferExplanation": "Explanation",
+        "reverse.vocabularyTier": "Vocabulary Level",
+        "reverse.preferredTerms": "Preferred Terms",
+        "reverse.bannedTerms": "Banned Terms",
+        "reverse.preferredDevices": "Preferred Devices",
+        "reverse.deviceFrequency": "Device Frequency",
+        "reverse.executionPrompt": "Execution Prompt",
+        "reverse.analysisVersion": "Version",
+        "reverse.noSamples": "No golden samples available",
+        "reverse.noTransferDemo": "No transfer demo available",
+        "reverse.tabRules": "Rules",
+        "reverse.tabSamples": "Samples",
+        "reverse.coreRulesSection": "Core Rules",
+        "reverse.lexicalSection": "Lexical Constraints",
+        "reverse.rhetoricSection": "Rhetoric Patterns",
+        "reverse.antiPatternsSection": "Anti-Patterns",
+        "reverse.goldenSamplesSection": "Golden Samples",
+        "reverse.transferDemoSection": "Style Transfer",
+        "reverse.executionPromptLabel": "Execution Prompt",
+        "reverse.deleteSuccess": "Deleted successfully",
+        "reverse.deleteFailed": "Delete failed",
+        "reverse.copySuccess": "Copied to clipboard",
+        "reverse.copyFailed": "Copy failed",
+        "reverse.noPromptToCopy": "No prompt to copy",
         // App
         "app.title": "Media Ops",
         "app.description": "AI-powered article generation platform",
@@ -447,6 +599,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.topicPlaceholder": "请输入文章主题",
         "taskForm.keywords": "关键字",
         "taskForm.keywordsPlaceholder": "多个关键词用逗号分隔",
+        "taskForm.totalWordCount": "总字数",
         "taskForm.style": "写作风格",
         "taskForm.stylePlaceholder": "可留空则使用环境变量 WRITING_STYLE_TEMPLATE",
         "taskForm.openingExample": "开场范例",
@@ -477,6 +630,17 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.modeText2img": "文生图",
         "taskForm.modeSingleImg2img": "单图生图",
         "taskForm.modeMultiImg2img": "多图生图",
+        // Wizard steps
+        "taskForm.step1Title": "想写点什么?",
+        "taskForm.step2Title": "选择风格参考",
+        "taskForm.step2Desc": "选择一个素材作为写作风格参考 (可选)",
+        "taskForm.step3Title": "封面图风格",
+        "taskForm.selectCoverPrompt": "选择封面图风格提示词 (可选)",
+        "taskForm.coverStylePrompt": "风格提示词",
+        "taskForm.coverStylePromptPlaceholder": "描述封面图片的视觉风格...",
+        "taskForm.noMaterials": "暂无素材。请先在素材仓库中添加一些素材。",
+        "taskForm.prev": "上一步",
+        "taskForm.next": "下一步",
         // Prompts
         "prompts.title": "提示词管理",
         "prompts.createPrompt": "创建提示词",
@@ -505,9 +669,13 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.successRate": "成功率",
         "insights.topGenres": "常用文体",
         "insights.averageMetrics": "平均指标",
+        "insights.metrics": "指标",
         "insights.burstiness": "节奏变化度",
         "insights.ttr": "词汇丰富度 (TTR)",
         "insights.avgSentLen": "平均句长",
+        "insights.avgParaLen": "平均段落长度",
+        "insights.wordCount": "字数",
+        "insights.toneKeywords": "语调关键词",
         "insights.commonVocabulary": "常用词汇",
         "insights.lastAnalysis": "最近分析",
         "insights.metricsTrend": "指标趋势",
@@ -521,6 +689,12 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.statistics": "统计概览",
         "insights.byStatus": "按状态",
         "insights.byGenre": "按文体",
+        "insights.topCategories": "常用分类",
+        "insights.selectCategory": "选择分类",
+        "insights.categoryInsights": "分类洞察",
+        "insights.byCategory": "按分类",
+        "insights.byStyleName": "按风格名称",
+        "insights.byTextType": "按文本类型",
         // 素材仓库 (formerly 逆向分析)
         "nav.reverse": "素材仓库",
         "reverse.title": "素材仓库",
@@ -573,6 +747,60 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.targetAudience": "目标受众",
         "reverse.toneKeywords": "语调关键词",
         "reverse.clickToViewFull": "点击标题查看完整详情",
+        "reverse.totalWords": "总字数",
+        "reverse.metaProfile": "元数据画像",
+        "reverse.personaDescription": "人设描述",
+        "reverse.voiceTraits": "声音特征",
+        "reverse.voiceFormality": "正式度",
+        "reverse.voiceEnergy": "能量感",
+        "reverse.voiceWarmth": "温暖度",
+        "reverse.voiceConfidence": "自信度",
+        "reverse.sentenceCount": "句子数",
+        "reverse.paragraphCount": "段落数",
+        "reverse.analysisConfidence": "分析置信度",
+        "reverse.styleStability": "风格稳定性",
+        "reverse.styleConsistency": "一致性",
+        "reverse.coreRulesCount": "核心规则数",
+        "reverse.topRuleFeature": "主要特征",
+        "reverse.tabVoice": "声音",
+        "reverse.tabCoreRules": "核心规则",
+        "reverse.sentenceTemplates": "句式模板",
+        "reverse.antiPatterns": "反模式",
+        "reverse.secondaryTraits": "次要特征",
+        "reverse.textTypeRationale": "类型分析",
+        "reverse.tabGoldenSamples": "黄金样本",
+        "reverse.tabTransferDemo": "风格迁移",
+        "reverse.tabLexicalRhetoric": "词汇修辞",
+        "reverse.tabExecutionPrompt": "执行提示词",
+        "reverse.goldenSample": "黄金样本",
+        "reverse.sampleText": "样本文本",
+        "reverse.sampleReason": "入选理由",
+        "reverse.transferBefore": "改写前",
+        "reverse.transferAfter": "改写后",
+        "reverse.transferExplanation": "改写说明",
+        "reverse.vocabularyTier": "词汇层级",
+        "reverse.preferredTerms": "推荐用词",
+        "reverse.bannedTerms": "禁用词汇",
+        "reverse.preferredDevices": "偏好修辞",
+        "reverse.deviceFrequency": "修辞频率",
+        "reverse.executionPrompt": "执行提示词",
+        "reverse.analysisVersion": "版本",
+        "reverse.noSamples": "暂无黄金样本",
+        "reverse.noTransferDemo": "暂无风格迁移示例",
+        "reverse.tabRules": "规则",
+        "reverse.tabSamples": "样本",
+        "reverse.coreRulesSection": "核心规则",
+        "reverse.lexicalSection": "词汇约束",
+        "reverse.rhetoricSection": "修辞模式",
+        "reverse.antiPatternsSection": "反面模式",
+        "reverse.goldenSamplesSection": "黄金样本",
+        "reverse.transferDemoSection": "风格迁移",
+        "reverse.executionPromptLabel": "执行提示词",
+        "reverse.deleteSuccess": "删除成功",
+        "reverse.deleteFailed": "删除失败",
+        "reverse.copySuccess": "已复制到剪贴板",
+        "reverse.copyFailed": "复制失败",
+        "reverse.noPromptToCopy": "没有可复制的提示词",
         // App
         "app.title": "Media Ops",
         "app.description": "AI 驱动的文章生成平台",

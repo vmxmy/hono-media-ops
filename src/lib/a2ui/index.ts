@@ -39,6 +39,7 @@ export type {
   A2UITabsNode,
   A2UIFormNode,
   A2UIFormFieldNode,
+  A2UICollapsibleNode,
   // Feedback
   A2UIBadgeNode,
   A2UIProgressNode,
@@ -91,6 +92,11 @@ export {
 // Transformers (only complex list transformations)
 // ============================================================================
 export * from "./task-transformer"
+
+// ============================================================================
+// Toast System (Imperative API)
+// ============================================================================
+export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "./toast"
 
 // ============================================================================
 // Legacy Compatibility

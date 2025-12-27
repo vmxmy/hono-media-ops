@@ -7,29 +7,33 @@ export type { TaskService, GetAllTasksOptions, CreateTaskInput, UpdateTaskStatus
 export { imagePromptService } from "./image-prompt.service";
 export type { ImagePromptService, CreateImagePromptInput, UpdateImagePromptInput, GetAllInput as GetAllImagePromptsInput } from "./image-prompt.service";
 
-export { reverseLogService } from "./reverse-log.service";
+export { styleAnalysisService } from "./style-analysis.service";
 export type {
-  ReverseLogService,
-  GetAllReverseLogsOptions,
-  CreateReverseLogInput,
-  ReverseLogStatus,
+  StyleAnalysisService,
+  GetAllStyleAnalysesOptions,
+  CreateStyleAnalysisInput,
+  UpdateStyleAnalysisInput,
   // Domain types
   UserStyleProfile,
-  PromptSuggestion,
   MetricsTrendPoint,
-} from "./reverse-log.service";
+} from "./style-analysis.service";
+
+// Backwards compatibility alias
+export { styleAnalysisService as reverseLogService } from "./style-analysis.service";
 
 // ==================== Services Aggregate ====================
 // For injection into tRPC context
 
 import { taskService } from "./task.service";
 import { imagePromptService } from "./image-prompt.service";
-import { reverseLogService } from "./reverse-log.service";
+import { styleAnalysisService } from "./style-analysis.service";
 
 export const services = {
   task: taskService,
   imagePrompt: imagePromptService,
-  reverseLog: reverseLogService,
+  styleAnalysis: styleAnalysisService,
+  // Backwards compatibility
+  reverseLog: styleAnalysisService,
 } as const;
 
 export type Services = typeof services;

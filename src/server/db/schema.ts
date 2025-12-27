@@ -9,6 +9,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -29,9 +30,9 @@ export const executionStatusEnum = pgEnum("execution_status", [
 ]);
 
 export const reverseLogStatusEnum = pgEnum("reverse_log_status", [
+  "PENDING",
   "SUCCESS",
   "FAILED",
-  "PENDING",
 ]);
 
 // ==================== Users Table ====================
@@ -53,7 +54,7 @@ export const users = pgTable(
 
 export const usersRelations = relations(users, ({ many }) => ({
   tasks: many(tasks),
-  reverseEngineeringLogs: many(reverseEngineeringLogs),
+  styleAnalyses: many(styleAnalyses),
 }));
 
 // ==================== Tasks Table ====================
@@ -65,18 +66,12 @@ export const tasks = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     topic: text("topic").notNull(),
     keywords: text("keywords"),
+    totalWordCount: integer("total_word_count").default(4000).notNull(),
     status: taskStatusEnum("status").default("pending").notNull(),
-    // Cover config fields
-    coverPrompt: text("cover_prompt"),
-    coverRatio: text("cover_ratio").default("16:9"),
-    coverResolution: text("cover_resolution").default("1k"),
-    coverModel: text("cover_model").default("jimeng-4.5"),
-    coverMode: text("cover_mode").default("text2img"),
-    coverNegativePrompt: text("cover_negative_prompt").default("模糊, 变形, 低质量, 水印, 文字"),
-    // Reference material fields (from reverse engineering logs)
+    // Cover prompt (link to image_prompts, n8n queries by this ID)
+    coverPromptId: uuid("cover_prompt_id"),
+    // Reference material (link to reverse_engineering)
     refMaterialId: uuid("ref_material_id"),
-    refGenreCategory: text("ref_genre_category"),
-    refReverseResult: jsonb("ref_reverse_result").$type<ReverseResult>(),
     // Timestamps
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -209,103 +204,205 @@ export const imagePrompts = pgTable(
   })
 );
 
-// ==================== Reverse Engineering Logs Table ====================
+// ==================== Style Analyses Table (风格分析 v7.3) ====================
 
-// Reverse result JSON types (from n8n clean_result)
-export type ReverseResultMetaProfile = {
-  archetype?: string;
-  tone_keywords?: string[];
-  target_audience?: string;
-};
-
-export type ReverseResultBlueprint = {
-  section: string;
-  specs: string;
-};
-
-export type ReverseResultConstraints = {
-  rhythm_instruction?: string;
-  vocabulary_level?: string;
-  formatting_rules?: string;
-};
-
-export type ReverseResult = {
+/**
+ * StyleIdentityData - 风格身份数据
+ */
+export type StyleIdentityData = {
+  persona_description?: string;
+  voice_traits?: {
+    formality?: string;
+    energy?: string;
+    warmth?: string;
+    confidence?: string;
+  };
   style_name?: string;
-  meta_profile?: ReverseResultMetaProfile;
-  blueprint?: ReverseResultBlueprint[];
-  constraints?: ReverseResultConstraints;
-  execution_prompt?: string;
+  archetype?: string;
+  implied_reader?: string;
   [key: string]: unknown;
 };
 
-// Metrics JSON type
-export type ReverseMetrics = {
-  burstiness?: number;
-  ttr?: number;
-  avgSentLen?: number;
+/**
+ * MetricsConstraintsData - 量化约束数据
+ */
+export type MetricsConstraintsData = {
+  avg_sentence_length?: number;
+  sentence_length_std?: number;
+  sentence_length_target?: number;
+  avg_paragraph_length?: number;
+  punctuation_rules?: Record<string, unknown>;
+  rhythm_rules?: Record<string, unknown>;
+  [key: string]: unknown;
 };
 
-export const reverseEngineeringLogs = pgTable(
-  "reverse_engineering_logs",
+/**
+ * LexicalLogicData - 词汇逻辑数据
+ */
+export type LexicalLogicData = {
+  vocabulary_tier?: string;
+  preferred_terms?: string[];
+  banned_terms?: string[];
+  tone_keywords?: string[];
+  [key: string]: unknown;
+};
+
+/**
+ * RhetoricLogicData - 修辞逻辑数据
+ */
+export type RhetoricLogicData = {
+  preferred_devices?: string[];
+  device_frequency?: Record<string, unknown>;
+  sentence_templates?: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+};
+
+/**
+ * GoldenSampleData - 黄金样本数据
+ */
+export type GoldenSampleData = {
+  samples?: Array<{
+    text?: string;
+    why?: string;
+  }>;
+  [key: string]: unknown;
+};
+
+/**
+ * TransferDemoData - 迁移示例数据
+ */
+export type TransferDemoData = {
+  before_after_pairs?: Array<{
+    before?: string;
+    after?: string;
+    explanation?: string;
+  }>;
+  [key: string]: unknown;
+};
+
+/**
+ * CoreRuleItem - 核心规则条目
+ */
+export type CoreRuleItem = {
+  rule_id?: string;
+  rule_text?: string;
+  importance?: string;
+  examples?: string[];
+  priority?: number;
+  feature?: string;
+  evidence?: string;
+  frequency?: string;
+  replication_instruction?: string;
+  [key: string]: unknown;
+};
+
+/**
+ * BlueprintItem - 结构蓝图条目
+ */
+export type BlueprintItem = {
+  section?: string;
+  section_position?: string;
+  position?: string;
+  word_count_target?: number;
+  word_percentage?: string;
+  function?: string;
+  internal_logic?: Record<string, unknown>;
+  techniques?: Array<Record<string, unknown>>;
+  sentence_patterns?: Record<string, unknown>;
+  do_list?: string[];
+  dont_list?: string[];
+  [key: string]: unknown;
+};
+
+/**
+ * AntiPatternItem - 反模式条目
+ */
+export type AntiPatternItem = {
+  pattern?: string;
+  severity?: string;
+  example?: string;
+  fix_suggestion?: string;
+  [key: string]: unknown;
+};
+
+export const styleAnalyses = pgTable(
+  "style_analyses",
   {
+    // ========== 主键 ==========
     id: uuid("id").primaryKey().defaultRandom(),
+
+    // ========== 用户关联 ==========
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    articleTitle: text("article_title"),
-    articleUrl: text("article_url"),
-    originalContent: text("original_content"),
-    genreCategory: text("genre_category"),
-    // JSONB for structured data
-    reverseResult: jsonb("reverse_result").$type<ReverseResult>(),
-    metrics: jsonb("metrics").$type<ReverseMetrics>(),
-    // n8n writes to these columns
-    reverseResultJson: jsonb("reverse_result_json"),
-    metricBurstiness: real("metric_burstiness"),
-    metricTtr: real("metric_ttr"),
-    metricAvgSentLen: real("metric_avg_sent_len"),
-    finalSystemPrompt: text("final_system_prompt"),
-    modelName: text("model_name"),
-    status: reverseLogStatusEnum("status").default("SUCCESS"),
-    // Parsed clean result from n8n (structured reverse analysis)
-    cleanResult: jsonb("clean_result").$type<ReverseResult>(),
-    // Extracted fields for querying and display
-    styleName: text("style_name"),
-    archetype: text("archetype"),
-    targetAudience: text("target_audience"),
-    // Timestamps
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    deletedAt: timestamp("deleted_at"),
+
+    // ========== 时间戳 ==========
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+
+    // ========== 基础识别 ==========
+    sourceUrl: text("source_url"),
+    sourceTitle: text("source_title"),
+    styleName: text("style_name"), // 风格名称
+    primaryType: text("primary_type"), // narrative, tutorial, opinion, etc.
+    analysisVersion: text("analysis_version"), // 分析版本号
+    executionPrompt: text("execution_prompt"), // 执行提示词
+    wordCount: integer("word_count"),
+    paraCount: integer("para_count"),
+
+    // ========== 数值指标（策略层数据，非 jsonb）==========
+    metricsBurstiness: real("metrics_burstiness"), // 句长突变度 (0-1)
+    metricsTtr: real("metrics_ttr"), // 词汇丰富度 TTR (0-1)
+
+    // ========== 策略层：jsonb ==========
+    styleIdentityData: jsonb("style_identity_data").$type<StyleIdentityData>(),
+    metricsConstraintsData: jsonb("metrics_constraints_data").$type<MetricsConstraintsData>(),
+    lexicalLogicData: jsonb("lexical_logic_data").$type<LexicalLogicData>(),
+    rhetoricLogicData: jsonb("rhetoric_logic_data").$type<RhetoricLogicData>(),
+    goldenSampleData: jsonb("golden_sample_data").$type<GoldenSampleData>(),
+    transferDemoData: jsonb("transfer_demo_data").$type<TransferDemoData>(),
+
+    // ========== 数组层：jsonb (各段规则 / 结构) ==========
+    coreRulesData: jsonb("core_rules_data").$type<CoreRuleItem[]>(),
+    blueprintData: jsonb("blueprint_data").$type<BlueprintItem[]>(),
+    antiPatternsData: jsonb("anti_patterns_data").$type<AntiPatternItem[]>(),
+
+    // ========== 备份 & 状态 ==========
+    rawJsonFull: jsonb("raw_json_full"),
+    status: reverseLogStatusEnum("status").default("PENDING").notNull(),
   },
   (table) => ({
-    userIdIdx: index("idx_re_logs_user_id").on(table.userId),
-    genreIdx: index("idx_re_logs_genre").on(table.genreCategory),
-    createdAtIdx: index("idx_re_logs_created_at").on(table.createdAt),
-    statusIdx: index("idx_re_logs_status").on(table.status),
-    articleUrlIdx: index("idx_re_logs_article_url").on(table.articleUrl),
-    styleNameIdx: index("idx_re_logs_style_name").on(table.styleName),
-    // Composite indexes
-    userCreatedIdx: index("idx_re_logs_user_created").on(
+    // 用户查询（最常用）
+    userIdIdx: index("idx_style_analyses_user_id").on(table.userId),
+    // 时间排序
+    createdAtIdx: index("idx_style_analyses_created_at").on(table.createdAt),
+    // 组合索引（用户 + 时间）
+    userCreatedIdx: index("idx_style_analyses_user_created").on(
       table.userId,
       table.createdAt
     ),
-    userGenreIdx: index("idx_re_logs_user_genre").on(
-      table.userId,
-      table.genreCategory
-    ),
+    // 状态筛选
+    statusIdx: index("idx_style_analyses_status").on(table.status),
+    // 类型筛选
+    primaryTypeIdx: index("idx_style_analyses_primary_type").on(table.primaryType),
+    // source_url 唯一索引（部分索引，仅对未删除记录生效）
+    // 注意：Drizzle 不支持部分唯一索引，此处为普通索引，实际唯一约束在数据库层通过 SQL 创建
+    sourceUrlIdx: index("idx_style_analyses_source_url").on(table.sourceUrl),
+    // source_url 唯一约束
+    sourceUrlUnique: unique("style_analyses_source_url_key").on(table.sourceUrl),
   })
 );
 
-export const reverseEngineeringLogsRelations = relations(
-  reverseEngineeringLogs,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [reverseEngineeringLogs.userId],
-      references: [users.id],
-    }),
-  })
-);
+export const styleAnalysesRelations = relations(styleAnalyses, ({ one }) => ({
+  user: one(users, {
+    fields: [styleAnalyses.userId],
+    references: [users.id],
+  }),
+}));
+
+// Backwards compatibility alias
+export const reverseEngineering = styleAnalyses;
 
 // ==================== Type Exports ====================
 
@@ -321,5 +418,9 @@ export type NewTaskExecution = typeof taskExecutions.$inferInsert;
 export type ImagePrompt = typeof imagePrompts.$inferSelect;
 export type NewImagePrompt = typeof imagePrompts.$inferInsert;
 
-export type ReverseEngineeringLog = typeof reverseEngineeringLogs.$inferSelect;
-export type NewReverseEngineeringLog = typeof reverseEngineeringLogs.$inferInsert;
+export type StyleAnalysis = typeof styleAnalyses.$inferSelect;
+export type NewStyleAnalysis = typeof styleAnalyses.$inferInsert;
+
+// Backwards compatibility aliases (deprecated)
+export type ReverseEngineering = StyleAnalysis;
+export type NewReverseEngineering = NewStyleAnalysis;

@@ -27,6 +27,7 @@ import type {
   A2UIAlertNode,
   A2UILinkNode,
   A2UISpacerNode,
+  A2UICollapsibleNode,
 } from "@/lib/a2ui"
 import type { A2UIComponentProps } from "@/lib/a2ui/registry"
 
@@ -180,9 +181,58 @@ export function A2UIImage({ node }: A2UIComponentProps<A2UIImageNode>) {
   )
 }
 
+import * as LucideIcons from "lucide-react"
+
+// Map of icon names to lucide components
+const iconMap: Record<string, LucideIcons.LucideIcon> = {
+  eye: LucideIcons.Eye,
+  "eye-off": LucideIcons.EyeOff,
+  search: LucideIcons.Search,
+  check: LucideIcons.Check,
+  x: LucideIcons.X,
+  plus: LucideIcons.Plus,
+  minus: LucideIcons.Minus,
+  edit: LucideIcons.Pencil,
+  trash: LucideIcons.Trash2,
+  copy: LucideIcons.Copy,
+  link: LucideIcons.Link,
+  "external-link": LucideIcons.ExternalLink,
+  chevron_up: LucideIcons.ChevronUp,
+  chevron_down: LucideIcons.ChevronDown,
+  chevron_left: LucideIcons.ChevronLeft,
+  chevron_right: LucideIcons.ChevronRight,
+  arrow_up: LucideIcons.ArrowUp,
+  arrow_down: LucideIcons.ArrowDown,
+  refresh: LucideIcons.RefreshCw,
+  loading: LucideIcons.Loader2,
+  info: LucideIcons.Info,
+  warning: LucideIcons.AlertTriangle,
+  error: LucideIcons.AlertCircle,
+  success: LucideIcons.CheckCircle,
+  file: LucideIcons.File,
+  folder: LucideIcons.Folder,
+  settings: LucideIcons.Settings,
+  user: LucideIcons.User,
+  logout: LucideIcons.LogOut,
+  menu: LucideIcons.Menu,
+  sparkles: LucideIcons.Sparkles,
+}
+
 export function A2UIIcon({ node }: A2UIComponentProps<A2UIIconNode>) {
-  // Simple icon implementation using emoji or text
-  // Can be extended to use icon libraries like lucide-react
+  const IconComponent = iconMap[node.name.toLowerCase()]
+
+  if (IconComponent) {
+    return (
+      <IconComponent
+        size={node.size ?? 16}
+        color={node.color}
+        style={node.style}
+        className="inline-flex items-center justify-center"
+      />
+    )
+  }
+
+  // Fallback to text/emoji if icon not found
   return (
     <span
       style={{
@@ -631,6 +681,96 @@ export function A2UILink({ node, onAction }: A2UIComponentProps<A2UILinkNode>) {
     <button onClick={handleClick} className={className} style={node.style}>
       {node.text}
     </button>
+  )
+}
+
+// ============================================================================
+// Collapsible Component
+// ============================================================================
+
+export function A2UICollapsible({ node, renderChildren }: A2UIComponentProps<A2UICollapsibleNode>) {
+  const [isOpen, setIsOpen] = useState(node.defaultOpen ?? false)
+
+  const badgeColorClasses: Record<string, string> = {
+    default: "bg-muted text-muted-foreground",
+    primary: "bg-primary/10 text-primary",
+    success: "bg-success/10 text-success",
+    warning: "bg-warning/10 text-warning",
+    destructive: "bg-destructive/10 text-destructive",
+    info: "bg-accent/10 text-accent-foreground",
+  }
+
+  // Check if there's expandable content (children beyond previewChildren)
+  const hasExpandableContent = node.children && node.children.length > 0
+
+  return (
+    <div
+      className="rounded-lg border border-border overflow-hidden"
+      style={node.style}
+    >
+      {/* Header - clickable */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between gap-3 bg-muted/50 px-4 py-3 text-left transition-colors hover:bg-muted"
+      >
+        <div className="flex flex-1 flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-foreground">{node.title}</span>
+            {node.badges?.map((badge: { text: string; color?: string }, idx: number) => (
+              <span
+                key={idx}
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badgeColorClasses[badge.color ?? "default"]}`}
+              >
+                {badge.text}
+              </span>
+            ))}
+          </div>
+          {node.subtitle && (
+            <span className="text-sm text-muted-foreground line-clamp-2">{node.subtitle}</span>
+          )}
+        </div>
+        {/* Chevron icon - only show if there's expandable content */}
+        {hasExpandableContent && (
+          <svg
+            className={`h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
+      </button>
+
+      {/* Always visible content: summary + previewChildren */}
+      {(node.summary || (node.previewChildren && node.previewChildren.length > 0)) && (
+        <div className="border-t border-border bg-card/50 px-4 py-3">
+          {/* Summary text */}
+          {node.summary && (
+            <p className="text-sm text-foreground leading-relaxed">{node.summary}</p>
+          )}
+          {/* Preview children - always visible */}
+          {node.previewChildren && node.previewChildren.length > 0 && (
+            <div className={node.summary ? "mt-3" : ""}>
+              {renderChildren?.(node.previewChildren)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsible content - only children, hidden when collapsed */}
+      {hasExpandableContent && (
+        <div
+          className={`overflow-hidden transition-all duration-200 ease-in-out ${
+            isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="border-t border-border bg-card px-4 py-3">
+            {renderChildren?.(node.children!)}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

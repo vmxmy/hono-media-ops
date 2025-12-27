@@ -28,6 +28,7 @@ import {
   A2UIFormField,
   A2UIAlert,
   A2UILink,
+  A2UICollapsible,
   A2UIFallback,
 } from "./standard-components"
 
@@ -60,6 +61,7 @@ export function setupStandardRegistry(): A2UIRegistry {
   registry.register("select", A2UISelect, { source: "standard" })
   registry.register("checkbox", A2UICheckbox, { source: "standard" })
   registry.register("tabs", A2UITabs, { source: "standard" })
+  registry.register("collapsible", A2UICollapsible, { source: "standard" })
 
   // Register feedback components
   registry.register("badge", A2UIBadge, { source: "standard" })

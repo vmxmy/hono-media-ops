@@ -63,7 +63,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
   const utils = api.useUtils()
 
   // 计算是否有正在处理的任务
-  const { data, isLoading, refetch } = api.tasks.getAll.useQuery(
+  const { data, isLoading, refetch, error, isFetching } = api.tasks.getAll.useQuery(
     { page, pageSize },
     {
       enabled,

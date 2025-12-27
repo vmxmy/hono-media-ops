@@ -118,6 +118,7 @@ function generateTypes(schema: CatalogSchema): string {
   lines.push("export interface A2UIAction {")
   lines.push("  action: string")
   lines.push("  args?: unknown[]")
+  lines.push("  stopPropagation?: boolean")
   lines.push("}")
   lines.push("")
 

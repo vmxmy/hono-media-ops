@@ -31,30 +31,19 @@ export interface CreateTaskInput {
   userId?: string;
   topic: string;
   keywords?: string;
-  // Cover config fields
-  coverPrompt?: string;
-  coverRatio?: string;
-  coverResolution?: string;
-  coverModel?: string;
-  coverMode?: string;
-  coverNegativePrompt?: string;
-  // Reference material fields (from reverse engineering logs)
+  totalWordCount?: number;
+  // Cover prompt (link to image_prompts)
+  coverPromptId?: string;
+  // Reference material (link to reverse_engineering_logs)
   refMaterialId?: string;
-  refGenreCategory?: string;
-  refReverseResult?: Record<string, unknown>;
 }
 
 export interface UpdateTaskInput {
   id: string;
   topic?: string;
   keywords?: string;
-  // Cover config fields
-  coverPrompt?: string;
-  coverRatio?: string;
-  coverResolution?: string;
-  coverModel?: string;
-  coverMode?: string;
-  coverNegativePrompt?: string;
+  // Cover prompt (link to image_prompts)
+  coverPromptId?: string;
 }
 
 export interface UpdateTaskStatusInput {
@@ -79,28 +68,9 @@ export interface WebhookPayload {
   taskId: string;
   topic: string;
   keywords: string;
-  coverPrompt: string;
-  coverRatio: string;
-  coverResolution: string;
-  coverModel: string;
-  coverMode: string;
-  coverNegativePrompt: string;
-  // Chinese field names for n8n compatibility
-  主题: string;
-  关键字: string;
-  封面提示词: string;
-  封面比例: string;
-  封面分辨率: string;
-  封面模型: string;
-  封面负面提示词: string;
-  // Reference material fields
+  totalWordCount: number;
+  coverPromptId?: string;
   refMaterialId?: string;
-  refGenreCategory?: string;
-  refReverseResult?: Record<string, unknown>;
-  // Chinese field names for reference material
-  参考素材ID?: string;
-  参考文体?: string;
-  参考逆向结果?: Record<string, unknown>;
 }
 
 // ==================== Service ====================
@@ -272,15 +242,9 @@ export const taskService = {
       userId: input.userId,
       topic: input.topic,
       keywords: input.keywords,
-      coverPrompt: input.coverPrompt,
-      coverRatio: input.coverRatio ?? "16:9",
-      coverResolution: input.coverResolution ?? "1k",
-      coverModel: input.coverModel ?? "jimeng-4.5",
-      coverMode: input.coverMode ?? "text2img",
-      coverNegativePrompt: input.coverNegativePrompt ?? "模糊, 变形, 低质量, 水印, 文字",
+      totalWordCount: input.totalWordCount ?? 4000,
+      coverPromptId: input.coverPromptId,
       refMaterialId: input.refMaterialId,
-      refGenreCategory: input.refGenreCategory,
-      refReverseResult: input.refReverseResult,
       status: "pending",
     }).returning();
 
@@ -299,12 +263,7 @@ export const taskService = {
 
     if (input.topic !== undefined) updateData.topic = input.topic;
     if (input.keywords !== undefined) updateData.keywords = input.keywords;
-    if (input.coverPrompt !== undefined) updateData.coverPrompt = input.coverPrompt;
-    if (input.coverRatio !== undefined) updateData.coverRatio = input.coverRatio;
-    if (input.coverResolution !== undefined) updateData.coverResolution = input.coverResolution;
-    if (input.coverModel !== undefined) updateData.coverModel = input.coverModel;
-    if (input.coverMode !== undefined) updateData.coverMode = input.coverMode;
-    if (input.coverNegativePrompt !== undefined) updateData.coverNegativePrompt = input.coverNegativePrompt;
+    if (input.coverPromptId !== undefined) updateData.coverPromptId = input.coverPromptId;
 
     await db.update(tasks).set(updateData).where(eq(tasks.id, input.id));
 
@@ -361,15 +320,8 @@ export const taskService = {
       userId: original.userId,
       topic: `${original.topic} (副本)`,
       keywords: original.keywords,
-      coverPrompt: original.coverPrompt,
-      coverRatio: original.coverRatio,
-      coverResolution: original.coverResolution,
-      coverModel: original.coverModel,
-      coverMode: original.coverMode,
-      coverNegativePrompt: original.coverNegativePrompt,
+      coverPromptId: original.coverPromptId,
       refMaterialId: original.refMaterialId,
-      refGenreCategory: original.refGenreCategory,
-      refReverseResult: original.refReverseResult,
       status: "pending",
     }).returning();
 
@@ -437,26 +389,9 @@ export const taskService = {
       taskId: task.id,
       topic: task.topic,
       keywords: task.keywords ?? "",
-      coverPrompt: task.coverPrompt ?? "",
-      coverRatio: task.coverRatio ?? "16:9",
-      coverResolution: task.coverResolution ?? "1k",
-      coverModel: task.coverModel ?? "jimeng-4.5",
-      coverMode: task.coverMode ?? "text2img",
-      coverNegativePrompt: task.coverNegativePrompt ?? "模糊, 变形, 低质量, 水印, 文字",
-      主题: task.topic,
-      关键字: task.keywords ?? "",
-      封面提示词: task.coverPrompt ?? "",
-      封面比例: task.coverRatio ?? "16:9",
-      封面分辨率: task.coverResolution ?? "1k",
-      封面模型: task.coverModel ?? "jimeng-4.5",
-      封面负面提示词: task.coverNegativePrompt ?? "模糊, 变形, 低质量, 水印, 文字",
-      // Reference material fields
+      totalWordCount: task.totalWordCount,
+      coverPromptId: task.coverPromptId ?? undefined,
       refMaterialId: task.refMaterialId ?? undefined,
-      refGenreCategory: task.refGenreCategory ?? undefined,
-      refReverseResult: task.refReverseResult as Record<string, unknown> ?? undefined,
-      参考素材ID: task.refMaterialId ?? undefined,
-      参考文体: task.refGenreCategory ?? undefined,
-      参考逆向结果: task.refReverseResult as Record<string, unknown> ?? undefined,
     };
 
     try {
@@ -504,8 +439,8 @@ export const taskService = {
       inputSnapshot: task ? {
         topic: task.topic,
         keywords: task.keywords,
-        coverPrompt: task.coverPrompt,
-        refGenreCategory: task.refGenreCategory,
+        coverPromptId: task.coverPromptId,
+        refMaterialId: task.refMaterialId,
       } : undefined,
     }).returning();
 

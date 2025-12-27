@@ -86,5 +86,11 @@ export type {
   A2UIAlertNode,
 } from "@/lib/a2ui"
 
+// Toast provider
+export { A2UIToaster } from "./toaster"
+
+// Toast API (re-export from lib)
+export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "@/lib/a2ui"
+
 // Legacy compatibility
 export type { A2UIDeviderNode } from "@/lib/a2ui"

@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-24T18:02:52.979Z
+// Generated at: 2025-12-27T06:31:35.772Z
 
 import type { CSSProperties } from "react"
 
@@ -44,6 +44,7 @@ export type A2UINode =
   | A2UIAlertNode
   | A2UILinkNode
   | A2UISpacerNode
+  | A2UICollapsibleNode
 
 // Vertical flex container
 export interface A2UIColumnNode extends A2UIBaseNode {
@@ -59,8 +60,8 @@ export interface A2UIRowNode extends A2UIBaseNode {
   gap?: string // Gap between children
   align?: "start" | "center" | "end" | "stretch" // Align items vertically
   justify?: "start" | "center" | "end" | "between" | "around" // Justify content horizontally
-  responsive?: boolean // Stack vertically on mobile (default: false)
-  wrap?: boolean // Allow wrapping (default: false)
+  wrap?: boolean // Enable flex wrap
+  responsive?: boolean // Enable responsive behavior (stack on mobile)
 }
 
 // Generic container
@@ -245,6 +246,18 @@ export interface A2UISpacerNode extends A2UIBaseNode {
   type: "spacer"
   size?: string // Fixed size (e.g., '1rem', '20px')
   flex?: boolean // Use flex grow
+}
+
+// Collapsible content section with expand/collapse toggle. Shows summary when collapsed, full children when expanded.
+export interface A2UICollapsibleNode extends A2UIBaseNode {
+  type: "collapsible"
+  children?: A2UINode[]
+  title: string // Header title text
+  subtitle?: string // Optional subtitle text shown in header
+  summary?: string // Summary text shown when collapsed (always visible)
+  previewChildren?: A2UINode[] // Children nodes always visible (shown when collapsed and expanded)
+  defaultOpen?: boolean // Initial open state
+  badges?: Array<{ text: string; color: string }> // Optional badges to display in header
 }
 
 // A2UI Response format (from server)
