@@ -342,7 +342,7 @@ export function A2UIAppShell({
   const headerActions = node.headerActions as A2UINode[] | undefined
 
   return (
-    <div className="flex min-h-screen bg-background" style={node.style}>
+    <div className="flex h-screen overflow-hidden bg-background" style={node.style}>
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
@@ -432,8 +432,8 @@ export function A2UIAppShell({
         </div>
       </aside>
 
-      <div className={`flex flex-1 flex-col transition-all duration-200 ${isCollapsed ? "md:ml-16" : "md:ml-56"}`}>
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-4 md:justify-end md:px-6">
+      <div className={`flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-200 ${isCollapsed ? "md:ml-16" : "md:ml-56"}`}>
+        <header className="z-30 flex h-14 flex-shrink-0 items-center justify-between gap-4 border-b border-border bg-background px-4 md:justify-end md:px-6">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
