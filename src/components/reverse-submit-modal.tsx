@@ -52,17 +52,10 @@ export function ReverseSubmitModal({ isOpen, onClose, onSuccess }: ReverseSubmit
     setError(null)
 
     try {
-      const token = localStorage.getItem("token")
-      if (!token) {
-        setError(t("reverse.submitError"))
-        return
-      }
-
       const response = await fetch("/api/reverse", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           type: inputType,

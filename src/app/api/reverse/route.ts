@@ -1,28 +1,16 @@
 import { NextResponse } from "next/server"
-import { jwtVerify } from "jose"
+import { auth } from "@/lib/auth"
 import { env } from "@/env"
 
 export async function POST(request: Request) {
   try {
-    // Verify auth
-    const authHeader = request.headers.get("authorization")
-    if (!authHeader?.startsWith("Bearer ")) {
+    // Verify auth using NextAuth
+    const session = await auth()
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const token = authHeader.slice(7)
-    const secret = new TextEncoder().encode(env.JWT_SECRET)
-
-    let userId: string
-    try {
-      const { payload } = await jwtVerify(token, secret)
-      userId = payload.userId as string
-      if (!userId) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-      }
-    } catch {
-      return NextResponse.json({ error: "Token verification failed" }, { status: 401 })
-    }
+    const userId = session.user.id
 
     // Parse request body
     const { type, content } = await request.json()
