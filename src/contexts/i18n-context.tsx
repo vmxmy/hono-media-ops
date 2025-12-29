@@ -23,6 +23,9 @@ export type I18nKey =
     | "common.confirm"
     | "common.search"
     | "common.noData"
+    | "common.date"
+    | "common.enabled"
+    | "common.disabled"
     // Auth
     | "auth.login"
     | "auth.logout"
@@ -32,6 +35,12 @@ export type I18nKey =
     | "auth.loggingIn"
     | "auth.invalidCredentials"
     | "auth.required"
+    | "auth.signInWithGoogle"
+    | "auth.signInWithGitHub"
+    | "auth.signIn"
+    | "auth.usernamePlaceholder"
+    | "auth.accessCodePlaceholder"
+    | "auth.orContinueWith"
     // Navigation
     | "nav.dashboard"
     | "nav.prompts"
@@ -45,6 +54,7 @@ export type I18nKey =
     | "tasks.untitledTask"
     | "tasks.noKeywords"
     | "tasks.polling"
+    | "tasks.refMaterial"
     // Task Status
     | "status.pending"
     | "status.processing"
@@ -57,6 +67,7 @@ export type I18nKey =
     | "task.deleteConfirm"
     | "task.retryConfirm"
     | "task.stopConfirm"
+    | "task.updateFailed"
     // Task Form
     | "taskForm.title"
     | "taskForm.regenerateTitle"
@@ -97,6 +108,7 @@ export type I18nKey =
     | "taskForm.modeText2img"
     | "taskForm.modeSingleImg2img"
     | "taskForm.modeMultiImg2img"
+    | "taskForm.useSearch"
     // Wizard steps
     | "taskForm.step1Title"
     | "taskForm.step2Title"
@@ -162,6 +174,8 @@ export type I18nKey =
     | "insights.byCategory"
     | "insights.byStyleName"
     | "insights.byTextType"
+    | "insights.ttrDescription"
+    | "insights.burstyDescription"
     // Reverse
     | "nav.reverse"
     | "reverse.title"
@@ -268,9 +282,25 @@ export type I18nKey =
     | "reverse.copySuccess"
     | "reverse.copyFailed"
     | "reverse.noPromptToCopy"
+    | "reverse.cloneToTask"
+    | "reverse.colTitle"
+    | "reverse.colType"
+    | "reverse.colArchetype"
+    | "reverse.colWordCount"
+    | "reverse.colTtr"
+    | "reverse.colUpdated"
+    | "reverse.colActions"
+    | "reverse.noLogs"
     // App
     | "app.title"
     | "app.description"
+    // Article viewer
+    | "article.preview"
+    | "article.source"
+    | "article.copyMarkdown"
+    | "article.copied"
+    | "article.viewArticle"
+    | "common.close"
 
 interface I18nContextValue {
     locale: Locale
@@ -295,6 +325,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.confirm": "Confirm",
         "common.search": "Search",
         "common.noData": "No data",
+        "common.date": "Date",
+        "common.enabled": "Enabled",
+        "common.disabled": "Disabled",
         // Auth
         "auth.login": "Login",
         "auth.logout": "Logout",
@@ -304,6 +337,12 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.loggingIn": "Logging in...",
         "auth.invalidCredentials": "Invalid username or access code",
         "auth.required": "Username and access code are required",
+        "auth.signInWithGoogle": "Sign in with Google",
+        "auth.signInWithGitHub": "Sign in with GitHub",
+        "auth.signIn": "Sign In",
+        "auth.usernamePlaceholder": "Enter username",
+        "auth.accessCodePlaceholder": "Enter access code",
+        "auth.orContinueWith": "Or continue with",
         // Navigation
         "nav.dashboard": "Dashboard",
         "nav.prompts": "Prompts",
@@ -317,6 +356,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.untitledTask": "Untitled Task",
         "tasks.noKeywords": "No keywords",
         "tasks.polling": "{count} task(s) processing, auto-refreshing...",
+        "tasks.refMaterial": "Reference material",
         // Task Status
         "status.pending": "Pending",
         "status.processing": "Processing",
@@ -329,6 +369,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "task.deleteConfirm": "Are you sure you want to delete this task?",
         "task.retryConfirm": "Are you sure you want to retry this task?",
         "task.stopConfirm": "Are you sure you want to stop this task?",
+        "task.updateFailed": "Failed to update task",
         // Task Form
         "taskForm.title": "New Task",
         "taskForm.regenerateTitle": "Regenerate Task",
@@ -369,6 +410,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.modeText2img": "Text to Image",
         "taskForm.modeSingleImg2img": "Single Image to Image",
         "taskForm.modeMultiImg2img": "Multi Image to Image",
+        "taskForm.useSearch": "Use search engine to find references",
         // Wizard steps
         "taskForm.step1Title": "What do you want to write?",
         "taskForm.step2Title": "Choose a style reference",
@@ -434,6 +476,8 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.byCategory": "By Category",
         "insights.byStyleName": "By Style Name",
         "insights.byTextType": "By Text Type",
+        "insights.ttrDescription": "Vocabulary Richness",
+        "insights.burstyDescription": "Rhythm Variation",
         // Materials (formerly Reverse)
         "nav.reverse": "Materials",
         "reverse.title": "Material Library",
@@ -540,9 +584,25 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.copySuccess": "Copied to clipboard",
         "reverse.copyFailed": "Copy failed",
         "reverse.noPromptToCopy": "No prompt to copy",
+        "reverse.cloneToTask": "Clone to Task",
+        "reverse.colTitle": "Title",
+        "reverse.colType": "Type",
+        "reverse.colArchetype": "Archetype",
+        "reverse.colWordCount": "Words",
+        "reverse.colTtr": "Vocab Richness",
+        "reverse.colUpdated": "Updated",
+        "reverse.colActions": "Actions",
+        "reverse.noLogs": "No materials yet",
         // App
-        "app.title": "Media Ops",
+        "app.title": "Ghostwriter",
         "app.description": "AI-powered article generation platform",
+        // Article viewer
+        "article.preview": "Preview",
+        "article.source": "Source",
+        "article.copyMarkdown": "Copy Markdown",
+        "article.copied": "Copied!",
+        "article.viewArticle": "View Article",
+        "common.close": "Close",
     },
     "zh-CN": {
         // Common
@@ -556,6 +616,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.confirm": "确认",
         "common.search": "搜索",
         "common.noData": "暂无数据",
+        "common.date": "日期",
+        "common.enabled": "已开启",
+        "common.disabled": "已关闭",
         // Auth
         "auth.login": "登录",
         "auth.logout": "退出登录",
@@ -565,6 +628,12 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.loggingIn": "登录中...",
         "auth.invalidCredentials": "用户名或访问码无效",
         "auth.required": "请输入用户名和访问码",
+        "auth.signInWithGoogle": "使用 Google 登录",
+        "auth.signInWithGitHub": "使用 GitHub 登录",
+        "auth.signIn": "登录",
+        "auth.usernamePlaceholder": "请输入用户名",
+        "auth.accessCodePlaceholder": "请输入访问码",
+        "auth.orContinueWith": "或使用以下方式登录",
         // Navigation
         "nav.dashboard": "仪表盘",
         "nav.prompts": "提示词",
@@ -578,6 +647,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.untitledTask": "未命名任务",
         "tasks.noKeywords": "无关键词",
         "tasks.polling": "{count} 个任务处理中，自动刷新中...",
+        "tasks.refMaterial": "参考素材",
         // Task Status
         "status.pending": "等待中",
         "status.processing": "处理中",
@@ -590,6 +660,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "task.deleteConfirm": "确定要删除这个任务吗？",
         "task.retryConfirm": "确定要重新发起这个任务吗？",
         "task.stopConfirm": "确定要停止这个任务吗？",
+        "task.updateFailed": "更新任务失败",
         // Task Form
         "taskForm.title": "新建生成任务",
         "taskForm.regenerateTitle": "重新生成任务",
@@ -630,6 +701,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "taskForm.modeText2img": "文生图",
         "taskForm.modeSingleImg2img": "单图生图",
         "taskForm.modeMultiImg2img": "多图生图",
+        "taskForm.useSearch": "使用搜索引擎查找参考资料",
         // Wizard steps
         "taskForm.step1Title": "想写点什么?",
         "taskForm.step2Title": "选择风格参考",
@@ -695,6 +767,8 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "insights.byCategory": "按分类",
         "insights.byStyleName": "按风格名称",
         "insights.byTextType": "按文本类型",
+        "insights.ttrDescription": "词汇丰富度",
+        "insights.burstyDescription": "节奏变化度",
         // 素材仓库 (formerly 逆向分析)
         "nav.reverse": "素材仓库",
         "reverse.title": "素材仓库",
@@ -801,9 +875,25 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.copySuccess": "已复制到剪贴板",
         "reverse.copyFailed": "复制失败",
         "reverse.noPromptToCopy": "没有可复制的提示词",
+        "reverse.cloneToTask": "复刻任务",
+        "reverse.colTitle": "标题",
+        "reverse.colType": "类型",
+        "reverse.colArchetype": "原型",
+        "reverse.colWordCount": "字数",
+        "reverse.colTtr": "词汇丰富度",
+        "reverse.colUpdated": "更新时间",
+        "reverse.colActions": "操作",
+        "reverse.noLogs": "暂无素材",
         // App
-        "app.title": "Media Ops",
+        "app.title": "抄手",
         "app.description": "AI 驱动的文章生成平台",
+        // Article viewer
+        "article.preview": "预览",
+        "article.source": "源码",
+        "article.copyMarkdown": "复制 Markdown",
+        "article.copied": "已复制！",
+        "article.viewArticle": "查看文章",
+        "common.close": "关闭",
     },
 }
 

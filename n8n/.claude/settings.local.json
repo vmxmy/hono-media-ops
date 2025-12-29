@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m json.tool:*)",
+      "Bash(/dev/null)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(awk:*)",
+      "Bash(xargs:*)",
+      "Bash(node build-workflow.js:*)",
+      "Bash(python3:*)",
+      "Read(//Users/xumingyang/app/hono-media-ops/src/server/db/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

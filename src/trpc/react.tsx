@@ -37,12 +37,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
         httpBatchLink({
           transformer: superjson,
           url: getBaseUrl() + "/api/trpc",
-          headers() {
-            const token = typeof window !== "undefined"
-              ? localStorage.getItem("token")
-              : null;
-            return token ? { authorization: `Bearer ${token}` } : {};
-          },
+          // NextAuth handles auth via cookies, no need for manual headers
         }),
       ],
     })

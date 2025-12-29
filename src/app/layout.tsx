@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Media Ops",
+  title: "抄手",
   description: "AI-powered article generation platform",
 };
 

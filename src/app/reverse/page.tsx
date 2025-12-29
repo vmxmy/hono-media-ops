@@ -1,13 +1,21 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
+import dynamic from "next/dynamic"
+import { useSession, signOut } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { AppLayout } from "@/components/app-layout"
 import { ReverseSubmitModal } from "@/components/reverse-submit-modal"
+import { MaterialsTable, type StyleAnalysis as TableStyleAnalysis } from "@/components/materials-table"
 import { useI18n } from "@/contexts/i18n-context"
-import { useAuth } from "@/hooks/use-auth"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type { A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+
+// 延迟加载 CreateTaskModal
+const CreateTaskModal = dynamic(
+  () => import("@/components/create-task-modal").then((mod) => mod.CreateTaskModal),
+  { ssr: false }
+)
 
 // v7.3 Schema Types
 interface StyleIdentityData {
@@ -152,7 +160,7 @@ interface StyleAnalysis {
   coreRulesData: CoreRuleItem[] | null
   blueprintData: BlueprintItem[] | null
   antiPatternsData: AntiPatternItem[] | null
-  rawJsonFull: Record<string, unknown> | null
+  rawJsonFull: unknown
   status: "PENDING" | "SUCCESS" | "FAILED"
   createdAt: Date | null
   updatedAt: Date | null
@@ -161,10 +169,17 @@ interface StyleAnalysis {
 
 export default function ReversePage() {
   const { t } = useI18n()
-  const { mounted, logout } = useAuth()
+  const { status } = useSession()
+  const mounted = status !== "loading"
+  const logout = () => signOut({ callbackUrl: "/" })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedAnalysis, setSelectedAnalysis] = useState<StyleAnalysis | null>(null)
+  // 复刻任务 modal 状态
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
+  const [cloneMaterialId, setCloneMaterialId] = useState<string | null>(null)
+  // 视图模式: 卡片 or 列表
+  const [viewMode, setViewMode] = useState<"card" | "list">("card")
 
   const utils = api.useUtils()
   const { data, isLoading } = api.reverseLogs.getAll.useQuery(
@@ -245,6 +260,18 @@ export default function ReversePage() {
           }
           break
         }
+        case "cloneToTask": {
+          const materialId = args?.[0] as string
+          setCloneMaterialId(materialId)
+          setIsCreateTaskModalOpen(true)
+          break
+        }
+        case "setViewCard":
+          setViewMode("card")
+          break
+        case "setViewList":
+          setViewMode("list")
+          break
       }
     },
     [logs, t, deleteMutation]
@@ -1296,6 +1323,14 @@ export default function ReversePage() {
                     gap: "0.5rem",
                     align: "center",
                     children: [
+                      // Clone to task button
+                      {
+                        type: "button" as const,
+                        text: t("reverse.cloneToTask"),
+                        variant: "primary" as const,
+                        size: "sm" as const,
+                        onClick: { action: "cloneToTask", args: [analysis.id], stopPropagation: true },
+                      },
                       // Copy Prompt button (only show if has execution prompt)
                       ...(analysis.executionPrompt
                         ? [
@@ -1470,22 +1505,116 @@ export default function ReversePage() {
         gap: "0.75rem",
         children: [
           { type: "text", text: t("reverse.title"), variant: "h2" },
-          { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
+          {
+            type: "row",
+            gap: "0.5rem",
+            align: "center",
+            children: [
+              {
+                type: "button",
+                text: "▦",
+                variant: viewMode === "card" ? "primary" : "secondary",
+                size: "sm",
+                onClick: { action: "setViewCard" },
+              },
+              {
+                type: "button",
+                text: "☰",
+                variant: viewMode === "list" ? "primary" : "secondary",
+                size: "sm",
+                onClick: { action: "setViewList" },
+              },
+              { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
+            ],
+          },
         ],
       },
-      buildListNode(),
+      // Conditionally render card view or table - table is rendered in JSX below
+      ...(viewMode === "card" ? [buildListNode()] : []),
     ],
   }
 
   const detailModalNode = buildDetailModalNode()
+
+  // Memoize initialData to prevent unnecessary re-renders
+  const createTaskInitialData = useMemo(
+    () => (cloneMaterialId ? { refMaterialId: cloneMaterialId } : undefined),
+    [cloneMaterialId]
+  )
+
+  const handleCreateTaskClose = useCallback(() => {
+    setIsCreateTaskModalOpen(false)
+    setCloneMaterialId(null)
+  }, [])
+
+  // Table action handlers
+  const handleTableClone = useCallback((id: string) => {
+    setCloneMaterialId(id)
+    setIsCreateTaskModalOpen(true)
+  }, [])
+
+  const handleTableDelete = useCallback((id: string) => {
+    const log = logs.find((l) => l.id === id) as StyleAnalysis | undefined
+    const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
+
+    a2uiToast.warning(t("reverse.deleteConfirm"), {
+      description: title,
+      duration: 5000,
+      action: {
+        label: t("common.delete"),
+        onClick: () => {
+          deleteMutation.mutate(
+            { id },
+            {
+              onSuccess: () => {
+                a2uiToast.success(t("reverse.deleteSuccess"))
+              },
+              onError: () => {
+                a2uiToast.error(t("reverse.deleteFailed"))
+              },
+            }
+          )
+        },
+      },
+    })
+  }, [logs, t, deleteMutation])
+
+  const handleTableViewDetail = useCallback((analysis: TableStyleAnalysis) => {
+    // Find the full analysis from logs to preserve all data
+    const fullAnalysis = logs.find(l => l.id === analysis.id)
+    if (fullAnalysis) {
+      setSelectedAnalysis(fullAnalysis as StyleAnalysis)
+      setDetailModalOpen(true)
+    }
+  }, [logs])
 
   if (!mounted) return null
 
   return (
     <AppLayout onLogout={logout}>
       <A2UIRenderer node={pageNode} onAction={handleAction} />
+      {viewMode === "list" && (
+        <div className="mt-4">
+          {isLoading ? (
+            <p className="text-muted-foreground">{t("common.loading")}</p>
+          ) : (
+            <MaterialsTable
+              data={logs as TableStyleAnalysis[]}
+              onClone={handleTableClone}
+              onDelete={handleTableDelete}
+              onViewDetail={handleTableViewDetail}
+            />
+          )}
+        </div>
+      )}
       {detailModalOpen && detailModalNode && <A2UIRenderer node={detailModalNode} onAction={handleAction} />}
       <ReverseSubmitModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={handleSuccess} />
+      <CreateTaskModal
+        isOpen={isCreateTaskModalOpen}
+        onClose={handleCreateTaskClose}
+        onSuccess={handleCreateTaskClose}
+        initialData={createTaskInitialData}
+      />
     </AppLayout>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useI18n, type I18nKey } from "@/contexts/i18n-context"
 import { api } from "@/trpc/react"
 import { A2UIRenderer } from "@/components/a2ui"
@@ -383,6 +383,7 @@ interface CreateTaskModalProps {
     topic?: string
     keywords?: string
     coverPromptId?: string
+    refMaterialId?: string
   }
   isRegenerate?: boolean
 }
@@ -396,6 +397,7 @@ const defaultFormData = {
   outputSchema: "",
   selectedMaterialId: null as string | null,
   selectedCoverPromptId: null as string | null,
+  useSearch: true,
 }
 
 export function CreateTaskModal({
@@ -426,27 +428,39 @@ export function CreateTaskModal({
 
   const createMutation = api.tasks.create.useMutation({
     onSuccess: () => {
+      console.log("[CreateTaskModal] Task created successfully, triggering webhook")
       onSuccess()
       handleClose()
     },
+    onError: (error) => {
+      console.error("[CreateTaskModal] Failed to create task:", error)
+    },
   })
 
+  // Track previous isOpen to detect modal open event
+  const prevIsOpenRef = useRef(false)
+
   useEffect(() => {
-    if (isOpen && initialData) {
-      setFormData({
-        topic: initialData.topic ?? "",
-        keywords: initialData.keywords ?? "",
-        totalWordCount: 4000,
-        style: "",
-        structureGuide: "",
-        outputSchema: "",
-        selectedMaterialId: null,
-        selectedCoverPromptId: initialData.coverPromptId ?? null,
-      })
-    } else if (isOpen) {
-      setFormData(defaultFormData)
+    // Only initialize when modal opens (isOpen changes from false to true)
+    if (isOpen && !prevIsOpenRef.current) {
+      if (initialData) {
+        setFormData({
+          topic: initialData.topic ?? "",
+          keywords: initialData.keywords ?? "",
+          totalWordCount: 4000,
+          style: "",
+          structureGuide: "",
+          outputSchema: "",
+          selectedMaterialId: initialData.refMaterialId ?? null,
+          selectedCoverPromptId: initialData.coverPromptId ?? null,
+          useSearch: true,
+        })
+      } else {
+        setFormData(defaultFormData)
+      }
+      setCurrentStep(1)
     }
-    setCurrentStep(1)
+    prevIsOpenRef.current = isOpen
   }, [isOpen, initialData])
 
   useEffect(() => {
@@ -480,6 +494,8 @@ export function CreateTaskModal({
       coverPromptId: formData.selectedCoverPromptId || undefined,
       // Reference material (n8n queries reverse_engineering_logs by this ID)
       refMaterialId: formData.selectedMaterialId || undefined,
+      // Whether to use search engine
+      useSearch: formData.useSearch,
     })
   }
 
@@ -613,65 +629,57 @@ export function CreateTaskModal({
     ],
   }
 
-  // Step 1: Topic and keywords
-  const step1Content: A2UINode = {
-    type: "column",
-    gap: "1rem",
-    children: [
-      {
-        type: "text",
-        text: t("taskForm.step1Title"),
-        variant: "h3",
-        weight: "semibold",
-        style: { marginBottom: "0.5rem" },
-      },
-      {
-        type: "form-field",
-        label: t("taskForm.topic"),
-        required: true,
-        children: [
-          {
-            type: "input",
-            id: "topic",
-            value: formData.topic,
-            placeholder: t("taskForm.topicPlaceholder"),
-            onChange: { action: "setTopic" },
-          },
-        ],
-      },
-      {
-        type: "form-field",
-        label: t("taskForm.keywords"),
-        children: [
-          {
-            type: "textarea",
-            id: "keywords",
-            value: formData.keywords,
-            placeholder: t("taskForm.keywordsPlaceholder"),
-            rows: 3,
-            onChange: { action: "setKeywords" },
-          },
-        ],
-      },
-      {
-        type: "form-field",
-        label: t("taskForm.totalWordCount"),
-        children: [
-          {
-            type: "input",
-            id: "totalWordCount",
-            inputType: "number",
-            value: String(formData.totalWordCount),
-            placeholder: "4000",
-            onChange: { action: "setTotalWordCount" },
-          },
-        ],
-      },
-    ],
-  }
 
-  // Step 2: React-based materials list with swipeable detail tabs
-  const Step2Content = () => (
+  // Step content render functions - inline JSX to avoid recreation on each render
+  const renderStep1Content = () => (
+    <div className="flex flex-col gap-4">
+      <h3 className="mb-2 text-lg font-semibold">{t("taskForm.step1Title")}</h3>
+
+      {/* Topic */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium">
+          {t("taskForm.topic")} <span className="text-destructive">*</span>
+        </label>
+        <input
+          type="text"
+          value={formData.topic}
+          onChange={(e) => setFormData((prev) => ({ ...prev, topic: e.target.value }))}
+          placeholder={t("taskForm.topicPlaceholder")}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </div>
+
+      {/* Keywords */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium">
+          {t("taskForm.keywords")}
+        </label>
+        <textarea
+          value={formData.keywords}
+          onChange={(e) => setFormData((prev) => ({ ...prev, keywords: e.target.value }))}
+          placeholder={t("taskForm.keywordsPlaceholder")}
+          rows={3}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </div>
+
+      {/* Total Word Count */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium">
+          {t("taskForm.totalWordCount")}
+        </label>
+        <input
+          type="number"
+          value={formData.totalWordCount}
+          onChange={(e) => setFormData((prev) => ({ ...prev, totalWordCount: parseInt(e.target.value) || 4000 }))}
+          placeholder="4000"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </div>
+    </div>
+  )
+
+  const renderStep2Content = () => (
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="mb-2 text-lg font-semibold">{t("taskForm.step2Title")}</h3>
@@ -703,15 +711,7 @@ export function CreateTaskModal({
     </div>
   )
 
-  // Placeholder A2UI node for step 2 (won't be used, replaced by React component)
-  const step2Content: A2UINode = {
-    type: "column",
-    gap: "1rem",
-    children: [{ type: "text", text: "" }],
-  }
-
-  // Step 3: React-based cover prompts list
-  const Step3Content = () => (
+  const renderStep3Content = () => (
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="mb-2 text-lg font-semibold">{t("taskForm.step3Title")}</h3>
@@ -736,27 +736,6 @@ export function CreateTaskModal({
       </div>
     </div>
   )
-
-  // Placeholder A2UI node for step 3 (won't be used, replaced by React component)
-  const step3Content: A2UINode = {
-    type: "column",
-    gap: "1rem",
-    children: [{ type: "text", text: "" }],
-  }
-
-  // Get current step content
-  const getCurrentStepContent = (): A2UINode => {
-    switch (currentStep) {
-      case 1:
-        return step1Content
-      case 2:
-        return step2Content
-      case 3:
-        return step3Content
-      default:
-        return step1Content
-    }
-  }
 
   // Navigation buttons
   const getNavigationButtons = (): A2UINode => {
@@ -848,13 +827,9 @@ export function CreateTaskModal({
           <A2UIRenderer node={stepIndicator} onAction={handleAction} />
 
           {/* Step content */}
-          {currentStep === 2 ? (
-            <Step2Content />
-          ) : currentStep === 3 ? (
-            <Step3Content />
-          ) : (
-            <A2UIRenderer node={getCurrentStepContent()} onAction={handleAction} />
-          )}
+          {currentStep === 1 && renderStep1Content()}
+          {currentStep === 2 && renderStep2Content()}
+          {currentStep === 3 && renderStep3Content()}
         </div>
 
         {/* Navigation buttons */}

@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-27T06:31:35.773Z
+// Generated at: 2025-12-29T13:10:09.246Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"
 
@@ -180,7 +180,7 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       variant: {
         type: "string",
         description: "Button style variant",
-        enum: ["primary","secondary","destructive","ghost","text"],
+        enum: ["primary","secondary","destructive","ghost","text","outline"],
         default: "primary",
       },
       size: {
@@ -192,6 +192,16 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       disabled: {
         type: "boolean",
         description: "Disable the button",
+        default: false,
+      },
+      icon: {
+        type: "string",
+        description: "Icon to display before text",
+        enum: ["google","github"],
+      },
+      fullWidth: {
+        type: "boolean",
+        description: "Make button full width",
         default: false,
       },
       onClick: {
@@ -222,6 +232,42 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       onChange: {
         type: "action",
         description: "Change action handler",
+      },
+    },
+  },
+  {
+    type: "editable-text",
+    description: "Click-to-edit text field that toggles between display and edit mode",
+    category: "interactive",
+    properties: {
+      value: {
+        type: "string",
+        required: true,
+        description: "Text value to display and edit",
+      },
+      placeholder: {
+        type: "string",
+        description: "Placeholder text when value is empty",
+      },
+      variant: {
+        type: "string",
+        description: "Text style variant",
+        enum: ["h1","h2","h3","h4","body","caption"],
+        default: "body",
+      },
+      multiline: {
+        type: "boolean",
+        description: "Use textarea for multi-line editing",
+        default: false,
+      },
+      editable: {
+        type: "boolean",
+        description: "Whether the text can be edited",
+        default: true,
+      },
+      onChange: {
+        type: "action",
+        description: "Called when text is saved with new value as first arg",
       },
     },
   },
@@ -550,6 +596,220 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       },
     },
   },
+  {
+    type: "chart-pie",
+    description: "Pie/Donut chart for distribution data visualization",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Chart data array with id, label, and value",
+      },
+      innerRadius: {
+        type: "number",
+        description: "Inner radius for donut effect (0-1)",
+        default: 0.5,
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      colors: {
+        type: "array",
+        description: "Custom color scheme",
+      },
+    },
+  },
+  {
+    type: "chart-radar",
+    description: "Radar chart for multi-dimensional comparison",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Radar data array",
+      },
+      keys: {
+        type: "array",
+        required: true,
+        description: "Data keys to plot",
+      },
+      indexBy: {
+        type: "string",
+        required: true,
+        description: "Index field name",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      maxValue: {
+        type: "number",
+        description: "Maximum scale value",
+      },
+    },
+  },
+  {
+    type: "chart-line",
+    description: "Line/Area chart for time series data",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Series data with id and data points",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      enableArea: {
+        type: "boolean",
+        description: "Fill area under line",
+        default: false,
+      },
+      curve: {
+        type: "string",
+        description: "Line curve type",
+        enum: ["linear","cardinal","catmullRom","monotoneX","natural","step"],
+        default: "catmullRom",
+      },
+      enablePoints: {
+        type: "boolean",
+        description: "Show data points",
+        default: true,
+      },
+      xLegend: {
+        type: "string",
+        description: "X axis legend",
+      },
+      yLegend: {
+        type: "string",
+        description: "Y axis legend",
+      },
+    },
+  },
+  {
+    type: "chart-bar",
+    description: "Bar chart for comparison data",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Bar data array",
+      },
+      keys: {
+        type: "array",
+        required: true,
+        description: "Data keys to display",
+      },
+      indexBy: {
+        type: "string",
+        required: true,
+        description: "Index field name",
+      },
+      layout: {
+        type: "string",
+        description: "Bar orientation",
+        enum: ["horizontal","vertical"],
+        default: "vertical",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      groupMode: {
+        type: "string",
+        description: "How to group multiple keys",
+        enum: ["grouped","stacked"],
+        default: "grouped",
+      },
+    },
+  },
+  {
+    type: "chart-radial-bar",
+    description: "Radial bar / gauge chart for metrics display",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Radial data with id and data points",
+      },
+      maxValue: {
+        type: "number",
+        description: "Maximum value for scale",
+        default: 100,
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 200,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      startAngle: {
+        type: "number",
+        description: "Start angle in degrees",
+        default: 0,
+      },
+      endAngle: {
+        type: "number",
+        description: "End angle in degrees",
+        default: 360,
+      },
+    },
+  },
+  {
+    type: "chart-word-cloud",
+    description: "Word cloud for keyword visualization",
+    category: "chart",
+    properties: {
+      words: {
+        type: "array",
+        required: true,
+        description: "Words array with text and value",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 200,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      colors: {
+        type: "array",
+        description: "Custom color scheme",
+      },
+    },
+  },
 ]
 
 // Create the standard catalog
@@ -570,5 +830,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible"] as const
+export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","editable-text","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

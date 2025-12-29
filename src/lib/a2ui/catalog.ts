@@ -20,7 +20,7 @@ export interface A2UIPropertyDefinition {
 export interface A2UIComponentDefinition {
   type: string
   description: string
-  category: "layout" | "content" | "interactive" | "feedback" | "custom"
+  category: "layout" | "content" | "interactive" | "feedback" | "chart" | "custom"
   properties: Record<string, A2UIPropertyDefinition>
   supportsChildren?: boolean
 }

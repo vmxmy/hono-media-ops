@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import {
   tasks,
   taskExecutions,
+  styleAnalyses,
   type Task,
   type TaskExecution,
   type ExecutionResult,
@@ -36,6 +37,8 @@ export interface CreateTaskInput {
   coverPromptId?: string;
   // Reference material (link to reverse_engineering_logs)
   refMaterialId?: string;
+  // Whether to use search engine
+  useSearch?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -64,6 +67,14 @@ export interface TaskWithExecutions extends Task {
   executions?: TaskExecution[];
 }
 
+export interface TaskWithMaterial extends Task {
+  refMaterial?: {
+    styleName: string | null;
+    sourceTitle: string | null;
+    sourceUrl: string | null;
+  } | null;
+}
+
 export interface WebhookPayload {
   taskId: string;
   topic: string;
@@ -71,6 +82,7 @@ export interface WebhookPayload {
   totalWordCount: number;
   coverPromptId?: string;
   refMaterialId?: string;
+  useSearch: boolean;
 }
 
 // ==================== Service ====================
@@ -114,14 +126,36 @@ export const taskService = {
     const orderBy = sortOrder === "desc" ? desc(orderByColumn) : orderByColumn;
 
     const [data, countResult] = await Promise.all([
-      db.select().from(tasks).where(whereClause).orderBy(orderBy).limit(pageSize).offset(offset),
+      db
+        .select({
+          task: tasks,
+          refMaterial: {
+            styleName: styleAnalyses.styleName,
+            sourceTitle: styleAnalyses.sourceTitle,
+            sourceUrl: styleAnalyses.sourceUrl,
+          },
+        })
+        .from(tasks)
+        .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
+        .where(whereClause)
+        .orderBy(orderBy)
+        .limit(pageSize)
+        .offset(offset),
       db.select({ count: sql<number>`count(*)` }).from(tasks).where(whereClause),
     ]);
 
     const total = countResult[0]?.count ?? 0;
 
+    // Flatten the result to include refMaterial in the task object
+    const tasksWithMaterial: TaskWithMaterial[] = data.map((row) => ({
+      ...row.task,
+      refMaterial: row.refMaterial?.styleName || row.refMaterial?.sourceTitle || row.refMaterial?.sourceUrl
+        ? row.refMaterial
+        : null,
+    }));
+
     return {
-      tasks: data,
+      tasks: tasksWithMaterial,
       pagination: {
         page,
         pageSize,
@@ -252,9 +286,13 @@ export const taskService = {
   },
 
   async createAndTrigger(input: CreateTaskInput, callbackUrl: string): Promise<{ id: string; task: Task; triggered: boolean }> {
+    console.log("[TaskService] createAndTrigger called with:", { topic: input.topic, useSearch: input.useSearch, callbackUrl });
     const { id, task } = await this.create(input);
+    console.log("[TaskService] Task created:", id);
     await this.updateStatus({ id, status: "processing" });
-    const triggered = await this.triggerWebhook(id, callbackUrl);
+    console.log("[TaskService] Status updated to processing, triggering webhook...");
+    const triggered = await this.triggerWebhook(id, callbackUrl, input.useSearch ?? true);
+    console.log("[TaskService] Webhook triggered:", triggered);
     return { id, task, triggered };
   },
 
@@ -372,8 +410,9 @@ export const taskService = {
 
   // ==================== Webhook Integration ====================
 
-  async triggerWebhook(taskId: string, _callbackUrl: string): Promise<boolean> {
+  async triggerWebhook(taskId: string, _callbackUrl: string, useSearch: boolean = true): Promise<boolean> {
     const webhookUrl = env.N8N_WEBHOOK_URL;
+    console.log("[TaskService] triggerWebhook - webhookUrl:", webhookUrl, "useSearch:", useSearch);
     if (!webhookUrl) {
       console.warn("[TaskService] N8N_WEBHOOK_URL not configured");
       return false;
@@ -392,7 +431,10 @@ export const taskService = {
       totalWordCount: task.totalWordCount,
       coverPromptId: task.coverPromptId ?? undefined,
       refMaterialId: task.refMaterialId ?? undefined,
+      useSearch,
     };
+
+    console.log("[TaskService] Sending webhook payload:", payload);
 
     try {
       const response = await fetch(webhookUrl, {
@@ -400,6 +442,8 @@ export const taskService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      console.log("[TaskService] Webhook response status:", response.status);
 
       if (!response.ok) {
         console.error(`[TaskService] Webhook failed: ${response.status} ${response.statusText}`);
@@ -457,6 +501,7 @@ export const taskService = {
       wechatMediaId?: string;
       wechatDraftId?: string;
       articleHtml?: string;
+      articleMarkdown?: string;
       metadata?: Record<string, unknown>;
     }
   ): Promise<{ success: boolean }> {
@@ -468,7 +513,11 @@ export const taskService = {
       .where(eq(taskExecutions.id, executionId))
       .limit(1);
 
-    const durationMs = execution?.startedAt
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    const durationMs = execution.startedAt
       ? now.getTime() - new Date(execution.startedAt).getTime()
       : null;
 
@@ -477,10 +526,10 @@ export const taskService = {
       coverR2Key: result.coverR2Key,
       wechatMediaId: result.wechatMediaId,
       wechatDraftId: result.wechatDraftId,
-      articleHtml: result.articleHtml,
       ...result.metadata,
     };
 
+    // Update execution record
     await db
       .update(taskExecutions)
       .set({
@@ -489,8 +538,14 @@ export const taskService = {
         status: result.status,
         errorMessage: result.errorMessage,
         result: executionResult,
+        articleMarkdown: result.articleMarkdown,
+        articleHtml: result.articleHtml,
       })
       .where(eq(taskExecutions.id, executionId));
+
+    // Sync task status based on execution result
+    const taskStatus: TaskStatus = result.status === "completed" ? "completed" : "failed";
+    await this.updateStatus({ id: execution.taskId, status: taskStatus });
 
     return { success: true };
   },

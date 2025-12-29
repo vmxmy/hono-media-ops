@@ -1,0 +1,548 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "769c6a1c-f2fa-46cd-8461-7fa08eba3197",
+        "options": {}
+      },
+      "id": "webhook-receive",
+      "name": "webhook_receive",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "webhookId": "769c6a1c-f2fa-46cd-8461-7fa08eba3197",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  sa.*,\n  ip.prompt as cover_prompt,\n  ip.ratio as cover_ratio,\n  ip.resolution as cover_resolution,\n  ip.model as cover_model\nFROM style_analyses sa\nLEFT JOIN image_prompts ip ON ip.id = '{{ $json.body.coverPromptId }}'\nWHERE sa.id = '{{ $json.body.refMaterialId }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [200, 0],
+      "id": "load-spec",
+      "name": "load_spec",
+      "credentials": {
+        "postgres": {
+          "id": "XTSDl3uToEpo9ujr",
+          "name": "media-ops"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==================== Phase 1: Spec 加载与验证 ====================\n\nconst webhookData = $('webhook_receive').first().json.body;\nconst specData = $input.first().json;\n\n// 1. 提取并验证 Blueprint\nconst blueprint = specData.blueprint_data || [];\nif (blueprint.length === 0) {\n  throw new Error(\"Blueprint data is missing or empty\");\n}\n\n// 2. 构建分层 Spec 结构\nconst spec = {\n  // 元数据\n  meta: {\n    topic: webhookData.topic,\n    keywords: webhookData.keywords,\n    total_word_count: parseInt(webhookData.totalWordCount) || 4000,\n    task_id: webhookData.taskId,\n    use_search: webhookData.useSearch || false\n  },\n  \n  // 风格身份 (System Prompt 层)\n  identity: {\n    archetype: specData.style_identity_data?.archetype || \"观察者\",\n    persona_desc: specData.style_identity_data?.persona_desc || \"\",\n    tone_keywords: specData.style_identity_data?.tone_keywords || \"\",\n    energy_level: specData.style_identity_data?.energy_level || \"平稳\",\n    voice_distance: specData.style_identity_data?.voice_distance || \"平等\",\n    formality_score: specData.style_identity_data?.formality_score || 5\n  },\n  \n  // 度量约束 (Hard Constraints)\n  constraints: {\n    rhythm_pattern: specData.metrics_constraints_data?.rhythm_pattern || \"\",\n    target_sent_len: specData.metrics_constraints_data?.target_sent_len || \"30字\",\n    target_para_len: specData.metrics_constraints_data?.target_para_len || \"3句\",\n    burstiness_logic: specData.metrics_constraints_data?.burstiness_logic || \"\",\n    punctuation_logic: specData.metrics_constraints_data?.punctuation_logic || \"\"\n  },\n  \n  // 词法逻辑 (Lexical Rules)\n  lexical: {\n    must_use: specData.lexical_logic_data?.must_use || [],\n    must_avoid: specData.lexical_logic_data?.must_avoid || [],\n    adj_style: specData.lexical_logic_data?.adj_style || \"\",\n    verb_style: specData.lexical_logic_data?.verb_style || \"\",\n    vocab_tier: specData.lexical_logic_data?.vocab_tier || \"\",\n    mood_particles: specData.lexical_logic_data?.mood_particles || []\n  },\n  \n  // 修辞逻辑 (Rhetorical Strategy)\n  rhetoric: {\n    arg_style: specData.rhetoric_logic_data?.arg_style || \"\",\n    dominant_device: specData.rhetoric_logic_data?.dominant_device || \"\",\n    opening_pattern: specData.rhetoric_logic_data?.opening_pattern || \"\",\n    closing_pattern: specData.rhetoric_logic_data?.closing_pattern || \"\",\n    device_frequency: specData.rhetoric_logic_data?.device_frequency || \"\",\n    device_sample: specData.rhetoric_logic_data?.device_sample || \"\"\n  },\n  \n  // 黄金样本 (Golden Reference)\n  golden_sample: {\n    paragraph: specData.golden_sample_data?.paragraph || \"\",\n    tech_list: specData.golden_sample_data?.tech_list || [],\n    reason: specData.golden_sample_data?.reason || \"\"\n  },\n  \n  // 核心规则 (Quality Gates)\n  core_rules: specData.core_rules_data || [],\n  \n  // 生成蓝图 (Execution Plan)\n  blueprint: blueprint,\n  \n  // 封面配置\n  cover: {\n    prompt: specData.cover_prompt || \"\",\n    ratio: specData.cover_ratio || \"16:9\",\n    resolution: specData.cover_resolution || \"1024x1024\",\n    model: specData.cover_model || \"dall-e-3\"\n  }\n};\n\n// 3. 验证 Spec 完整性\nconst validation = {\n  is_valid: true,\n  warnings: [],\n  errors: []\n};\n\n// 验证关键字段\nif (!spec.identity.persona_desc) {\n  validation.warnings.push(\"Missing persona_desc - may affect tone\");\n}\n\nif (spec.lexical.must_use.length === 0) {\n  validation.warnings.push(\"No must_use keywords defined\");\n}\n\nif (spec.blueprint.length === 0) {\n  validation.errors.push(\"Blueprint is empty\");\n  validation.is_valid = false;\n}\n\n// 验证蓝图连续性\nconst pIds = spec.blueprint.map(b => b.p_id);\nconst expectedCount = parseInt(pIds[pIds.length - 1].split('/')[1]);\nif (pIds.length !== expectedCount) {\n  validation.warnings.push(`Blueprint count mismatch: ${pIds.length} vs ${expectedCount}`);\n}\n\n// 4. 计算批次划分 (每批5段, 批次内串行, 批次间可并行)\nconst BATCH_SIZE = 5;\nconst batches = [];\nfor (let i = 0; i < spec.blueprint.length; i += BATCH_SIZE) {\n  batches.push({\n    batch_id: Math.floor(i / BATCH_SIZE) + 1,\n    start_index: i,\n    end_index: Math.min(i + BATCH_SIZE, spec.blueprint.length),\n    blueprints: spec.blueprint.slice(i, i + BATCH_SIZE)\n  });\n}\n\nreturn {\n  json: {\n    spec: spec,\n    validation: validation,\n    batches: batches,\n    execution_context: {\n      total_sections: spec.blueprint.length,\n      total_batches: batches.length,\n      avg_words_per_section: Math.floor(spec.meta.total_word_count / spec.blueprint.length),\n      search_material: null // 稍后注入\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "id": "validate-spec",
+      "name": "validate_spec",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-search",
+              "leftValue": "={{ $json.spec.meta.use_search }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [600, 0],
+      "id": "check-search-needed",
+      "name": "check_search_needed"
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "你是一个专业的资料收集助手，请根据主题搜集最新的深度素材、数据和真实案例。",
+              "role": "system"
+            },
+            {
+              "content": "=请针对主题：'{{ $json.spec.meta.topic }}' 和关键字：'{{ $json.spec.meta.keywords }}' 进行深度网络搜索。\n\n要求:\n1. 提供5-8条具体的背景素材或最新社会现象\n2. 包含具体的数据、案例、人物故事\n3. 注重真实性和时效性\n4. 结构化输出，每条素材独立成段"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [800, -100],
+      "id": "search-material",
+      "name": "search_material",
+      "credentials": {
+        "perplexityApi": {
+          "id": "5ESUHCDkK9ztpaAP",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 注入搜索素材\nconst validated = $('validate_spec').first().json;\nconst searchResult = $input.first().json.search_results || \"\";\n\nvalidated.execution_context.search_material = searchResult;\n\nreturn validated;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, -100],
+      "id": "inject-search",
+      "name": "inject_search_material"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 无搜索分支：直接传递\nconst validated = $('validate_spec').first().json;\nvalidated.execution_context.search_material = \"无外部搜索素材\";\n\nreturn validated;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 100],
+      "id": "no-search",
+      "name": "no_search_material"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1200, 0],
+      "id": "merge-search",
+      "name": "merge_search_branches"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==================== Phase 3: 批次分发 ====================\n\nconst data = $input.first().json;\nconst batches = data.batches;\n\n// 将批次数组展开为多个 item，触发批次并行处理\nreturn batches.map(batch => ({\n  json: {\n    batch: batch,\n    spec: data.spec,\n    execution_context: data.execution_context,\n    validation: data.validation\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 0],
+      "id": "split-batches",
+      "name": "split_into_batches"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==================== Phase 3.1: 批次内串行生成 ====================\n\nconst batchData = $input.first().json;\nconst batch = batchData.batch;\nconst spec = batchData.spec;\nconst context = batchData.execution_context;\n\n// 初始化批次上下文\nconst sections = [];\nlet cumulativeText = \"\";\n\n// 串行处理批次内的每个 blueprint\nfor (let i = 0; i < batch.blueprints.length; i++) {\n  const blueprint = batch.blueprints[i];\n  const globalIndex = batch.start_index + i;\n  \n  // 构建前文摘要 (滑动窗口: 最近2段)\n  const recentSections = sections.slice(-2);\n  const contextSummary = recentSections.length > 0\n    ? recentSections.map(s => `[${s.p_id}] ${s.text.substring(0, 100)}...`).join('\\n')\n    : \"这是文章的开篇部分\";\n  \n  // 计算剩余字数配额\n  const remainingSections = spec.blueprint.length - globalIndex;\n  const remainingWords = context.avg_words_per_section * remainingSections;\n  \n  // 准备当前段落的生成上下文\n  const sectionContext = {\n    // 当前 Blueprint\n    blueprint: blueprint,\n    \n    // 进度信息\n    progress: {\n      current: globalIndex + 1,\n      total: spec.blueprint.length,\n      remaining_sections: remainingSections,\n      remaining_words: remainingWords\n    },\n    \n    // 前文上下文\n    previous_context: contextSummary,\n    \n    // 全局 Spec (分层传递)\n    global_spec: {\n      identity: spec.identity,\n      constraints: spec.constraints,\n      lexical: spec.lexical,\n      rhetoric: spec.rhetoric,\n      golden_sample: spec.golden_sample\n    },\n    \n    // 主题元数据\n    meta: spec.meta,\n    \n    // 素材\n    search_material: context.search_material\n  };\n  \n  // 存储上下文供 LLM 节点使用\n  sections.push({\n    p_id: blueprint.p_id,\n    context: sectionContext,\n    text: \"\", // 将由 LLM 填充\n    index: globalIndex\n  });\n}\n\n// 输出批次内所有待生成的段落上下文\nreturn sections.map(s => ({ json: s }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 0],
+      "id": "prepare-section-contexts",
+      "name": "prepare_section_contexts",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.context.previous_context }}\n\n---\n\n# 当前段落任务\n\n**进度**: 正在创作第 {{ $json.context.progress.current }} 段，共 {{ $json.context.progress.total }} 段\n**剩余字数配额**: {{ $json.context.progress.remaining_words }} 字\n\n## 当前段落规范 (Blueprint)\n\n- **段落ID**: {{ $json.context.blueprint.p_id }}\n- **策略**: {{ $json.context.blueprint.strategy }}\n- **核心动作**: {{ $json.context.blueprint.action }}\n- **执行准则**: {{ $json.context.blueprint.guidelines }}\n- **句式模板**: {{ $json.context.blueprint.pattern_template }}\n- **目标字数**: {{ $json.context.blueprint.word_count_target }}\n- **应用技巧**: {{ $json.context.blueprint.techniques.join('、') }}\n\n## 参考样本\n\n{{ $json.context.blueprint.pattern_sample }}\n\n---\n\n## 主题与素材\n\n**主题**: {{ $json.context.meta.topic }}\n**关键词**: {{ $json.context.meta.keywords }}\n\n{{ $json.context.search_material ? '**网络素材**:\\n' + $json.context.search_material : '' }}\n\n---\n\n## 黄金样本参考\n\n以下段落展示了目标风格，请参考其技巧但不要照搬内容：\n\n> {{ $json.context.global_spec.golden_sample.paragraph }}\n\n**技巧要点**: {{ $json.context.global_spec.golden_sample.tech_list.join('、') }}\n\n---\n\n## 输出要求\n\n1. **严格遵循** Blueprint 的 `action`、`pattern_template` 和 `word_count_target`\n2. **自然融入** 主题和关键词，避免生硬植入\n3. **保持连贯**: 注意与前文的衔接（见上方"前文回顾"）\n4. **直接输出正文**，不要包含任何说明性文字或标题\n\n请开始创作本段内容：",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# 角色身份\n\n你是一位 **{{ $json.context.global_spec.identity.persona_desc }}**\n\n- **原型**: {{ $json.context.global_spec.identity.archetype }}\n- **语调**: {{ $json.context.global_spec.identity.tone_keywords }}\n- **能量级别**: {{ $json.context.global_spec.identity.energy_level }}\n- **对话距离**: {{ $json.context.global_spec.identity.voice_distance }}\n- **正式度**: {{ $json.context.global_spec.identity.formality_score }}/10\n\n---\n\n# 核心语言控制\n\n## 词法约束\n\n- **必须自然使用** (参考，不要生硬堆砌): {{ $json.context.global_spec.lexical.must_use.join('、') }}\n- **严格禁用**: {{ $json.context.global_spec.lexical.must_avoid.join('、') }}\n- **形容词风格**: {{ $json.context.global_spec.lexical.adj_style }}\n- **动词偏好**: {{ $json.context.global_spec.lexical.verb_style }}\n- **语气词**: {{ $json.context.global_spec.lexical.mood_particles.join('、') }}\n\n## 度量约束\n\n- **节奏模式**: {{ $json.context.global_spec.constraints.rhythm_pattern }}\n- **目标句长**: {{ $json.context.global_spec.constraints.target_sent_len }}\n- **段落长度**: {{ $json.context.global_spec.constraints.target_para_len }}\n- **突发性逻辑**: {{ $json.context.global_spec.constraints.burstiness_logic }}\n- **标点逻辑**: {{ $json.context.global_spec.constraints.punctuation_logic }}\n\n## 修辞策略\n\n- **论证风格**: {{ $json.context.global_spec.rhetoric.arg_style }}\n- **主导手法**: {{ $json.context.global_spec.rhetoric.dominant_device }}\n- **开篇模式**: {{ $json.context.global_spec.rhetoric.opening_pattern }}\n- **收尾模式**: {{ $json.context.global_spec.rhetoric.closing_pattern }}\n- **手法频率**: {{ $json.context.global_spec.rhetoric.device_frequency }}\n\n---\n\n# 写作负面清单\n\n- 任何意象/概念词（如\"天际线\"\"锻造\"\"赋能\"）全文不超过2次\n- 禁止在每段重复使用同一组核心词汇的排列组合\n- 禁止用加粗标记强行植入关键词\n- 禁用\"这不是X，而是Y\"句式，除非紧随其后有具体论证\n- 禁用\"本质上是……\"\"真正的……在于……\"等抽象升华，除非能用事实支撑\n- 禁止连续三句以上无具体信息的抒情/宣言式表达"
+            }
+          ]
+        },
+        "options": {
+          "systemMessage": "=你是一位专业的深度内容创作者，擅长基于结构化规范 (Spec) 进行精准写作。你的任务是严格按照提供的 Blueprint 规范，结合全局风格约束，创作出符合要求的文章段落。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [1800, 0],
+      "id": "generate-section",
+      "name": "llm_generate_section",
+      "executeOnce": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==================== Phase 3.2: 段落验证与重试 ====================\n\nconst sectionContext = $('prepare_section_contexts').item.json;\nconst llmOutput = $input.first().json.text || \"\";\n\nconst blueprint = sectionContext.context.blueprint;\nconst spec = sectionContext.context.global_spec;\n\n// 1. 字数验证\nconst wordCount = llmOutput.length; // 简化：中文按字符计数\nconst targetMatch = blueprint.word_count_target.match(/(\\d+)/);\nconst target = targetMatch ? parseInt(targetMatch[1]) : 100;\nconst tolerance = 50; // ±50字容差\n\nconst validation = {\n  is_valid: true,\n  errors: [],\n  warnings: [],\n  metrics: {\n    word_count: wordCount,\n    target_word_count: target\n  }\n};\n\n// 字数检查\nif (Math.abs(wordCount - target) > tolerance) {\n  validation.warnings.push(`字数偏差: ${wordCount} vs ${target}±${tolerance}`);\n}\n\n// 2. 禁用词检查\nconst mustAvoid = spec.lexical.must_avoid || [];\nmustAvoid.forEach(word => {\n  if (llmOutput.includes(word)) {\n    validation.errors.push(`包含禁用词: ${word}`);\n    validation.is_valid = false;\n  }\n});\n\n// 3. 空内容检查\nif (wordCount < 20) {\n  validation.errors.push(\"生成内容过短\");\n  validation.is_valid = false;\n}\n\n// 4. 返回验证结果\nreturn {\n  json: {\n    p_id: blueprint.p_id,\n    text: llmOutput,\n    validation: validation,\n    context: sectionContext.context,\n    index: sectionContext.index\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 0],
+      "id": "validate-section",
+      "name": "validate_section_output",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [2200, 0],
+      "id": "aggregate-sections",
+      "name": "aggregate_all_sections"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==================== Phase 4: 物理缝合 + 准备定稿上下文 ====================\n\nconst allSections = $input.all()[0].json.data;\n\n// 1. 按 index 排序（确保顺序正确）\nallSections.sort((a, b) => a.index - b.index);\n\n// 2. 物理缝合\nconst fullDraft = allSections\n  .map(s => s.text)\n  .join('\\n\\n[SECTION_BREAK]\\n\\n');\n\n// 3. 收集验证报告\nconst validationReport = {\n  total_sections: allSections.length,\n  failed_sections: allSections.filter(s => !s.validation.is_valid).length,\n  total_words: allSections.reduce((sum, s) => sum + s.validation.metrics.word_count, 0),\n  errors: allSections.flatMap(s => s.validation.errors),\n  warnings: allSections.flatMap(s => s.validation.warnings)\n};\n\n// 4. 获取原始 spec（从第一个 section 的 context 中）\nconst spec = allSections[0].context.global_spec;\nconst meta = allSections[0].context.meta;\n\n// 5. 准备定稿上下文\nreturn {\n  json: {\n    full_draft: fullDraft,\n    spec: spec,\n    meta: meta,\n    validation_report: validationReport,\n    current_date: new Date().toISOString().split('T')[0].replace(/-/g, '/')\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 0],
+      "id": "stitch-sections",
+      "name": "stitch_and_prepare"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "markdown-rule-1",
+              "name": "markdown_spec",
+              "value": "{\n  \"标题规则\": {\n    \"二级标题\": \"将全文划分为5-7个章节，使用 ## 标题\",\n    \"三级标题\": \"在章节内根据转折点嵌入2-3个 ### 标题\",\n    \"标题风格\": \"体现意象与洞察，融合 tone_keywords 风格\"\n  },\n  \"视觉分割\": {\n    \"章节过渡\": \"使用标题或 --- 分隔线\",\n    \"段落控制\": \"保持短促，符合 target_para_len\"\n  },\n  \"视觉化元素\": {\n    \"原则\": \"非必要不图表，一图表即精华\",\n    \"表格\": \"仅用于对比数据\",\n    \"Mermaid图表\": \"仅用于描述复杂流程\",\n    \"引用块\": \"用于金句或独白 (>)\",\n    \"行内代码\": \"用于关键概念 (`code`)\",\n    \"加粗\": \"用于痛点词汇 (**text**)\"\n  },\n  \"呼吸感\": \"即便无图表，仅靠文字分段与引用也能呈现极佳的阅读体验\"\n}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2200, 200],
+      "id": "markdown-spec",
+      "name": "markdown_formatting_spec"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2600, 0],
+      "id": "merge-markdown-spec",
+      "name": "merge_markdown_spec"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=以下是物理缝合后的初稿，请执行终审定稿逻辑：\n\n---\n\n{{ $('stitch_and_prepare').item.json.full_draft }}\n\n---\n\n## 终审任务\n\n请对上述初稿执行以下精修：\n\n### 1. 叙事去重与逻辑融合\n- 识别并合并因分段生成导致的重复人物背景、案例或逻辑循环\n- 将重叠的叙事弧线融合成单一且递进的逻辑链条\n- 确保"困境-转折-高光"结构不中断\n\n### 2. 语义无缝缝合\n- **彻底移除** 所有 `[SECTION_BREAK]` 标记\n- 在衔接处添加符合逻辑的过渡句\n- 确保全文呈现 {{ $('stitch_and_prepare').item.json.spec.constraints.rhythm_pattern }} 的流动感\n\n### 3. 时效性校准\n- 当前基准日期: **{{ $('stitch_and_prepare').item.json.current_date }}**\n- 动态处理历史年份或数据，通过叙事技巧融入当下视角\n- 示例: \"回望过去两年\"、\"作为转型初期的基准\"\n\n### 4. 度量指标严格执行\n- **句法**: 平均句长控制在 {{ $('stitch_and_prepare').item.json.spec.constraints.target_sent_len }}\n- **规模**: 严禁删减核心细节，维持约 {{ $('stitch_and_prepare').item.json.meta.total_word_count }} 字总量\n- **词法**: 确保关键词自然渗透，严格禁用 {{ $('stitch_and_prepare').item.json.spec.lexical.must_avoid.join('、') }}\n\n### 5. Markdown 结构重塑\n\n参考规范：\n```json\n{{ $('markdown_formatting_spec').item.json.markdown_spec }}\n```\n\n**具体要求**:\n- 将全文划分为 **5-7 个章节**，建立 `##` 二级标题\n- 在章节内根据转折点嵌入 **2-3 个** `###` 三级标题\n- 标题需体现 {{ $('stitch_and_prepare').item.json.spec.identity.tone_keywords }} 风格，融合意象与洞察\n- 故事与深度分析过渡处使用标题或 `---`\n- 关键概念使用 `行内代码`，痛点词汇使用 **加粗**\n- 灵魂金句或独白使用引用块 `>`\n- **非必要不图表**，仅在对比时使用表格，复杂流向时使用 Mermaid\n\n---\n\n## 质量检查\n\n- 避免排版过于花哨\n- 确保全文即便无图表，仅靠文字分段与引用也能呈现极佳的阅读呼吸感\n- 绝不删减核心感官细节和具体案例\n\n---\n\n## 输出要求\n\n**直接输出最终定稿版本**，保留 Markdown 格式，禁止包含任何开场白或解释文字。",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# 角色定位\n\n你是一位 **{{ $('stitch_and_prepare').item.json.spec.identity.persona_desc }}**\n\n你负责对这份分段生成的长篇深度报道进行 **最终总编定稿**。\n\n---\n\n# 全局上下文\n\n- **创作主题**: {{ $('stitch_and_prepare').item.json.meta.topic }}\n- **核心关键词**: {{ $('stitch_and_prepare').item.json.spec.lexical.must_use.join('、') }}\n- **叙事审美**: {{ $('stitch_and_prepare').item.json.spec.identity.tone_keywords }}\n- **能量级别**: {{ $('stitch_and_prepare').item.json.spec.identity.energy_level }}\n- **论证风格**: {{ $('stitch_and_prepare').item.json.spec.rhetoric.arg_style }}\n- **主导手法**: {{ $('stitch_and_prepare').item.json.spec.rhetoric.dominant_device }}\n\n---\n\n# 度量约束\n\n- **节奏模式**: {{ $('stitch_and_prepare').item.json.spec.constraints.rhythm_pattern }}\n- **目标句长**: {{ $('stitch_and_prepare').item.json.spec.constraints.target_sent_len }}\n- **段落长度**: {{ $('stitch_and_prepare').item.json.spec.constraints.target_para_len }}\n- **突发性逻辑**: {{ $('stitch_and_prepare').item.json.spec.constraints.burstiness_logic }}"
+            }
+          ]
+        },
+        "options": {
+          "systemMessage": "你是一位资深总编，擅长对分段生成的长文进行整体优化和结构重塑，确保全文的连贯性、可读性和风格一致性。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [2800, 0],
+      "id": "final-polish",
+      "name": "llm_final_polish"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "task_executions",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "task_id": "={{ $('webhook_receive').item.json.body.taskId }}",
+            "status": "completed",
+            "input_snapshot": "={{ $('webhook_receive').item.json.body }}",
+            "article_markdown": "={{ $json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [3000, 0],
+      "id": "insert-execution",
+      "name": "insert_execution_record",
+      "credentials": {
+        "postgres": {
+          "id": "XTSDl3uToEpo9ujr",
+          "name": "media-ops"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tasks",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('webhook_receive').item.json.body.taskId }}",
+            "status": "completed"
+          },
+          "matchingColumns": ["id"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [3000, 200],
+      "id": "update-task",
+      "name": "update_task_status",
+      "credentials": {
+        "postgres": {
+          "id": "XTSDl3uToEpo9ujr",
+          "name": "media-ops"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1800, 200],
+      "id": "gemini-model",
+      "name": "gemini_flash_model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gbk9ly5Ad03ln6Yc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook_receive": {
+      "main": [[
+        {
+          "node": "load_spec",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "load_spec": {
+      "main": [[
+        {
+          "node": "validate_spec",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "validate_spec": {
+      "main": [[
+        {
+          "node": "check_search_needed",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "check_search_needed": {
+      "main": [
+        [
+          {
+            "node": "search_material",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "no_search_material",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_material": {
+      "main": [[
+        {
+          "node": "inject_search_material",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "inject_search_material": {
+      "main": [[
+        {
+          "node": "merge_search_branches",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "no_search_material": {
+      "main": [[
+        {
+          "node": "merge_search_branches",
+          "type": "main",
+          "index": 1
+        }
+      ]]
+    },
+    "merge_search_branches": {
+      "main": [[
+        {
+          "node": "split_into_batches",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "split_into_batches": {
+      "main": [[
+        {
+          "node": "prepare_section_contexts",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "prepare_section_contexts": {
+      "main": [[
+        {
+          "node": "llm_generate_section",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "llm_generate_section": {
+      "main": [[
+        {
+          "node": "validate_section_output",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "validate_section_output": {
+      "main": [[
+        {
+          "node": "aggregate_all_sections",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "aggregate_all_sections": {
+      "main": [[
+        {
+          "node": "stitch_and_prepare",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "markdown_formatting_spec",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "stitch_and_prepare": {
+      "main": [[
+        {
+          "node": "merge_markdown_spec",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "markdown_formatting_spec": {
+      "main": [[
+        {
+          "node": "merge_markdown_spec",
+          "type": "main",
+          "index": 1
+        }
+      ]]
+    },
+    "merge_markdown_spec": {
+      "main": [[
+        {
+          "node": "llm_final_polish",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "llm_final_polish": {
+      "main": [[
+        {
+          "node": "insert_execution_record",
+          "type": "main",
+          "index": 0
+        },
+        {
+          "node": "update_task_status",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "gemini_flash_model": {
+      "ai_languageModel": [[
+        {
+          "node": "llm_generate_section",
+          "type": "ai_languageModel",
+          "index": 0
+        },
+        {
+          "node": "llm_final_polish",
+          "type": "ai_languageModel",
+          "index": 0
+        }
+      ]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b567d3c8d87fb7f8b70a1dd36ea2ab492a07686b7429a62e28beb58f3b19cc21"
+  }
+}

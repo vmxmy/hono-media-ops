@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-27T06:31:35.772Z
+// Generated at: 2025-12-29T13:10:09.244Z
 
 import type { CSSProperties } from "react"
 
@@ -29,6 +29,7 @@ export type A2UINode =
   | A2UIDividerNode
   | A2UIButtonNode
   | A2UIInputNode
+  | A2UIEditableTextNode
   | A2UITextareaNode
   | A2UISelectNode
   | A2UICheckboxNode
@@ -45,6 +46,12 @@ export type A2UINode =
   | A2UILinkNode
   | A2UISpacerNode
   | A2UICollapsibleNode
+  | A2UIChartPieNode
+  | A2UIChartRadarNode
+  | A2UIChartLineNode
+  | A2UIChartBarNode
+  | A2UIChartRadialBarNode
+  | A2UIChartWordCloudNode
 
 // Vertical flex container
 export interface A2UIColumnNode extends A2UIBaseNode {
@@ -114,9 +121,11 @@ export interface A2UIDividerNode extends A2UIBaseNode {
 export interface A2UIButtonNode extends A2UIBaseNode {
   type: "button"
   text: string // Button label
-  variant?: "primary" | "secondary" | "destructive" | "ghost" | "text" // Button style variant
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "text" | "outline" // Button style variant
   size?: "sm" | "md" | "lg" // Button size
   disabled?: boolean // Disable the button
+  icon?: "google" | "github" // Icon to display before text
+  fullWidth?: boolean // Make button full width
   onClick?: A2UIAction // Click action handler
 }
 
@@ -127,6 +136,17 @@ export interface A2UIInputNode extends A2UIBaseNode {
   placeholder?: string // Placeholder text
   inputType?: "text" | "password" | "email" | "number" // Input type
   onChange?: A2UIAction // Change action handler
+}
+
+// Click-to-edit text field that toggles between display and edit mode
+export interface A2UIEditableTextNode extends A2UIBaseNode {
+  type: "editable-text"
+  value: string // Text value to display and edit
+  placeholder?: string // Placeholder text when value is empty
+  variant?: "h1" | "h2" | "h3" | "h4" | "body" | "caption" // Text style variant
+  multiline?: boolean // Use textarea for multi-line editing
+  editable?: boolean // Whether the text can be edited
+  onChange?: A2UIAction // Called when text is saved with new value as first arg
 }
 
 // Multi-line text input
@@ -255,9 +275,75 @@ export interface A2UICollapsibleNode extends A2UIBaseNode {
   title: string // Header title text
   subtitle?: string // Optional subtitle text shown in header
   summary?: string // Summary text shown when collapsed (always visible)
-  previewChildren?: A2UINode[] // Children nodes always visible (shown when collapsed and expanded)
+  previewChildren?: unknown[] // Children nodes always visible (shown when collapsed and expanded)
   defaultOpen?: boolean // Initial open state
   badges?: Array<{ text: string; color: string }> // Optional badges to display in header
+}
+
+// Pie/Donut chart for distribution data visualization
+export interface A2UIChartPieNode extends A2UIBaseNode {
+  type: "chart-pie"
+  data: unknown[] // Chart data array with id, label, and value
+  innerRadius?: number // Inner radius for donut effect (0-1)
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  colors?: unknown[] // Custom color scheme
+}
+
+// Radar chart for multi-dimensional comparison
+export interface A2UIChartRadarNode extends A2UIBaseNode {
+  type: "chart-radar"
+  data: unknown[] // Radar data array
+  keys: unknown[] // Data keys to plot
+  indexBy: string // Index field name
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  maxValue?: number // Maximum scale value
+}
+
+// Line/Area chart for time series data
+export interface A2UIChartLineNode extends A2UIBaseNode {
+  type: "chart-line"
+  data: unknown[] // Series data with id and data points
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  enableArea?: boolean // Fill area under line
+  curve?: "linear" | "cardinal" | "catmullRom" | "monotoneX" | "natural" | "step" // Line curve type
+  enablePoints?: boolean // Show data points
+  xLegend?: string // X axis legend
+  yLegend?: string // Y axis legend
+}
+
+// Bar chart for comparison data
+export interface A2UIChartBarNode extends A2UIBaseNode {
+  type: "chart-bar"
+  data: unknown[] // Bar data array
+  keys: unknown[] // Data keys to display
+  indexBy: string // Index field name
+  layout?: "horizontal" | "vertical" // Bar orientation
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  groupMode?: "grouped" | "stacked" // How to group multiple keys
+}
+
+// Radial bar / gauge chart for metrics display
+export interface A2UIChartRadialBarNode extends A2UIBaseNode {
+  type: "chart-radial-bar"
+  data: unknown[] // Radial data with id and data points
+  maxValue?: number // Maximum value for scale
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  startAngle?: number // Start angle in degrees
+  endAngle?: number // End angle in degrees
+}
+
+// Word cloud for keyword visualization
+export interface A2UIChartWordCloudNode extends A2UIBaseNode {
+  type: "chart-word-cloud"
+  words: unknown[] // Words array with text and value
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  colors?: unknown[] // Custom color scheme
 }
 
 // A2UI Response format (from server)

@@ -13,6 +13,7 @@ import {
   A2UIDivider,
   A2UIButton,
   A2UIInput,
+  A2UIEditableText,
   A2UITextarea,
   A2UISelect,
   A2UICheckbox,
@@ -31,6 +32,14 @@ import {
   A2UICollapsible,
   A2UIFallback,
 } from "./standard-components"
+import {
+  A2UIChartPie,
+  A2UIChartRadar,
+  A2UIChartLine,
+  A2UIChartBar,
+  A2UIChartRadialBar,
+  A2UIChartWordCloud,
+} from "./chart-components"
 
 /**
  * Create and setup a registry with all standard components
@@ -57,6 +66,7 @@ export function setupStandardRegistry(): A2UIRegistry {
   // Register interactive components
   registry.register("button", A2UIButton, { source: "standard" })
   registry.register("input", A2UIInput, { source: "standard" })
+  registry.register("editable-text", A2UIEditableText, { source: "standard" })
   registry.register("textarea", A2UITextarea, { source: "standard" })
   registry.register("select", A2UISelect, { source: "standard" })
   registry.register("checkbox", A2UICheckbox, { source: "standard" })
@@ -79,6 +89,14 @@ export function setupStandardRegistry(): A2UIRegistry {
   // Register form components
   registry.register("form", A2UIForm, { source: "standard" })
   registry.register("form-field", A2UIFormField, { source: "standard" })
+
+  // Register chart components
+  registry.register("chart-pie", A2UIChartPie, { source: "standard" })
+  registry.register("chart-radar", A2UIChartRadar, { source: "standard" })
+  registry.register("chart-line", A2UIChartLine, { source: "standard" })
+  registry.register("chart-bar", A2UIChartBar, { source: "standard" })
+  registry.register("chart-radial-bar", A2UIChartRadialBar, { source: "standard" })
+  registry.register("chart-word-cloud", A2UIChartWordCloud, { source: "standard" })
 
   return registry
 }

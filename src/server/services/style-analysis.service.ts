@@ -109,6 +109,7 @@ export interface MetricsTrendPoint {
 export const styleAnalysisService = {
   /**
    * Get all style analyses with pagination and filtering
+   * Only selects fields needed for list display to optimize performance
    */
   async getAll(options: GetAllStyleAnalysesOptions) {
     const { page, pageSize, search, primaryType, status, userId } = options;
@@ -134,12 +135,31 @@ export const styleAnalysisService = {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Only select fields needed for list display (excludes large JSONB fields)
     const [data, countResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: styleAnalyses.id,
+          userId: styleAnalyses.userId,
+          createdAt: styleAnalyses.createdAt,
+          updatedAt: styleAnalyses.updatedAt,
+          sourceUrl: styleAnalyses.sourceUrl,
+          sourceTitle: styleAnalyses.sourceTitle,
+          styleName: styleAnalyses.styleName,
+          primaryType: styleAnalyses.primaryType,
+          wordCount: styleAnalyses.wordCount,
+          paraCount: styleAnalyses.paraCount,
+          metricsBurstiness: styleAnalyses.metricsBurstiness,
+          metricsTtr: styleAnalyses.metricsTtr,
+          status: styleAnalyses.status,
+          // Include smaller JSONB fields needed for list display
+          styleIdentityData: styleAnalyses.styleIdentityData,
+          lexicalLogicData: styleAnalyses.lexicalLogicData,
+          metricsConstraintsData: styleAnalyses.metricsConstraintsData,
+        })
         .from(styleAnalyses)
         .where(whereClause)
-        .orderBy(desc(styleAnalyses.createdAt))
+        .orderBy(desc(styleAnalyses.updatedAt))
         .limit(pageSize)
         .offset(offset),
       db
@@ -218,16 +238,8 @@ export const styleAnalysisService = {
     const metaInfo = rawJson?.meta_info as Record<string, unknown> | undefined;
     const styleIdentity = input.styleIdentityData as Record<string, unknown> | undefined;
 
-    // Determine if we have substantial JSONB data (indicates analysis completed)
-    const hasSubstantialData = !!(
-      input.coreRulesData?.length ||
-      input.styleIdentityData ||
-      input.executionPrompt ||
-      metaInfo
-    );
-
-    // Auto-derive status: if we have substantial data, default to SUCCESS
-    const derivedStatus = input.status ?? (hasSubstantialData ? "SUCCESS" : "PENDING");
+    // Default status to SUCCESS unless explicitly specified
+    const derivedStatus = input.status ?? "SUCCESS";
 
     const [analysis] = await db.insert(styleAnalyses).values({
       userId: input.userId,
@@ -275,17 +287,8 @@ export const styleAnalysisService = {
       const metaInfo = (inputRawJson?.meta_info ?? existingRawJson?.meta_info) as Record<string, unknown> | undefined;
       const styleIdentity = (input.styleIdentityData ?? existing.styleIdentityData) as Record<string, unknown> | undefined;
 
-      // Determine if we have substantial JSONB data (indicates analysis completed)
-      const hasSubstantialData = !!(
-        input.coreRulesData?.length ||
-        input.styleIdentityData ||
-        input.executionPrompt ||
-        metaInfo
-      );
-
-      // Auto-derive status: if we have substantial data, mark as SUCCESS
-      const derivedStatus = input.status ??
-        (hasSubstantialData && existing.status === "PENDING" ? "SUCCESS" : existing.status);
+      // Default status to SUCCESS unless explicitly specified
+      const derivedStatus = input.status ?? "SUCCESS";
 
       // Update existing (and restore if soft-deleted)
       const [updated] = await db

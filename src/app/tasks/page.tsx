@@ -1,24 +1,57 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
+import { useSession, signOut } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { AppLayout } from "@/components/app-layout"
 import { useI18n } from "@/contexts/i18n-context"
-import { useAuth } from "@/hooks/use-auth"
-import { A2UIRenderer } from "@/components/a2ui"
+import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type { A2UIColumnNode, A2UINode, A2UICardNode, A2UIRowNode } from "@/lib/a2ui"
 
-// 延迟加载 CreateTaskModal
+// 延迟加载 CreateTaskModal 和 ArticleViewerModal
 import dynamic from "next/dynamic"
 const CreateTaskModal = dynamic(
   () => import("@/components/create-task-modal").then((mod) => mod.CreateTaskModal),
   { ssr: false }
 )
+const ArticleViewerModal = dynamic(
+  () => import("@/components/article-viewer-modal").then((mod) => mod.ArticleViewerModal),
+  { ssr: false }
+)
+
+// Task type from API
+interface TaskWithMaterial {
+  id: string
+  topic: string
+  keywords: string | null
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled"
+  createdAt: Date
+  coverPromptId: string | null
+  refMaterialId: string | null
+  refMaterial?: {
+    styleName: string | null
+    sourceTitle: string | null
+    sourceUrl: string | null
+  } | null
+}
 
 export default function TasksPage() {
   const { t } = useI18n()
-  const { mounted, logout } = useAuth()
+  const { status } = useSession()
+  const mounted = status !== "loading"
+  const logout = () => signOut({ callbackUrl: "/" })
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [articleViewerState, setArticleViewerState] = useState<{
+    isOpen: boolean
+    markdown: string
+    title: string
+  }>({ isOpen: false, markdown: "", title: "" })
+  const [regenerateData, setRegenerateData] = useState<{
+    topic?: string
+    keywords?: string
+    coverPromptId?: string
+    refMaterialId?: string
+  } | null>(null)
 
   const { data, isLoading, error, refetch } = api.tasks.getAll.useQuery(
     { page: 1, pageSize: 20 },
@@ -37,6 +70,16 @@ export default function TasksPage() {
 
   const deleteMutation = api.tasks.delete.useMutation({
     onSuccess: () => refetch(),
+  })
+
+  const updateMutation = api.tasks.update.useMutation({
+    onSuccess: () => {
+      refetch()
+      a2uiToast.success(t("common.update"))
+    },
+    onError: () => {
+      a2uiToast.error(t("task.updateFailed"))
+    },
   })
 
   const handleNewTask = () => setIsModalOpen(true)
@@ -59,6 +102,34 @@ export default function TasksPage() {
     }
   }
 
+  // Get trpc utils for imperative queries
+  const trpcUtils = api.useUtils()
+
+  const handleViewArticle = async (taskId: string, taskTopic: string) => {
+    const execution = await trpcUtils.tasks.getLatestExecution.fetch({ id: taskId })
+    if (execution?.articleMarkdown) {
+      setArticleViewerState({
+        isOpen: true,
+        markdown: execution.articleMarkdown,
+        title: taskTopic,
+      })
+    }
+  }
+
+  const handleRegenerate = (task: TaskWithMaterial) => {
+    setRegenerateData({
+      topic: task.topic,
+      keywords: task.keywords ?? undefined,
+      coverPromptId: task.coverPromptId ?? undefined,
+      refMaterialId: task.refMaterialId ?? undefined,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleUpdate = useCallback((id: string, data: { topic?: string; keywords?: string }) => {
+    updateMutation.mutate({ id, ...data })
+  }, [updateMutation])
+
   const handleA2UIAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
@@ -74,13 +145,35 @@ export default function TasksPage() {
         case "delete":
           handleDelete(args?.[0] as string)
           break
+        case "viewArticle":
+          handleViewArticle(args?.[0] as string, args?.[1] as string)
+          break
+        case "regenerate": {
+          const taskId = args?.[0] as string
+          const task = tasks.find((t) => t.id === taskId)
+          if (task) handleRegenerate(task)
+          break
+        }
+        // Editable text actions
+        case "updateTopic": {
+          const [newValue, taskId] = args as [string, string]
+          if (newValue?.trim()) {
+            handleUpdate(taskId, { topic: newValue.trim() })
+          }
+          break
+        }
+        case "updateKeywords": {
+          const [newValue, taskId] = args as [string, string]
+          handleUpdate(taskId, { keywords: newValue?.trim() || undefined })
+          break
+        }
       }
     },
-    [t, cancelMutation, retryMutation, deleteMutation]
+    [t, cancelMutation, retryMutation, deleteMutation, trpcUtils, tasks, handleUpdate]
   )
 
-  // 构建任务卡片
-  const buildTaskCard = (task: typeof tasks[0]): A2UICardNode => {
+  // Build A2UI task card
+  const buildTaskCard = (task: TaskWithMaterial): A2UICardNode => {
     const statusColors: Record<string, string> = {
       pending: "default",
       processing: "processing",
@@ -91,13 +184,32 @@ export default function TasksPage() {
 
     const canStop = task.status === "pending" || task.status === "processing"
     const canRetry = task.status === "failed" || task.status === "cancelled"
+    const canViewArticle = task.status === "completed"
+    const canEdit = task.status === "pending" || task.status === "failed" || task.status === "cancelled"
 
     const actions: A2UINode[] = []
+
+    if (canViewArticle) {
+      actions.push({
+        type: "button",
+        text: t("article.viewArticle"),
+        variant: "primary",
+        size: "sm",
+        onClick: { action: "viewArticle", args: [task.id, task.topic] },
+      })
+      actions.push({
+        type: "button",
+        text: t("taskForm.regenerateTitle"),
+        variant: "secondary",
+        size: "sm",
+        onClick: { action: "regenerate", args: [task.id] },
+      })
+    }
     if (canRetry) {
       actions.push({
         type: "button",
         text: t("task.retry"),
-        variant: "primary",
+        variant: "secondary",
         size: "sm",
         onClick: { action: "retry", args: [task.id] },
       })
@@ -119,6 +231,54 @@ export default function TasksPage() {
       onClick: { action: "delete", args: [task.id] },
     })
 
+    // Build children array with editable text and optional reference material
+    const contentChildren: A2UINode[] = [
+      {
+        type: "editable-text",
+        value: task.topic || t("tasks.untitledTask"),
+        placeholder: t("tasks.untitledTask"),
+        variant: "h4",
+        editable: canEdit,
+        onChange: { action: "updateTopic", args: [task.id] },
+      },
+      {
+        type: "editable-text",
+        value: task.keywords || "",
+        placeholder: t("tasks.noKeywords"),
+        variant: "caption",
+        multiline: true,
+        editable: canEdit,
+        onChange: { action: "updateKeywords", args: [task.id] },
+      },
+    ]
+
+    // Add reference material if exists
+    if (task.refMaterial) {
+      contentChildren.push({
+        type: "row",
+        gap: "0.5rem",
+        align: "center",
+        style: { marginTop: "0.25rem" },
+        children: [
+          { type: "text", text: "📄", variant: "caption" },
+          task.refMaterial.sourceUrl
+            ? {
+                type: "link",
+                text: task.refMaterial.styleName || task.refMaterial.sourceTitle || t("tasks.refMaterial"),
+                href: task.refMaterial.sourceUrl,
+                external: true,
+                style: { fontSize: "0.75rem" },
+              }
+            : {
+                type: "text",
+                text: task.refMaterial.styleName || task.refMaterial.sourceTitle || t("tasks.refMaterial"),
+                variant: "caption",
+                color: "muted",
+              },
+        ],
+      } as A2UIRowNode)
+    }
+
     return {
       type: "card",
       id: `task-${task.id}`,
@@ -139,10 +299,7 @@ export default function TasksPage() {
                   type: "column",
                   gap: "0.25rem",
                   style: { flex: 1, minWidth: "150px" },
-                  children: [
-                    { type: "text", text: task.topic || t("tasks.untitledTask"), variant: "h4" },
-                    { type: "text", text: task.keywords || t("tasks.noKeywords"), variant: "body", color: "muted" },
-                  ],
+                  children: contentChildren,
                 },
                 {
                   type: "badge",
@@ -173,16 +330,14 @@ export default function TasksPage() {
     }
   }
 
-  // 构建页面内容
-  const getContent = (): A2UINode => {
+  // Build task list content
+  const getTaskListContent = (): A2UINode => {
     if (error) {
       return {
         type: "card",
         hoverable: false,
         style: { padding: "2rem", textAlign: "center" },
-        children: [
-          { type: "text", text: `错误: ${error.message}`, color: "muted" },
-        ],
+        children: [{ type: "text", text: `错误: ${error.message}`, color: "muted" }],
       }
     }
 
@@ -206,11 +361,12 @@ export default function TasksPage() {
     return {
       type: "column",
       gap: "1rem",
-      children: tasks.map(buildTaskCard),
+      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial)),
     }
   }
 
-  const pageNode: A2UIColumnNode = {
+  // 页面头部
+  const headerNode: A2UIColumnNode = {
     type: "column",
     gap: "1rem",
     children: [
@@ -225,19 +381,46 @@ export default function TasksPage() {
           { type: "button", text: t("tasks.newTask"), variant: "primary", size: "md", onClick: { action: "newTask" } },
         ],
       },
-      getContent(),
     ],
   }
+
+  // Memoize callbacks and data to prevent unnecessary re-renders
+  const handleCreateTaskClose = useCallback(() => {
+    setIsModalOpen(false)
+    setRegenerateData(null)
+  }, [])
+
+  const handleCreateTaskSuccess = useCallback(() => {
+    refetch()
+  }, [refetch])
+
+  const createTaskInitialData = useMemo(
+    () => regenerateData ?? undefined,
+    [regenerateData]
+  )
+
+  const isRegenerate = regenerateData !== null
 
   if (!mounted) return null
 
   return (
     <AppLayout onLogout={logout}>
-      <A2UIRenderer node={pageNode} onAction={handleA2UIAction} />
+      <div className="flex flex-col gap-4">
+        <A2UIRenderer node={headerNode} onAction={handleA2UIAction} />
+        <A2UIRenderer node={getTaskListContent()} onAction={handleA2UIAction} />
+      </div>
       <CreateTaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => refetch()}
+        onClose={handleCreateTaskClose}
+        onSuccess={handleCreateTaskSuccess}
+        initialData={createTaskInitialData}
+        isRegenerate={isRegenerate}
+      />
+      <ArticleViewerModal
+        isOpen={articleViewerState.isOpen}
+        onClose={() => setArticleViewerState({ isOpen: false, markdown: "", title: "" })}
+        markdown={articleViewerState.markdown}
+        title={articleViewerState.title}
       />
     </AppLayout>
   )

@@ -26,6 +26,8 @@ const createInputSchema = z.object({
   coverPromptId: z.string().optional(),
   // Reference material (link to reverse_engineering_logs)
   refMaterialId: z.string().optional(),
+  // Whether to use search engine
+  useSearch: z.boolean().default(true),
 });
 
 const updateInputSchema = z.object({
@@ -71,6 +73,7 @@ const completeExecutionSchema = z.object({
   coverR2Key: z.string().optional(),
   wechatMediaId: z.string().optional(),
   wechatDraftId: z.string().optional(),
+  articleMarkdown: z.string().optional(),
   articleHtml: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -114,7 +117,10 @@ export const tasksRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const result = await ctx.services.task.createAndTrigger(input, "");
+      const result = await ctx.services.task.createAndTrigger(
+        { ...input, userId: ctx.user.id },
+        ""
+      );
       return { id: result.id, task: result.task };
     }),
 

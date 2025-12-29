@@ -49,6 +49,26 @@ export interface GetAllInput {
   pageSize?: number;
 }
 
+// Subset of ImagePrompt for list display (excludes large/unused fields)
+export interface ImagePromptListItem {
+  id: string;
+  userId: string | null;
+  title: string;
+  prompt: string;
+  negativePrompt: string | null;
+  model: string | null;
+  ratio: string | null;
+  resolution: string | null;
+  category: string | null;
+  tags: string[] | null;
+  previewUrl: string | null;
+  useCount: number;
+  isPublic: number;
+  rating: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ==================== Service ====================
 
 export const imagePromptService = {
@@ -56,7 +76,7 @@ export const imagePromptService = {
    * Get all image prompts with filtering and pagination
    */
   async getAll(input: GetAllInput = {}): Promise<{
-    items: ImagePrompt[];
+    items: ImagePromptListItem[];
     total: number;
     page: number;
     pageSize: number;
@@ -100,9 +120,27 @@ export const imagePromptService = {
       .from(imagePrompts)
       .where(whereClause);
 
-    // Get paginated items
+    // Get paginated items - exclude large/unused fields for list display
     const items = await db
-      .select()
+      .select({
+        id: imagePrompts.id,
+        userId: imagePrompts.userId,
+        title: imagePrompts.title,
+        prompt: imagePrompts.prompt,
+        negativePrompt: imagePrompts.negativePrompt,
+        model: imagePrompts.model,
+        ratio: imagePrompts.ratio,
+        resolution: imagePrompts.resolution,
+        category: imagePrompts.category,
+        tags: imagePrompts.tags,
+        previewUrl: imagePrompts.previewUrl,
+        useCount: imagePrompts.useCount,
+        isPublic: imagePrompts.isPublic,
+        rating: imagePrompts.rating,
+        createdAt: imagePrompts.createdAt,
+        updatedAt: imagePrompts.updatedAt,
+        // Excluded: previewR2Key, lastUsedAt, source, sourceRef, metadata, deletedAt
+      })
       .from(imagePrompts)
       .where(whereClause)
       .orderBy(desc(imagePrompts.useCount), desc(imagePrompts.createdAt))

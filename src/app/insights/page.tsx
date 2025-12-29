@@ -1,35 +1,45 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
+import { useSession, signOut } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { AppLayout } from "@/components/app-layout"
 import { useI18n } from "@/contexts/i18n-context"
-import { useAuth } from "@/hooks/use-auth"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UINode, A2UIColumnNode, A2UIRowNode, A2UICardNode } from "@/lib/a2ui"
+import type { A2UINode, A2UIColumnNode, A2UICardNode } from "@/lib/a2ui"
+
+// ============================================================================
+// Chart Layout Constants
+// ============================================================================
+const CHART_HEIGHT = {
+  card: 280,      // Standard card chart height (pie, radar, radial-bar)
+  trend: 300,     // Full-width trend chart height
+  compact: 200,   // Compact chart height (word cloud)
+  bar: 250,       // Bar chart height
+} as const
+
+const CARD_MIN_WIDTH = "280px"
+const LAYOUT_GAP = {
+  section: "1.5rem",
+  card: "1rem",
+  content: "0.5rem",
+} as const
 
 export default function InsightsPage() {
   const { t } = useI18n()
-  const { mounted, logout } = useAuth()
-  const [selectedPrimaryType, setSelectedPrimaryType] = useState<string>("")
+  const { status } = useSession()
+  const mounted = status !== "loading"
+  const logout = () => signOut({ callbackUrl: "/" })
   const [trendDays, setTrendDays] = useState(30)
 
-  // API queries - v7.3 compatible
+  // API queries
   const { data: profile, isLoading: profileLoading } = api.reverseLogs.getMyStyleProfile.useQuery()
   const { data: statistics } = api.reverseLogs.getMyStatistics.useQuery()
-  const { data: primaryTypes } = api.reverseLogs.getPrimaryTypes.useQuery()
   const { data: trend } = api.reverseLogs.getMyMetricsTrend.useQuery({ days: trendDays })
-  const { data: typeInsights, isLoading: typeLoading } = api.reverseLogs.getPrimaryTypeInsights.useQuery(
-    { primaryType: selectedPrimaryType },
-    { enabled: !!selectedPrimaryType }
-  )
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "setPrimaryType":
-          setSelectedPrimaryType(args?.[0] as string)
-          break
         case "setTrendDays":
           setTrendDays(Number(args?.[0]) || 30)
           break
@@ -38,21 +48,83 @@ export default function InsightsPage() {
     []
   )
 
-  // Safely format metric values
-  const formatMetric = (value: unknown, decimals: number): string => {
-    if (value == null) return "-"
-    const num = typeof value === "string" ? parseFloat(value) : Number(value)
-    return isNaN(num) ? "-" : num.toFixed(decimals)
-  }
+  // Transform data for stat cards
+  const metricsStats = useMemo(() => {
+    if (!profile?.averageMetrics) return null
+    const { wordCount, paraCount, ttr, burstiness } = profile.averageMetrics
+    return {
+      wordCount: Math.round(wordCount ?? 0),
+      paraCount: Math.round(paraCount ?? 0),
+      ttr: (ttr ?? 0).toFixed(2),
+      burstiness: (burstiness ?? 0).toFixed(2),
+    }
+  }, [profile])
 
-  const formatPercent = (value: unknown): string => {
-    if (value == null) return "-"
-    const num = typeof value === "string" ? parseFloat(value) : Number(value)
-    return isNaN(num) ? "-" : `${(num * 100).toFixed(0)}%`
-  }
+  const typeDistributionData = useMemo(() => {
+    if (!statistics?.byPrimaryType) return []
+    return Object.entries(statistics.byPrimaryType)
+      .filter(([type]) => type && type !== "null" && type !== "undefined")
+      .slice(0, 8)
+      .map(([type, count]) => ({
+        id: type,
+        label: type,
+        value: count as number,
+      }))
+  }, [statistics])
 
-  // Build style profile card
-  const buildProfileCard = (): A2UICardNode => {
+  const trendChartData = useMemo(() => {
+    if (!trend?.length) return []
+    return [
+      {
+        id: t("insights.wordCount"),
+        data: trend.map((point) => ({
+          x: point.date.slice(5), // MM-DD format
+          y: point.wordCount ?? 0,
+        })),
+      },
+      {
+        id: "TTR×1000",
+        data: trend.map((point) => ({
+          x: point.date.slice(5),
+          y: Math.round((point.ttr ?? 0) * 1000),
+        })),
+      },
+    ]
+  }, [trend, t])
+
+  const barChartData = useMemo(() => {
+    if (!statistics?.byPrimaryType) return []
+    return Object.entries(statistics.byPrimaryType)
+      .filter(([type]) => type && type !== "null" && type !== "undefined")
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 6)
+      .map(([type, count]) => ({
+        type,
+        count: count as number,
+      }))
+  }, [statistics])
+
+  const wordCloudData = useMemo(() => {
+    if (!profile?.commonToneKeywords) return []
+    return profile.commonToneKeywords.slice(0, 20).map((word: string, index: number) => ({
+      text: word,
+      value: 20 - index, // Higher value for earlier words (more common)
+    }))
+  }, [profile])
+
+  const radarData = useMemo(() => {
+    if (!profile?.averageMetrics) return []
+    const { wordCount, paraCount, ttr, burstiness } = profile.averageMetrics
+    return [
+      { trait: t("insights.wordCount"), value: Math.min(((wordCount ?? 0) / 5000) * 100, 100) },
+      { trait: t("reverse.paragraphCount"), value: Math.min(((paraCount ?? 0) / 50) * 100, 100) },
+      { trait: "TTR", value: (ttr ?? 0) * 100 },
+      { trait: "Burstiness", value: (burstiness ?? 0) * 100 },
+    ]
+  }, [profile, t])
+
+  // Build header stats card
+  const buildHeaderCard = (): A2UICardNode => {
     if (profileLoading) {
       return {
         type: "card",
@@ -68,154 +140,180 @@ export default function InsightsPage() {
       }
     }
 
-    const metricsRow: A2UIRowNode = {
-      type: "row",
-      gap: "1.5rem",
-      style: { marginTop: "1rem" },
-      children: [
-        {
-          type: "column",
-          gap: "0.25rem",
-          style: { flex: 1, textAlign: "center" },
-          children: [
-            { type: "text", text: formatMetric(profile.averageMetrics.wordCount, 0), variant: "h3" },
-            { type: "text", text: t("insights.wordCount"), variant: "caption", color: "muted" },
-          ],
-        },
-        {
-          type: "column",
-          gap: "0.25rem",
-          style: { flex: 1, textAlign: "center" },
-          children: [
-            { type: "text", text: formatMetric(profile.averageMetrics.paraCount, 0), variant: "h3" },
-            { type: "text", text: t("reverse.paragraphCount"), variant: "caption", color: "muted" },
-          ],
-        },
-        {
-          type: "column",
-          gap: "0.25rem",
-          style: { flex: 1, textAlign: "center" },
-          children: [
-            { type: "text", text: formatPercent(profile.averageMetrics.ttr), variant: "h3" },
-            { type: "text", text: "TTR", variant: "caption", color: "muted" },
-          ],
-        },
-        {
-          type: "column",
-          gap: "0.25rem",
-          style: { flex: 1, textAlign: "center" },
-          children: [
-            { type: "text", text: formatPercent(profile.averageMetrics.burstiness), variant: "h3" },
-            { type: "text", text: "Burstiness", variant: "caption", color: "muted" },
-          ],
-        },
-      ],
-    }
-
-    const typesRow: A2UIRowNode = {
-      type: "row",
-      gap: "0.5rem",
-      style: { flexWrap: "wrap", marginTop: "0.5rem" },
-      children: profile.topPrimaryTypes.slice(0, 5).map((item: { primaryType: string; percentage: number }) => ({
-        type: "badge",
-        text: `${item.primaryType} (${formatPercent(item.percentage)})`,
-        color: "primary" as const,
-      })),
-    }
-
-    const vocabularyRow: A2UIRowNode = {
-      type: "row",
-      gap: "0.5rem",
-      style: { flexWrap: "wrap", marginTop: "0.5rem" },
-      children: profile.commonToneKeywords.slice(0, 10).map((word: string) => ({
-        type: "badge",
-        text: word,
-        color: "default" as const,
-      })),
-    }
-
     return {
       type: "card",
       children: [
         {
-          type: "column",
-          gap: "1rem",
+          type: "row",
+          gap: "2rem",
+          justify: "around",
+          align: "center",
+          wrap: true,
           children: [
-            { type: "text", text: t("insights.styleProfile"), variant: "h3" },
             {
-              type: "row",
-              gap: "2rem",
+              type: "column",
+              gap: "0.25rem",
+              style: { textAlign: "center" },
               children: [
-                {
-                  type: "column",
-                  gap: "0.25rem",
-                  children: [
-                    { type: "text", text: String(profile.totalAnalyses), variant: "h2" },
-                    { type: "text", text: t("insights.totalAnalyses"), variant: "caption", color: "muted" },
-                  ],
-                },
-                {
-                  type: "column",
-                  gap: "0.25rem",
-                  children: [
-                    { type: "text", text: profile.lastAnalysisAt ? new Date(profile.lastAnalysisAt).toLocaleDateString() : "-", variant: "h4" },
-                    { type: "text", text: t("insights.lastAnalysis"), variant: "caption", color: "muted" },
-                  ],
-                },
+                { type: "text", text: String(profile.totalAnalyses), variant: "h1", weight: "bold" },
+                { type: "text", text: t("insights.totalAnalyses"), variant: "caption", color: "muted" },
               ],
             },
-            { type: "divider" },
-            { type: "text", text: t("insights.averageMetrics"), variant: "label" },
-            metricsRow,
-            { type: "divider" },
-            { type: "text", text: t("insights.topCategories"), variant: "label" },
-            typesRow,
-            { type: "divider" },
-            { type: "text", text: t("insights.toneKeywords"), variant: "label" },
-            vocabularyRow,
+            {
+              type: "column",
+              gap: "0.25rem",
+              style: { textAlign: "center" },
+              children: [
+                { type: "text", text: profile.lastAnalysisAt ? new Date(profile.lastAnalysisAt).toLocaleDateString() : "-", variant: "h3" },
+                { type: "text", text: t("insights.lastAnalysis"), variant: "caption", color: "muted" },
+              ],
+            },
+            {
+              type: "column",
+              gap: "0.25rem",
+              style: { textAlign: "center" },
+              children: [
+                { type: "text", text: String(profile.topPrimaryTypes.length), variant: "h3" },
+                { type: "text", text: t("insights.topCategories"), variant: "caption", color: "muted" },
+              ],
+            },
           ],
         },
       ],
     }
   }
 
-  // Build metrics trend card
-  const buildTrendCard = (): A2UICardNode => {
-    const trendData = trend ?? []
+  // Build metrics stat cards
+  const buildMetricsCard = (): A2UICardNode => {
+    if (!metricsStats) {
+      return {
+        type: "card",
+        children: [{ type: "text", text: t("common.noData"), color: "muted" }],
+      }
+    }
 
-    const chartContent: A2UINode = trendData.length === 0
-      ? { type: "text", text: t("common.noData"), color: "muted", style: { textAlign: "center", padding: "2rem" } }
-      : {
-          type: "column",
-          gap: "0.5rem",
-          children: trendData.slice(-10).map((point) => ({
-            type: "row",
-            justify: "between",
-            children: [
-              { type: "text", text: point.date, variant: "caption" },
-              { type: "row", gap: "1rem", children: [
-                { type: "text", text: `Words: ${formatMetric(point.wordCount, 0)}`, variant: "caption", color: "muted" },
-                { type: "text", text: `Para: ${formatMetric(point.paraCount, 0)}`, variant: "caption", color: "muted" },
-                { type: "text", text: `TTR: ${formatPercent(point.ttr)}`, variant: "caption", color: "muted" },
-                { type: "badge", text: String(point.count), color: "default" as const },
-              ]},
-            ],
-          })),
-        }
+    // Helper to build a single stat item
+    const buildStatItem = (value: string | number, label: string, description?: string): A2UINode => ({
+      type: "column",
+      gap: "0.25rem",
+      style: { textAlign: "center", flex: 1, minWidth: "100px" },
+      children: [
+        { type: "text", text: String(value), variant: "h2", weight: "bold" },
+        { type: "text", text: label, variant: "caption", color: "muted" },
+        ...(description ? [{ type: "text", text: description, variant: "caption", color: "muted", style: { fontSize: "10px" } } as A2UINode] : []),
+      ],
+    })
 
     return {
       type: "card",
       children: [
         {
           type: "column",
-          gap: "1rem",
+          gap: LAYOUT_GAP.content,
+          children: [
+            { type: "text", text: t("insights.averageMetrics"), variant: "h4", weight: "semibold" },
+            {
+              type: "row",
+              gap: LAYOUT_GAP.card,
+              wrap: true,
+              justify: "around",
+              children: [
+                buildStatItem(metricsStats.wordCount.toLocaleString(), t("insights.wordCount")),
+                buildStatItem(metricsStats.paraCount, t("reverse.paragraphCount")),
+                buildStatItem(metricsStats.ttr, "TTR", t("insights.ttrDescription")),
+                buildStatItem(metricsStats.burstiness, "Burstiness", t("insights.burstyDescription")),
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  }
+
+  // Build type distribution pie chart card
+  const buildTypeDistributionCard = (): A2UICardNode => {
+    if (typeDistributionData.length === 0) {
+      return {
+        type: "card",
+        children: [
+          {
+            type: "column",
+            gap: LAYOUT_GAP.content,
+            children: [
+              { type: "text", text: t("insights.byCategory"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("common.noData"), color: "muted" },
+            ],
+          },
+        ],
+      }
+    }
+
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: LAYOUT_GAP.content,
+          children: [
+            { type: "text", text: t("insights.byCategory"), variant: "h4", weight: "semibold" },
+            {
+              type: "chart-pie",
+              data: typeDistributionData,
+              height: CHART_HEIGHT.card,
+              innerRadius: 0.5,
+            } as A2UINode,
+          ],
+        },
+      ],
+    }
+  }
+
+  // Build radar chart card
+  const buildRadarCard = (): A2UICardNode => {
+    if (radarData.length === 0) {
+      return {
+        type: "card",
+        children: [{ type: "text", text: t("common.noData"), color: "muted" }],
+      }
+    }
+
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: LAYOUT_GAP.content,
+          children: [
+            { type: "text", text: t("insights.styleProfile"), variant: "h4", weight: "semibold" },
+            {
+              type: "chart-radar",
+              data: radarData,
+              keys: ["value"],
+              indexBy: "trait",
+              height: CHART_HEIGHT.card,
+              maxValue: 100,
+            } as A2UINode,
+          ],
+        },
+      ],
+    }
+  }
+
+  // Build trend chart card
+  const buildTrendCard = (): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: LAYOUT_GAP.content,
           children: [
             {
               type: "row",
               justify: "between",
               align: "center",
               children: [
-                { type: "text", text: t("insights.metricsTrend"), variant: "h3" },
+                { type: "text", text: t("insights.metricsTrend"), variant: "h4", weight: "semibold" },
                 {
                   type: "select",
                   id: "trendDays",
@@ -230,171 +328,130 @@ export default function InsightsPage() {
                 },
               ],
             },
-            chartContent,
+            trendChartData.length > 0
+              ? ({
+                  type: "chart-line",
+                  data: trendChartData,
+                  height: CHART_HEIGHT.trend,
+                  enableArea: true,
+                  curve: "catmullRom",
+                  xLegend: t("common.date"),
+                } as A2UINode)
+              : { type: "text", text: t("common.noData"), color: "muted", style: { textAlign: "center", padding: "2rem" } },
           ],
         },
       ],
     }
   }
 
-  // Build type insights card
-  const buildTypeCard = (): A2UICardNode => {
-    const typeOptions = (primaryTypes ?? []).map((t: string) => ({ label: t, value: t }))
-
-    const insightsContent: A2UINode = !selectedPrimaryType
-      ? { type: "text", text: t("insights.selectCategory"), color: "muted", style: { textAlign: "center", padding: "1rem" } }
-      : typeLoading
-        ? { type: "text", text: t("common.loading"), color: "muted" }
-        : typeInsights
-          ? {
-              type: "column",
-              gap: "1rem",
-              children: [
-                {
-                  type: "row",
-                  gap: "2rem",
-                  children: [
-                    {
-                      type: "column",
-                      gap: "0.25rem",
-                      children: [
-                        { type: "text", text: String(typeInsights.totalAnalyses), variant: "h3" },
-                        { type: "text", text: t("insights.totalAnalyses"), variant: "caption", color: "muted" },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "row",
-                  gap: "1.5rem",
-                  children: [
-                    {
-                      type: "column",
-                      gap: "0.25rem",
-                      style: { flex: 1 },
-                      children: [
-                        { type: "text", text: t("insights.wordCount"), variant: "label" },
-                        { type: "text", text: `Avg: ${formatMetric(typeInsights.metrics.wordCount.avg, 0)}`, variant: "caption" },
-                        { type: "text", text: `Range: ${formatMetric(typeInsights.metrics.wordCount.min, 0)} - ${formatMetric(typeInsights.metrics.wordCount.max, 0)}`, variant: "caption", color: "muted" },
-                      ],
-                    },
-                    {
-                      type: "column",
-                      gap: "0.25rem",
-                      style: { flex: 1 },
-                      children: [
-                        { type: "text", text: "TTR", variant: "label" },
-                        { type: "text", text: `Avg: ${formatPercent(typeInsights.metrics.ttr.avg)}`, variant: "caption" },
-                      ],
-                    },
-                    {
-                      type: "column",
-                      gap: "0.25rem",
-                      style: { flex: 1 },
-                      children: [
-                        { type: "text", text: "Burstiness", variant: "label" },
-                        { type: "text", text: `Avg: ${formatPercent(typeInsights.metrics.burstiness.avg)}`, variant: "caption" },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            }
-          : { type: "text", text: t("common.noData"), color: "muted" }
-
-    return {
-      type: "card",
-      children: [
-        {
-          type: "column",
-          gap: "1rem",
-          children: [
-            {
-              type: "row",
-              justify: "between",
-              align: "center",
-              children: [
-                { type: "text", text: t("insights.categoryInsights"), variant: "h3" },
-                {
-                  type: "select",
-                  id: "primaryType",
-                  value: selectedPrimaryType,
-                  options: [{ label: t("insights.selectCategory"), value: "" }, ...typeOptions],
-                  onChange: { action: "setPrimaryType" },
-                  style: { width: "180px" },
-                },
-              ],
-            },
-            insightsContent,
-          ],
-        },
-      ],
-    }
-  }
-
-  // Build statistics card
-  const buildStatisticsCard = (): A2UICardNode => {
-    if (!statistics) {
+  // Build word cloud card
+  const buildWordCloudCard = (): A2UICardNode => {
+    if (wordCloudData.length === 0) {
       return {
         type: "card",
-        children: [{ type: "text", text: t("common.loading"), color: "muted" }],
+        children: [
+          {
+            type: "column",
+            gap: LAYOUT_GAP.content,
+            children: [
+              { type: "text", text: t("insights.toneKeywords"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("common.noData"), color: "muted" },
+            ],
+          },
+        ],
       }
     }
 
-    const typeBadges: A2UINode[] = Object.entries(statistics.byPrimaryType).slice(0, 8).map(([type, count]) => ({
-      type: "badge",
-      text: `${type}: ${count}`,
-      color: "primary" as const,
-    }))
-
-    const statusBadges: A2UINode[] = Object.entries(statistics.byStatus).slice(0, 4).map(([status, count]) => ({
-      type: "badge",
-      text: `${status}: ${count}`,
-      color: status === "SUCCESS" ? "success" as const : status === "FAILED" ? "destructive" as const : "default" as const,
-    }))
-
     return {
       type: "card",
       children: [
         {
           type: "column",
-          gap: "1rem",
+          gap: LAYOUT_GAP.content,
           children: [
-            { type: "text", text: t("insights.statistics"), variant: "h3" },
+            { type: "text", text: t("insights.toneKeywords"), variant: "h4", weight: "semibold" },
             {
-              type: "column",
-              gap: "0.25rem",
-              children: [
-                { type: "text", text: String(statistics.total), variant: "h2" },
-                { type: "text", text: t("insights.totalAnalyses"), variant: "caption", color: "muted" },
-              ],
-            },
-            { type: "divider" },
-            { type: "text", text: t("insights.byCategory"), variant: "label" },
-            { type: "row", gap: "0.5rem", style: { flexWrap: "wrap" }, children: typeBadges },
-            { type: "divider" },
-            { type: "text", text: "By Status", variant: "label" },
-            { type: "row", gap: "0.5rem", style: { flexWrap: "wrap" }, children: statusBadges },
+              type: "chart-word-cloud",
+              words: wordCloudData,
+              height: CHART_HEIGHT.compact,
+            } as A2UINode,
           ],
         },
       ],
     }
   }
 
-  // Build main page layout
+  // Build bar chart card
+  const buildBarChartCard = (): A2UICardNode => {
+    if (barChartData.length === 0) {
+      return {
+        type: "card",
+        children: [
+          {
+            type: "column",
+            gap: LAYOUT_GAP.content,
+            children: [
+              { type: "text", text: t("insights.categoryInsights"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("common.noData"), color: "muted" },
+            ],
+          },
+        ],
+      }
+    }
+
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: LAYOUT_GAP.content,
+          children: [
+            { type: "text", text: t("insights.categoryInsights"), variant: "h4", weight: "semibold" },
+            {
+              type: "chart-bar",
+              data: barChartData,
+              keys: ["count"],
+              indexBy: "type",
+              layout: "horizontal",
+              height: CHART_HEIGHT.bar,
+            } as A2UINode,
+          ],
+        },
+      ],
+    }
+  }
+
+  // Build main page layout - 6 chart modules
   const buildPageNode = (): A2UIColumnNode => ({
     type: "column",
-    gap: "1.5rem",
+    gap: LAYOUT_GAP.section,
     children: [
+      // Title
       { type: "text", text: t("insights.title"), variant: "h2", weight: "bold" },
+      // Header stats
+      buildHeaderCard(),
+      // Row 1: Metrics Stats (full width)
+      buildMetricsCard(),
+      // Row 2: Type Distribution + Radar
       {
         type: "row",
-        gap: "1.5rem",
-        align: "start",
-        style: { flexWrap: "wrap" },
+        gap: LAYOUT_GAP.card,
+        wrap: true,
         children: [
-          { type: "column", gap: "1.5rem", style: { flex: 1, minWidth: "300px" }, children: [buildProfileCard(), buildStatisticsCard()] },
-          { type: "column", gap: "1.5rem", style: { flex: 1, minWidth: "300px" }, children: [buildTrendCard(), buildTypeCard()] },
+          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildTypeDistributionCard()] },
+          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildRadarCard()] },
+        ],
+      },
+      // Row 3: Trend Chart (full width)
+      buildTrendCard(),
+      // Row 3: Word Cloud + Bar Chart
+      {
+        type: "row",
+        gap: LAYOUT_GAP.card,
+        wrap: true,
+        children: [
+          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildWordCloudCard()] },
+          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildBarChartCard()] },
         ],
       },
     ],

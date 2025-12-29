@@ -33,6 +33,7 @@ export type {
   // Interactive
   A2UIButtonNode,
   A2UIInputNode,
+  A2UIEditableTextNode,
   A2UITextareaNode,
   A2UISelectNode,
   A2UICheckboxNode,
@@ -45,6 +46,13 @@ export type {
   A2UIProgressNode,
   A2UIModalNode,
   A2UIAlertNode,
+  // Chart
+  A2UIChartPieNode,
+  A2UIChartRadarNode,
+  A2UIChartLineNode,
+  A2UIChartBarNode,
+  A2UIChartRadialBarNode,
+  A2UIChartWordCloudNode,
 } from "./generated/types"
 
 export {

@@ -10,7 +10,9 @@ import {
   index,
   uniqueIndex,
   unique,
+  primaryKey,
 } from "drizzle-orm/pg-core";
+import type { AdapterAccountType } from "next-auth/adapters";
 import { relations } from "drizzle-orm";
 
 // ==================== Enum Types ====================
@@ -41,15 +43,76 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    username: text("username").notNull(),
-    accessCode: text("access_code").notNull(),
+    name: text("name"),
+    email: text("email").unique(),
+    emailVerified: timestamp("email_verified", { mode: "date" }),
+    image: text("image"),
+    // Legacy fields (kept for backwards compatibility)
+    username: text("username"),
+    accessCode: text("access_code"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     deletedAt: timestamp("deleted_at"),
   },
   (table) => ({
     usernameIdx: uniqueIndex("idx_users_username").on(table.username),
+    emailIdx: uniqueIndex("idx_users_email").on(table.email),
   })
+);
+
+// ==================== NextAuth Accounts Table ====================
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").$type<AdapterAccountType>().notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => [
+    primaryKey({ columns: [account.provider, account.providerAccountId] }),
+    index("idx_accounts_user_id").on(account.userId),
+  ]
+);
+
+// ==================== NextAuth Sessions Table ====================
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    sessionToken: text("session_token").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (session) => [
+    index("idx_sessions_user_id").on(session.userId),
+  ]
+);
+
+// ==================== NextAuth Verification Tokens Table ====================
+
+export const verificationTokens = pgTable(
+  "verification_tokens",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (vt) => [
+    primaryKey({ columns: [vt.identifier, vt.token] }),
+  ]
 );
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -99,13 +162,12 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 
 // ==================== Task Executions Table ====================
 
-// Execution result JSON type
+// Execution result JSON type (metadata only, content in separate columns)
 export type ExecutionResult = {
   coverUrl?: string;
   coverR2Key?: string;
   wechatMediaId?: string;
   wechatDraftId?: string;
-  articleHtml?: string;
   [key: string]: unknown;
 };
 
@@ -119,9 +181,12 @@ export const taskExecutions = pgTable(
     n8nExecutionId: text("n8n_execution_id"),
     status: executionStatusEnum("status").default("running").notNull(),
     errorMessage: text("error_message"),
-    // JSONB for input snapshot and result
+    // JSONB for input snapshot and result metadata
     inputSnapshot: jsonb("input_snapshot"),
     result: jsonb("result").$type<ExecutionResult>(),
+    // Article content (separate columns for performance)
+    articleMarkdown: text("article_markdown"),
+    articleHtml: text("article_html"),
     // Timestamps
     startedAt: timestamp("started_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
@@ -200,6 +265,11 @@ export const imagePrompts = pgTable(
     userCategoryIdx: index("idx_image_prompts_user_category").on(
       table.userId,
       table.category
+    ),
+    // 排序优化索引 (useCount DESC, createdAt DESC)
+    useCountCreatedIdx: index("idx_image_prompts_use_count_created").on(
+      table.useCount,
+      table.createdAt
     ),
   })
 );
@@ -377,7 +447,13 @@ export const styleAnalyses = pgTable(
     userIdIdx: index("idx_style_analyses_user_id").on(table.userId),
     // 时间排序
     createdAtIdx: index("idx_style_analyses_created_at").on(table.createdAt),
-    // 组合索引（用户 + 时间）
+    updatedAtIdx: index("idx_style_analyses_updated_at").on(table.updatedAt),
+    // 组合索引（用户 + 更新时间）用于列表查询
+    userUpdatedIdx: index("idx_style_analyses_user_updated").on(
+      table.userId,
+      table.updatedAt
+    ),
+    // 组合索引（用户 + 创建时间）
     userCreatedIdx: index("idx_style_analyses_user_created").on(
       table.userId,
       table.createdAt
@@ -424,3 +500,13 @@ export type NewStyleAnalysis = typeof styleAnalyses.$inferInsert;
 // Backwards compatibility aliases (deprecated)
 export type ReverseEngineering = StyleAnalysis;
 export type NewReverseEngineering = NewStyleAnalysis;
+
+// NextAuth types
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+
+export type VerificationToken = typeof verificationTokens.$inferSelect;
+export type NewVerificationToken = typeof verificationTokens.$inferInsert;

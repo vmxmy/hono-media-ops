@@ -2,10 +2,10 @@
 // Centralized export for all services
 
 export { taskService } from "./task.service";
-export type { TaskService, GetAllTasksOptions, CreateTaskInput, UpdateTaskStatusInput } from "./task.service";
+export type { TaskService, GetAllTasksOptions, CreateTaskInput, UpdateTaskStatusInput, TaskWithMaterial } from "./task.service";
 
 export { imagePromptService } from "./image-prompt.service";
-export type { ImagePromptService, CreateImagePromptInput, UpdateImagePromptInput, GetAllInput as GetAllImagePromptsInput } from "./image-prompt.service";
+export type { ImagePromptService, CreateImagePromptInput, UpdateImagePromptInput, GetAllInput as GetAllImagePromptsInput, ImagePromptListItem } from "./image-prompt.service";
 
 export { styleAnalysisService } from "./style-analysis.service";
 export type {

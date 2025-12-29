@@ -1,32 +1,31 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { jwtVerify } from "jose";
 import { db } from "@/server/db";
 import { services } from "@/server/services";
-import { env } from "@/env";
-
-interface JWTPayload {
-  userId: string;
-  username: string;
-}
+import { auth } from "@/lib/auth";
 
 export interface AuthUser {
   id: string;
-  username: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
 }
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const session = await auth();
+
   return {
     db,
     services,
+    session,
+    user: session?.user as AuthUser | null,
     ...opts,
   };
 };
 
 // Extended context type for protected procedures
 export type ProtectedContext = Awaited<ReturnType<typeof createTRPCContext>> & {
-  token: string;
   user: AuthUser;
 };
 
@@ -50,35 +49,14 @@ export const publicProcedure = t.procedure;
 
 // Protected procedure (requires auth)
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  const authHeader = ctx.headers.get("authorization");
-
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "未授权" });
   }
 
-  const token = authHeader.slice(7);
-
-  try {
-    const secret = new TextEncoder().encode(env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    const user = payload as unknown as JWTPayload;
-
-    if (!user.userId || !user.username) {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid token payload" });
-    }
-
-    return next({
-      ctx: {
-        ...ctx,
-        token,
-        user: {
-          id: user.userId,
-          username: user.username,
-        },
-      },
-    });
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Token verification failed" });
-  }
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.session.user as AuthUser,
+    },
+  });
 });

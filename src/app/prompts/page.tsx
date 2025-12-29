@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useSession, signOut } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { AppLayout } from "@/components/app-layout"
 import { useI18n } from "@/contexts/i18n-context"
-import { useAuth } from "@/hooks/use-auth"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 
@@ -65,7 +65,9 @@ const CATEGORY_OPTIONS = [
 
 export default function ImagePromptsPage() {
   const { t } = useI18n()
-  const { mounted, logout } = useAuth()
+  const { status } = useSession()
+  const mounted = status !== "loading"
+  const logout = () => signOut({ callbackUrl: "/" })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ImagePromptFormData>(DEFAULT_FORM)
   const [page, setPage] = useState(1)
@@ -447,7 +449,7 @@ export default function ImagePromptsPage() {
               gap: "1rem",
               children: [
                 { type: "text", text: `使用 ${prompt.useCount} 次`, variant: "caption", color: "muted" },
-                prompt.rating > 0 ? { type: "text", text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption", color: "warning" } : null,
+                (prompt.rating ?? 0) > 0 ? { type: "text", text: `${"★".repeat(prompt.rating!)}${"☆".repeat(5 - prompt.rating!)}`, variant: "caption", color: "warning" } : null,
               ].filter(Boolean),
             },
           ],

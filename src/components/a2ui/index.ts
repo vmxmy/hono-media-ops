@@ -30,6 +30,7 @@ export {
   A2UIDivider,
   A2UIButton,
   A2UIInput,
+  A2UIEditableText,
   A2UITextarea,
   A2UISelect,
   A2UICheckbox,
@@ -47,6 +48,16 @@ export {
   A2UILink,
   A2UIFallback,
 } from "./standard-components"
+
+// Chart components
+export {
+  A2UIChartPie,
+  A2UIChartRadar,
+  A2UIChartLine,
+  A2UIChartBar,
+  A2UIChartRadialBar,
+  A2UIChartWordCloud,
+} from "./chart-components"
 
 // Re-export types from generated
 export type {
@@ -73,6 +84,7 @@ export type {
   // Interactive
   A2UIButtonNode,
   A2UIInputNode,
+  A2UIEditableTextNode,
   A2UITextareaNode,
   A2UISelectNode,
   A2UICheckboxNode,
@@ -84,6 +96,13 @@ export type {
   A2UIProgressNode,
   A2UIModalNode,
   A2UIAlertNode,
+  // Chart
+  A2UIChartPieNode,
+  A2UIChartRadarNode,
+  A2UIChartLineNode,
+  A2UIChartBarNode,
+  A2UIChartRadialBarNode,
+  A2UIChartWordCloudNode,
 } from "@/lib/a2ui"
 
 // Toast provider
