@@ -180,11 +180,17 @@ export default function LoginPage() {
 
   // Show loading while checking session
   if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">{t("common.loading")}</div>
-      </div>
-    )
+    const loadingNode: A2UINode = {
+      type: "container",
+      style: {
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+      children: [{ type: "text", text: t("common.loading"), color: "muted" }],
+    }
+    return <A2UIRenderer node={loadingNode} />
   }
 
   const pageNode: A2UINode = {

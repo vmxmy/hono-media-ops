@@ -1,15 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  flexRender,
-  type ColumnDef,
-  type SortingState,
-} from "@tanstack/react-table"
+import { useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
+import { A2UIRenderer } from "@/components/a2ui"
+import type { A2UINode } from "@/lib/a2ui"
 
 // StyleIdentityData for extracting archetype
 interface StyleIdentityData {
@@ -38,6 +32,8 @@ interface MaterialsTableProps {
   onViewDetail: (analysis: StyleAnalysis) => void
 }
 
+type SortKey = "sourceTitle" | "primaryType" | "archetype" | "wordCount" | "metricsTtr" | "updatedAt"
+
 // Format relative time
 function formatRelativeTime(date: Date | null): string {
   if (!date) return "-"
@@ -54,178 +50,184 @@ function formatRelativeTime(date: Date | null): string {
   return new Date(date).toLocaleDateString()
 }
 
+function getSortValue(row: StyleAnalysis, key: SortKey): string | number {
+  switch (key) {
+    case "sourceTitle":
+      return (row.styleName || row.sourceTitle || "").toLowerCase()
+    case "primaryType":
+      return (row.primaryType || "").toLowerCase()
+    case "archetype":
+      return (row.styleIdentityData?.archetype || "").toLowerCase()
+    case "wordCount":
+      return row.wordCount ?? -1
+    case "metricsTtr":
+      return row.metricsTtr ?? -1
+    case "updatedAt":
+      return row.updatedAt ? new Date(row.updatedAt).getTime() : -1
+  }
+}
+
 export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: MaterialsTableProps) {
   const { t } = useI18n()
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<{ key: SortKey; direction: "asc" | "desc" } | null>(null)
 
-  const columns = useMemo<ColumnDef<StyleAnalysis>[]>(
-    () => [
-      {
-        accessorKey: "sourceTitle",
-        header: () => t("reverse.colTitle"),
-        cell: ({ row }) => {
-          const title = row.original.styleName || row.original.sourceTitle || t("reverse.untitled")
-          return (
-            <button
-              onClick={() => onViewDetail(row.original)}
-              className="max-w-[200px] truncate text-left font-medium text-foreground hover:text-primary hover:underline"
-              title={title}
-            >
-              {title}
-            </button>
-          )
-        },
-      },
-      {
-        accessorKey: "primaryType",
-        header: () => t("reverse.colType"),
-        cell: ({ getValue }) => {
-          const value = getValue() as string | null
-          if (!value) return <span className="text-muted-foreground">-</span>
-          return (
-            <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs">
-              {value}
-            </span>
-          )
-        },
-      },
-      {
-        id: "archetype",
-        accessorFn: (row) => row.styleIdentityData?.archetype,
-        header: () => t("reverse.colArchetype"),
-        cell: ({ getValue }) => {
-          const value = getValue() as string | undefined
-          if (!value) return <span className="text-muted-foreground">-</span>
-          return (
-            <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-              {value}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: "wordCount",
-        header: () => t("reverse.colWordCount"),
-        cell: ({ getValue }) => {
-          const value = getValue() as number | null
-          if (value == null) return <span className="text-muted-foreground">-</span>
-          return <span className="tabular-nums">{value.toLocaleString()}</span>
-        },
-      },
-      {
-        accessorKey: "metricsTtr",
-        header: () => t("reverse.colTtr"),
-        cell: ({ getValue }) => {
-          const value = getValue() as number | null
-          if (value == null) return <span className="text-muted-foreground">-</span>
-          return <span className="tabular-nums">{(value * 100).toFixed(1)}%</span>
-        },
-      },
-      {
-        accessorKey: "updatedAt",
-        header: () => t("reverse.colUpdated"),
-        cell: ({ getValue }) => {
-          const value = getValue() as Date | null
-          return (
-            <span className="text-muted-foreground">
-              {formatRelativeTime(value)}
-            </span>
-          )
-        },
-      },
-      {
-        id: "actions",
-        header: () => t("reverse.colActions"),
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onClone(row.original.id)}
-              className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-              title={t("reverse.cloneToTask")}
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onDelete(row.original.id)}
-              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              title={t("common.delete")}
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [t, onClone, onDelete, onViewDetail]
-  )
+  const sortedData = useMemo(() => {
+    if (!sorting) return data
+    const next = [...data]
+    next.sort((a, b) => {
+      const aVal = getSortValue(a, sorting.key)
+      const bVal = getSortValue(b, sorting.key)
+      if (aVal < bVal) return sorting.direction === "asc" ? -1 : 1
+      if (aVal > bVal) return sorting.direction === "asc" ? 1 : -1
+      return 0
+    })
+    return next
+  }, [data, sorting])
 
-  const table = useReactTable({
-    data,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
+  const gridTemplate =
+    "minmax(160px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(80px, 0.8fr) minmax(80px, 0.8fr) minmax(120px, 1fr) minmax(140px, 1fr)"
 
-  if (data.length === 0) {
-    return (
-      <div className="flex items-center justify-center rounded-lg border border-border bg-card p-8">
-        <p className="text-muted-foreground">{t("reverse.noLogs")}</p>
-      </div>
-    )
+  const handleAction = (action: string, args?: unknown[]) => {
+    switch (action) {
+      case "sort": {
+        const key = args?.[0] as SortKey
+        if (!key) return
+        setSorting((prev) => {
+          if (!prev || prev.key !== key) return { key, direction: "asc" }
+          return { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        })
+        break
+      }
+      case "view":
+        {
+          const target = data.find((item) => item.id === args?.[0])
+          if (target) onViewDetail(target)
+        }
+        break
+      case "clone":
+        onClone(args?.[0] as string)
+        break
+      case "delete":
+        onDelete(args?.[0] as string)
+        break
+    }
   }
 
-  return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <table className="w-full">
-        <thead className="bg-muted/50">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                  style={{ width: header.id === "sourceTitle" ? "auto" : undefined }}
-                >
-                  {header.isPlaceholder ? null : (
-                    <button
-                      className={`flex items-center gap-1 ${
-                        header.column.getCanSort() ? "cursor-pointer select-none hover:text-foreground" : ""
-                      }`}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {{
-                        asc: " ↑",
-                        desc: " ↓",
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </button>
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-border">
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="transition-colors hover:bg-accent/50"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-sm">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+  if (data.length === 0) {
+    const emptyNode: A2UINode = {
+      type: "card",
+      hoverable: false,
+      style: { padding: "2rem", textAlign: "center" },
+      children: [{ type: "text", text: t("reverse.noLogs"), color: "muted" }],
+    }
+    return <A2UIRenderer node={emptyNode} />
+  }
+
+  const headerLabels: Array<{ key?: SortKey; label: string }> = [
+    { key: "sourceTitle", label: t("reverse.colTitle") },
+    { key: "primaryType", label: t("reverse.colType") },
+    { key: "archetype", label: t("reverse.colArchetype") },
+    { key: "wordCount", label: t("reverse.colWordCount") },
+    { key: "metricsTtr", label: t("reverse.colTtr") },
+    { key: "updatedAt", label: t("reverse.colUpdated") },
+    { label: t("reverse.colActions") },
+  ]
+
+  const headerNode: A2UINode = {
+    type: "container",
+    style: {
+      display: "grid",
+      gridTemplateColumns: gridTemplate,
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      backgroundColor: "var(--ds-muted)",
+      borderBottom: "1px solid var(--ds-border)",
+    },
+    children: headerLabels.map((col, idx) => {
+      if (!col.key) {
+        return { type: "text", text: col.label, variant: "caption", color: "muted", weight: "medium" } as A2UINode
+      }
+      const isActive = sorting?.key === col.key
+      const arrow = isActive ? (sorting?.direction === "asc" ? " ↑" : " ↓") : ""
+      return {
+        type: "link",
+        text: `${col.label}${arrow}`,
+        variant: isActive ? "primary" : "muted",
+        onClick: { action: "sort", args: [col.key] },
+        style: { fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" },
+      } as A2UINode
+    }),
+  }
+
+  const rows: A2UINode[] = sortedData.map((row) => {
+    const title = row.styleName || row.sourceTitle || t("reverse.untitled")
+    const archetype = row.styleIdentityData?.archetype
+    const metricsTtr = row.metricsTtr
+    return {
+      type: "container",
+      style: {
+        display: "grid",
+        gridTemplateColumns: gridTemplate,
+        gap: "0.5rem",
+        padding: "0.75rem 1rem",
+        alignItems: "center",
+        borderBottom: "1px solid var(--ds-border)",
+      },
+      children: [
+        {
+          type: "link",
+          text: title,
+          variant: "default",
+          onClick: { action: "view", args: [row.id] },
+          style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+        },
+        row.primaryType
+          ? { type: "badge", text: row.primaryType, color: "default" }
+          : { type: "text", text: "-", color: "muted" },
+        archetype
+          ? { type: "badge", text: archetype, color: "primary" }
+          : { type: "text", text: "-", color: "muted" },
+        row.wordCount != null
+          ? { type: "text", text: row.wordCount.toLocaleString(), variant: "body" }
+          : { type: "text", text: "-", color: "muted" },
+        metricsTtr != null
+          ? { type: "text", text: `${(metricsTtr * 100).toFixed(1)}%`, variant: "body" }
+          : { type: "text", text: "-", color: "muted" },
+        { type: "text", text: formatRelativeTime(row.updatedAt), color: "muted" },
+        {
+          type: "row",
+          gap: "0.5rem",
+          children: [
+            {
+              type: "button",
+              text: "复制",
+              size: "sm",
+              variant: "secondary",
+              onClick: { action: "clone", args: [row.id] },
+            },
+            {
+              type: "button",
+              text: "删除",
+              size: "sm",
+              variant: "destructive",
+              onClick: { action: "delete", args: [row.id] },
+            },
+          ],
+        },
+      ],
+    }
+  })
+
+  const tableNode: A2UINode = {
+    type: "container",
+    style: {
+      border: "1px solid var(--ds-border)",
+      borderRadius: "0.75rem",
+      overflow: "hidden",
+      backgroundColor: "var(--ds-card)",
+    },
+    children: [headerNode, ...rows],
+  }
+
+  return <A2UIRenderer node={tableNode} onAction={handleAction} />
 }

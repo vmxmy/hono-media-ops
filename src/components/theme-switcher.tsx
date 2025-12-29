@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useTheme, type PaletteTheme } from "@/contexts/theme-context"
 import { useI18n, type Locale } from "@/contexts/i18n-context"
 import { tweakcnThemes } from "@/lib/tweakcn-themes"
+import { A2UIRenderer } from "@/components/a2ui"
+import type { A2UINode } from "@/lib/a2ui"
 
 export function ThemeSwitcher() {
   const { appearance, palette, setAppearance, setPalette } = useTheme()
@@ -17,7 +19,6 @@ export function ThemeSwitcher() {
     const checkDark = () => {
       if (appearance === "dark") return true
       if (appearance === "light") return false
-      // system mode - check media query
       return window.matchMedia("(prefers-color-scheme: dark)").matches
     }
     setIsDark(checkDark())
@@ -40,160 +41,180 @@ export function ThemeSwitcher() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  const handleAction = (action: string, args?: unknown[]) => {
+    switch (action) {
+      case "toggleOpen":
+        setIsOpen((prev) => !prev)
+        break
+      case "setLocale": {
+        const next = args?.[0] as Locale
+        if (next) {
+          setLocale(next)
+          setIsOpen(false)
+        }
+        break
+      }
+      case "setAppearance": {
+        const next = args?.[0] as "light" | "dark" | "system"
+        if (next) {
+          setAppearance(next)
+        }
+        break
+      }
+      case "setPalette": {
+        const next = args?.[0] as PaletteTheme | null
+        setPalette(next)
+        setIsOpen(false)
+        break
+      }
+    }
+  }
+
+  const themeItems = useMemo<A2UINode[]>(() => {
+    const items: A2UINode[] = [
+      {
+        type: "link",
+        text: t("settings.defaultTheme"),
+        variant: !palette ? "primary" : "default",
+        onClick: { action: "setPalette", args: [null] },
+        style: { display: "block", width: "100%", textAlign: "left", padding: "0.375rem 0.5rem" },
+      },
+    ]
+
+    tweakcnThemes.forEach((theme) => {
+      items.push({
+        type: "link",
+        text: theme.title,
+        variant: palette === theme.name ? "primary" : "default",
+        onClick: { action: "setPalette", args: [theme.name] },
+        style: { display: "block", width: "100%", textAlign: "left", padding: "0.375rem 0.5rem" },
+      })
+    })
+
+    return items
+  }, [palette, t])
+
+  const dropdownNode: A2UINode | null = isOpen
+    ? {
+        type: "container",
+        style: {
+          position: "absolute",
+          right: 0,
+          top: "100%",
+          marginTop: "0.5rem",
+          width: "16rem",
+          zIndex: 50,
+        },
+        children: [
+          {
+            type: "card",
+            hoverable: false,
+            style: { padding: "0.75rem" },
+            children: [
+              {
+                type: "row",
+                justify: "between",
+                align: "center",
+                children: [
+                  {
+                    type: "row",
+                    gap: "0.25rem",
+                    children: [
+                      {
+                        type: "button",
+                        text: "中",
+                        size: "sm",
+                        variant: locale === "zh-CN" ? "primary" : "secondary",
+                        onClick: { action: "setLocale", args: ["zh-CN"] },
+                      },
+                      {
+                        type: "button",
+                        text: "En",
+                        size: "sm",
+                        variant: locale === "en" ? "primary" : "secondary",
+                        onClick: { action: "setLocale", args: ["en"] },
+                      },
+                    ],
+                  },
+                  {
+                    type: "row",
+                    gap: "0.25rem",
+                    children: [
+                      {
+                        type: "button",
+                        text: "☀",
+                        size: "sm",
+                        variant: appearance === "light" ? "primary" : "secondary",
+                        onClick: { action: "setAppearance", args: ["light"] },
+                      },
+                      {
+                        type: "button",
+                        text: "🌙",
+                        size: "sm",
+                        variant: appearance === "dark" ? "primary" : "secondary",
+                        onClick: { action: "setAppearance", args: ["dark"] },
+                      },
+                      {
+                        type: "button",
+                        text: "🖥",
+                        size: "sm",
+                        variant: appearance === "system" ? "primary" : "secondary",
+                        onClick: { action: "setAppearance", args: ["system"] },
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: "text",
+                text: t("settings.theme"),
+                variant: "caption",
+                color: "muted",
+                style: { marginTop: "0.75rem", marginBottom: "0.5rem" },
+              },
+              {
+                type: "container",
+                style: { maxHeight: "12rem", overflowY: "auto" },
+                children: [
+                  {
+                    type: "column",
+                    gap: "0.25rem",
+                    children: themeItems,
+                  },
+                ],
+              },
+              {
+                type: "text",
+                text: isDark ? t("settings.dark") : t("settings.light"),
+                variant: "caption",
+                color: "muted",
+                style: { marginTop: "0.5rem" },
+              },
+            ],
+          },
+        ],
+      }
+    : null
+
+  const rootNode: A2UINode = {
+    type: "container",
+    style: { position: "relative" },
+    children: [
+      {
+        type: "button",
+        text: "⚙",
+        size: "sm",
+        variant: "secondary",
+        onClick: { action: "toggleOpen" },
+        style: { width: "2.25rem", height: "2.25rem", padding: 0 },
+      },
+      ...(dropdownNode ? [dropdownNode] : []),
+    ],
+  }
+
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80"
-        title={t("settings.title")}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-popover p-3 shadow-lg">
-          {/* Language & Appearance */}
-          <div className="mb-3 flex items-center justify-between">
-            {/* Language */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setLocale("zh-CN")}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  locale === "zh-CN"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-                title="中文"
-              >
-                <span className="text-sm font-medium">中</span>
-              </button>
-              <button
-                onClick={() => setLocale("en")}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  locale === "en"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-                title="English"
-              >
-                <span className="text-sm font-medium">En</span>
-              </button>
-            </div>
-
-            {/* Appearance */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setAppearance("light")}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  appearance === "light"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-                title={t("settings.light")}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setAppearance("dark")}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  appearance === "dark"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-                title={t("settings.dark")}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setAppearance("system")}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  appearance === "system"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-                title={t("settings.auto")}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2" />
-                  <path d="M8 21h8M12 17v4" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Theme */}
-          <div>
-            <div className="mb-2 text-xs font-medium text-muted-foreground">
-              {t("settings.theme")}
-            </div>
-            <div className="max-h-48 overflow-y-auto scrollbar-thin">
-              <button
-                onClick={() => {
-                  setPalette(null)
-                  setIsOpen(false)
-                }}
-                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                  !palette
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-secondary"
-                }`}
-              >
-                <div className="flex gap-0.5">
-                  <span className="h-4 w-4 rounded-full bg-primary" />
-                </div>
-                {t("settings.defaultTheme")}
-              </button>
-              {tweakcnThemes.map((theme) => (
-                <button
-                  key={theme.name}
-                  onClick={() => {
-                    setPalette(theme.name as PaletteTheme)
-                    setIsOpen(false)
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                    palette === theme.name
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-secondary"
-                  }`}
-                >
-                  <ThemePreview themeName={theme.name} isDark={isDark} />
-                  {theme.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ThemePreview({ themeName, isDark }: { themeName: string; isDark: boolean }) {
-  // Need both theme class AND light/dark class for CSS variables to apply
-  const themeClass = `theme-${themeName} ${isDark ? "dark" : "light"}`
-  return (
-    <div className={`${themeClass} flex gap-0.5`} style={{ isolation: "isolate" }}>
-      <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-primary)" }} />
-      <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-secondary)" }} />
-      <span className="h-4 w-4 rounded-full" style={{ backgroundColor: "var(--ds-accent)" }} />
+    <div ref={dropdownRef}>
+      <A2UIRenderer node={rootNode} onAction={handleAction} />
     </div>
   )
 }

@@ -21,6 +21,9 @@ export type I18nKey =
     | "common.create"
     | "common.update"
     | "common.confirm"
+    | "common.selected"
+    | "common.expand"
+    | "common.collapse"
     | "common.search"
     | "common.noData"
     | "common.date"
@@ -323,6 +326,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.create": "Create",
         "common.update": "Update",
         "common.confirm": "Confirm",
+        "common.selected": "Selected",
+        "common.expand": "Expand",
+        "common.collapse": "Collapse",
         "common.search": "Search",
         "common.noData": "No data",
         "common.date": "Date",
@@ -614,6 +620,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.create": "创建",
         "common.update": "更新",
         "common.confirm": "确认",
+        "common.selected": "已选择",
+        "common.expand": "展开",
+        "common.collapse": "收起",
         "common.search": "搜索",
         "common.noData": "暂无数据",
         "common.date": "日期",
