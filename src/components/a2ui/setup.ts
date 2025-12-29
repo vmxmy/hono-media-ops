@@ -40,6 +40,7 @@ import {
   A2UIChartRadialBar,
   A2UIChartWordCloud,
 } from "./chart-components"
+import { registerCustomComponents } from "./custom-components"
 
 /**
  * Create and setup a registry with all standard components
@@ -97,6 +98,8 @@ export function setupStandardRegistry(): A2UIRegistry {
   registry.register("chart-bar", A2UIChartBar, { source: "standard" })
   registry.register("chart-radial-bar", A2UIChartRadialBar, { source: "standard" })
   registry.register("chart-word-cloud", A2UIChartWordCloud, { source: "standard" })
+
+  registerCustomComponents(registry)
 
   return registry
 }

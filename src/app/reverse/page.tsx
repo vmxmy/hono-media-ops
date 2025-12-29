@@ -1,21 +1,13 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import dynamic from "next/dynamic"
 import { useSession, signOut } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
-import { AppLayout } from "@/components/app-layout"
-import { ReverseSubmitModal } from "@/components/reverse-submit-modal"
-import { MaterialsTable, type StyleAnalysis as TableStyleAnalysis } from "@/components/materials-table"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
-import type { A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
-
-// 延迟加载 CreateTaskModal
-const CreateTaskModal = dynamic(
-  () => import("@/components/create-task-modal").then((mod) => mod.CreateTaskModal),
-  { ssr: false }
-)
+import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+import { buildNavItems } from "@/lib/navigation"
 
 // v7.3 Schema Types
 interface StyleIdentityData {
@@ -170,8 +162,11 @@ interface StyleAnalysis {
 export default function ReversePage() {
   const { t } = useI18n()
   const { status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/" })
+  const navItems = buildNavItems(t)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedAnalysis, setSelectedAnalysis] = useState<StyleAnalysis | null>(null)
@@ -200,86 +195,9 @@ export default function ReversePage() {
     return new Date(date).toLocaleString()
   }
 
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "newAnalysis":
-          setIsModalOpen(true)
-          break
-        case "viewDetail": {
-          const logId = args?.[0] as string
-          const log = logs.find((l) => l.id === logId)
-          if (log) {
-            setSelectedAnalysis(log as StyleAnalysis)
-            setDetailModalOpen(true)
-          }
-          break
-        }
-        case "closeDetailModal":
-          setDetailModalOpen(false)
-          setSelectedAnalysis(null)
-          break
-        case "deleteLog": {
-          const deleteId = args?.[0] as string
-          const log = logs.find((l) => l.id === deleteId) as StyleAnalysis | undefined
-          const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
-
-          a2uiToast.warning(t("reverse.deleteConfirm"), {
-            description: title,
-            duration: 5000,
-            action: {
-              label: t("common.delete"),
-              onClick: () => {
-                deleteMutation.mutate(
-                  { id: deleteId },
-                  {
-                    onSuccess: () => {
-                      a2uiToast.success(t("reverse.deleteSuccess"))
-                    },
-                    onError: () => {
-                      a2uiToast.error(t("reverse.deleteFailed"))
-                    },
-                  }
-                )
-              },
-            },
-          })
-          break
-        }
-        case "copyPrompt": {
-          const logId = args?.[0] as string
-          const log = logs.find((l) => l.id === logId) as StyleAnalysis | undefined
-          if (log?.executionPrompt) {
-            navigator.clipboard.writeText(log.executionPrompt).then(() => {
-              a2uiToast.success(t("reverse.copySuccess"))
-            }).catch(() => {
-              a2uiToast.error(t("reverse.copyFailed"))
-            })
-          } else {
-            a2uiToast.warning(t("reverse.noPromptToCopy"))
-          }
-          break
-        }
-        case "cloneToTask": {
-          const materialId = args?.[0] as string
-          setCloneMaterialId(materialId)
-          setIsCreateTaskModalOpen(true)
-          break
-        }
-        case "setViewCard":
-          setViewMode("card")
-          break
-        case "setViewList":
-          setViewMode("list")
-          break
-      }
-    },
-    [logs, t, deleteMutation]
-  )
-
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     utils.reverseLogs.getAll.invalidate()
-  }
+  }, [utils])
 
   // Build list content
   const buildListNode = (): A2UINode => {
@@ -1377,6 +1295,20 @@ export default function ReversePage() {
     }
   }
 
+  const buildTableNode = (): A2UINode => {
+    if (isLoading) {
+      return { type: "text", text: t("common.loading"), color: "muted" }
+    }
+
+    return {
+      type: "materials-table",
+      data: logs,
+      onClone: { action: "cloneToTask" },
+      onDelete: { action: "deleteLog" },
+      onViewDetail: { action: "viewDetail" },
+    }
+  }
+
   // Build detail modal content
   const buildDetailModalNode = (): A2UINode | null => {
     if (!selectedAnalysis) return null
@@ -1529,8 +1461,8 @@ export default function ReversePage() {
           },
         ],
       },
-      // Conditionally render card view or table - table is rendered in JSX below
       ...(viewMode === "card" ? [buildListNode()] : []),
+      ...(viewMode === "list" ? [buildTableNode()] : []),
     ],
   }
 
@@ -1547,74 +1479,132 @@ export default function ReversePage() {
     setCloneMaterialId(null)
   }, [])
 
-  // Table action handlers
-  const handleTableClone = useCallback((id: string) => {
-    setCloneMaterialId(id)
-    setIsCreateTaskModalOpen(true)
-  }, [])
+  const handleAction = useCallback(
+    (action: string, args?: unknown[]) => {
+      switch (action) {
+        case "navigate": {
+          const href = args?.[0] as string
+          if (href) router.push(href)
+          break
+        }
+        case "logout":
+          logout()
+          break
+        case "newAnalysis":
+          setIsModalOpen(true)
+          break
+        case "viewDetail": {
+          const logId = args?.[0] as string
+          const log = logs.find((l) => l.id === logId)
+          if (log) {
+            setSelectedAnalysis(log as StyleAnalysis)
+            setDetailModalOpen(true)
+          }
+          break
+        }
+        case "closeDetailModal":
+          setDetailModalOpen(false)
+          setSelectedAnalysis(null)
+          break
+        case "deleteLog": {
+          const deleteId = args?.[0] as string
+          const log = logs.find((l) => l.id === deleteId) as StyleAnalysis | undefined
+          const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
 
-  const handleTableDelete = useCallback((id: string) => {
-    const log = logs.find((l) => l.id === id) as StyleAnalysis | undefined
-    const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
-
-    a2uiToast.warning(t("reverse.deleteConfirm"), {
-      description: title,
-      duration: 5000,
-      action: {
-        label: t("common.delete"),
-        onClick: () => {
-          deleteMutation.mutate(
-            { id },
-            {
-              onSuccess: () => {
-                a2uiToast.success(t("reverse.deleteSuccess"))
+          a2uiToast.warning(t("reverse.deleteConfirm"), {
+            description: title,
+            duration: 5000,
+            action: {
+              label: t("common.delete"),
+              onClick: () => {
+                deleteMutation.mutate(
+                  { id: deleteId },
+                  {
+                    onSuccess: () => {
+                      a2uiToast.success(t("reverse.deleteSuccess"))
+                    },
+                    onError: () => {
+                      a2uiToast.error(t("reverse.deleteFailed"))
+                    },
+                  }
+                )
               },
-              onError: () => {
-                a2uiToast.error(t("reverse.deleteFailed"))
-              },
-            }
-          )
-        },
-      },
-    })
-  }, [logs, t, deleteMutation])
-
-  const handleTableViewDetail = useCallback((analysis: TableStyleAnalysis) => {
-    // Find the full analysis from logs to preserve all data
-    const fullAnalysis = logs.find(l => l.id === analysis.id)
-    if (fullAnalysis) {
-      setSelectedAnalysis(fullAnalysis as StyleAnalysis)
-      setDetailModalOpen(true)
-    }
-  }, [logs])
+            },
+          })
+          break
+        }
+        case "copyPrompt": {
+          const logId = args?.[0] as string
+          const log = logs.find((l) => l.id === logId) as StyleAnalysis | undefined
+          if (log?.executionPrompt) {
+            navigator.clipboard.writeText(log.executionPrompt).then(() => {
+              a2uiToast.success(t("reverse.copySuccess"))
+            }).catch(() => {
+              a2uiToast.error(t("reverse.copyFailed"))
+            })
+          } else {
+            a2uiToast.warning(t("reverse.noPromptToCopy"))
+          }
+          break
+        }
+        case "cloneToTask": {
+          const materialId = args?.[0] as string
+          setCloneMaterialId(materialId)
+          setIsCreateTaskModalOpen(true)
+          break
+        }
+        case "setViewCard":
+          setViewMode("card")
+          break
+        case "setViewList":
+          setViewMode("list")
+          break
+        case "closeReverseSubmit":
+          setIsModalOpen(false)
+          break
+        case "reverseSubmitSuccess":
+          handleSuccess()
+          break
+        case "closeCreateTask":
+          handleCreateTaskClose()
+          break
+      }
+    },
+    [router, logout, logs, t, deleteMutation, handleSuccess, handleCreateTaskClose]
+  )
 
   if (!mounted) return null
 
-  return (
-    <AppLayout onLogout={logout}>
-      <A2UIRenderer node={pageNode} onAction={handleAction} />
-      {viewMode === "list" && (
-        <div className="mt-4">
-          {isLoading ? (
-            <p className="text-muted-foreground">{t("common.loading")}</p>
-          ) : (
-            <MaterialsTable
-              data={logs as TableStyleAnalysis[]}
-              onClone={handleTableClone}
-              onDelete={handleTableDelete}
-              onViewDetail={handleTableViewDetail}
-            />
-          )}
-        </div>
-      )}
-      {detailModalOpen && detailModalNode && <A2UIRenderer node={detailModalNode} onAction={handleAction} />}
-      <ReverseSubmitModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={handleSuccess} />
-      <CreateTaskModal
-        isOpen={isCreateTaskModalOpen}
-        onClose={handleCreateTaskClose}
-        onSuccess={handleCreateTaskClose}
-        initialData={createTaskInitialData}
-      />
-    </AppLayout>
-  )
+  const appShellNode: A2UIAppShellNode = {
+    type: "app-shell",
+    brand: t("app.title"),
+    logoSrc: "/logo.png",
+    logoAlt: "Wonton",
+    navItems,
+    activePath: pathname,
+    onNavigate: { action: "navigate" },
+    onLogout: { action: "logout" },
+    logoutLabel: t("auth.logout"),
+    headerActions: [{ type: "theme-switcher" }],
+    children: [pageNode],
+  }
+
+  const modalNodes: A2UINode[] = [
+    ...(detailModalOpen && detailModalNode ? [detailModalNode] : []),
+    {
+      type: "reverse-submit-modal",
+      open: isModalOpen,
+      onClose: { action: "closeReverseSubmit" },
+      onSuccess: { action: "reverseSubmitSuccess" },
+    },
+    {
+      type: "create-task-modal",
+      open: isCreateTaskModalOpen,
+      initialData: createTaskInitialData,
+      onClose: { action: "closeCreateTask" },
+      onSuccess: { action: "closeCreateTask" },
+    },
+  ]
+
+  return <A2UIRenderer node={[appShellNode, ...modalNodes]} onAction={handleAction} />
 }

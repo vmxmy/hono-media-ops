@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-29T13:10:09.244Z
+// Generated at: 2025-12-29T17:51:44.681Z
 
 import type { CSSProperties } from "react"
 
@@ -52,6 +52,13 @@ export type A2UINode =
   | A2UIChartBarNode
   | A2UIChartRadialBarNode
   | A2UIChartWordCloudNode
+  | A2UIAppShellNode
+  | A2UIThemeSwitcherNode
+  | A2UIMaterialsTableNode
+  | A2UIArticleViewerModalNode
+  | A2UICreateTaskModalNode
+  | A2UIReverseSubmitModalNode
+  | A2UIMarkdownNode
 
 // Vertical flex container
 export interface A2UIColumnNode extends A2UIBaseNode {
@@ -344,6 +351,68 @@ export interface A2UIChartWordCloudNode extends A2UIBaseNode {
   height?: number // Chart height in pixels
   title?: string // Chart title
   colors?: unknown[] // Custom color scheme
+}
+
+// Application shell layout with sidebar navigation and header
+export interface A2UIAppShellNode extends A2UIBaseNode {
+  type: "app-shell"
+  children?: A2UINode[]
+  brand?: string // Brand text
+  logoSrc?: string // Logo image source
+  logoAlt?: string // Logo image alt
+  navItems: Array<{ key: string; label: string; path: string }> // Sidebar navigation items
+  activePath?: string // Active pathname for highlighting
+  onNavigate?: A2UIAction // Navigate action
+  onLogout?: A2UIAction // Logout action
+  logoutLabel?: string // Logout button text
+  headerActions?: unknown[] // Optional header action nodes
+}
+
+// Theme and locale switcher
+export interface A2UIThemeSwitcherNode extends A2UIBaseNode {
+  type: "theme-switcher"
+}
+
+// Materials table for style analyses
+export interface A2UIMaterialsTableNode extends A2UIBaseNode {
+  type: "materials-table"
+  data: unknown[] // Table row data
+  onClone?: A2UIAction // Clone action
+  onDelete?: A2UIAction // Delete action
+  onViewDetail?: A2UIAction // View detail action
+}
+
+// Article viewer modal
+export interface A2UIArticleViewerModalNode extends A2UIBaseNode {
+  type: "article-viewer-modal"
+  open: boolean // Open state
+  markdown: string // Markdown content
+  title?: string // Modal title
+  onClose?: A2UIAction // Close action
+}
+
+// Create task modal
+export interface A2UICreateTaskModalNode extends A2UIBaseNode {
+  type: "create-task-modal"
+  open: boolean // Open state
+  initialData?: Record<string, unknown> // Initial form data
+  isRegenerate?: boolean // Regenerate mode
+  onClose?: A2UIAction // Close action
+  onSuccess?: A2UIAction // Success action
+}
+
+// Reverse analysis submit modal
+export interface A2UIReverseSubmitModalNode extends A2UIBaseNode {
+  type: "reverse-submit-modal"
+  open: boolean // Open state
+  onClose?: A2UIAction // Close action
+  onSuccess?: A2UIAction // Success action
+}
+
+// Markdown content renderer
+export interface A2UIMarkdownNode extends A2UIBaseNode {
+  type: "markdown"
+  content: string // Markdown source content
 }
 
 // A2UI Response format (from server)

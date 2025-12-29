@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useMemo } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
-import { AppLayout } from "@/components/app-layout"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UINode, A2UIColumnNode, A2UICardNode } from "@/lib/a2ui"
+import type { A2UIAppShellNode, A2UINode, A2UIColumnNode, A2UICardNode } from "@/lib/a2ui"
+import { buildNavItems } from "@/lib/navigation"
 
 // ============================================================================
 // Chart Layout Constants
@@ -28,8 +29,11 @@ const LAYOUT_GAP = {
 export default function InsightsPage() {
   const { t } = useI18n()
   const { status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/" })
+  const navItems = buildNavItems(t)
   const [trendDays, setTrendDays] = useState(30)
 
   // API queries
@@ -40,12 +44,20 @@ export default function InsightsPage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
+        case "navigate": {
+          const href = args?.[0] as string
+          if (href) router.push(href)
+          break
+        }
+        case "logout":
+          logout()
+          break
         case "setTrendDays":
           setTrendDays(Number(args?.[0]) || 30)
           break
       }
     },
-    []
+    [router, logout]
   )
 
   // Transform data for stat cards
@@ -459,9 +471,19 @@ export default function InsightsPage() {
 
   if (!mounted) return null
 
-  return (
-    <AppLayout onLogout={logout}>
-      <A2UIRenderer node={buildPageNode()} onAction={handleAction} />
-    </AppLayout>
-  )
+  const appShellNode: A2UIAppShellNode = {
+    type: "app-shell",
+    brand: t("app.title"),
+    logoSrc: "/logo.png",
+    logoAlt: "Wonton",
+    navItems,
+    activePath: pathname,
+    onNavigate: { action: "navigate" },
+    onLogout: { action: "logout" },
+    logoutLabel: t("auth.logout"),
+    headerActions: [{ type: "theme-switcher" }],
+    children: [buildPageNode()],
+  }
+
+  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
 }

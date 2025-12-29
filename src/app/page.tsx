@@ -4,7 +4,6 @@ import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import { useI18n } from "@/contexts/i18n-context"
-import { ThemeSwitcher } from "@/components/theme-switcher"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode, A2UIColumnNode } from "@/lib/a2ui"
 
@@ -188,16 +187,41 @@ export default function LoginPage() {
     )
   }
 
+  const pageNode: A2UINode = {
+    type: "container",
+    style: { position: "relative", minHeight: "100vh" },
+    children: [
+      {
+        type: "container",
+        style: { position: "absolute", right: "1rem", top: "1rem" },
+        children: [{ type: "theme-switcher" } as A2UINode],
+      },
+      {
+        type: "container",
+        style: {
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 1rem",
+        },
+        children: [
+          {
+            type: "card",
+            style: {
+              width: "100%",
+              maxWidth: "28rem",
+              padding: "2rem",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)",
+            },
+            children: [buildLoginPage()],
+          },
+        ],
+      },
+    ],
+  }
+
   return (
-    <>
-      <div className="absolute right-4 top-4">
-        <ThemeSwitcher />
-      </div>
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-lg">
-          <A2UIRenderer node={buildLoginPage()} onAction={handleAction} />
-        </div>
-      </div>
-    </>
+    <A2UIRenderer node={pageNode} onAction={handleAction} />
   )
 }

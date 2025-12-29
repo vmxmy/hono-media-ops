@@ -12,8 +12,28 @@
  * 3. Register it with the registry
  */
 
-import type { A2UIBaseNode } from "@/lib/a2ui"
+import { useCallback, useEffect, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import type {
+  A2UIBaseNode,
+  A2UIAction,
+  A2UINode,
+  A2UIAppShellNode,
+  A2UIThemeSwitcherNode,
+  A2UIMaterialsTableNode,
+  A2UIArticleViewerModalNode,
+  A2UICreateTaskModalNode,
+  A2UIReverseSubmitModalNode,
+  A2UIMarkdownNode,
+} from "@/lib/a2ui"
 import type { A2UIComponentProps } from "@/lib/a2ui/registry"
+import { ThemeSwitcher } from "@/components/theme-switcher"
+import { MaterialsTable, type StyleAnalysis } from "@/components/materials-table"
+import { ArticleViewerModal } from "@/components/article-viewer-modal"
+import { CreateTaskModal } from "@/components/create-task-modal"
+import { ReverseSubmitModal } from "@/components/reverse-submit-modal"
+import { A2UIToaster } from "./toaster"
 
 // Extend the base node type for custom components
 interface CustomA2UINode extends A2UIBaseNode {
@@ -223,6 +243,236 @@ export function A2UIEmptyState({
 }
 
 // ============================================================================
+// App Shell & Utility Components
+// ============================================================================
+
+function dispatchAction(
+  onAction: A2UIComponentProps<A2UIBaseNode>["onAction"],
+  action?: A2UIAction,
+  extraArgs?: unknown[]
+) {
+  if (!action) return
+  const args = extraArgs ? [...extraArgs, ...(action.args ?? [])] : action.args
+  onAction(action.action, args)
+}
+
+export function A2UIThemeSwitcher({
+  node,
+}: A2UIComponentProps<A2UIThemeSwitcherNode>) {
+  return (
+    <div style={node.style}>
+      <ThemeSwitcher />
+    </div>
+  )
+}
+
+export function A2UIAppShell({
+  node,
+  onAction,
+  renderChildren,
+}: A2UIComponentProps<A2UIAppShellNode>) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [node.activePath])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  const handleNavigate = useCallback(
+    (path: string) => {
+      dispatchAction(onAction, node.onNavigate, [path])
+      setIsMobileMenuOpen(false)
+    },
+    [node.onNavigate, onAction]
+  )
+
+  const handleLogout = useCallback(() => {
+    dispatchAction(onAction, node.onLogout)
+  }, [node.onLogout, onAction])
+
+  const headerActions = node.headerActions as A2UINode[] | undefined
+
+  return (
+    <div className="flex min-h-screen bg-background" style={node.style}>
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-border bg-card transition-transform duration-200 ease-in-out md:w-56 md:translate-x-0 ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex h-14 items-center justify-between border-b border-border px-4">
+            {node.logoSrc ? (
+              <img src={node.logoSrc} alt={node.logoAlt ?? node.brand ?? ""} className="h-8 w-auto" />
+            ) : (
+              <span className="text-lg font-semibold text-foreground">{node.brand}</span>
+            )}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="rounded-md p-1 text-muted-foreground hover:bg-accent md:hidden"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <nav className="flex-1 space-y-1 p-3">
+            {node.navItems.map((item) => {
+              const isActive = node.activePath === item.path
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleNavigate(item.path)}
+                  className={`flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </nav>
+
+          {node.onLogout && (
+            <div className="border-t border-border p-3 md:hidden">
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                {node.logoutLabel ?? "退出"}
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <div className="flex flex-1 flex-col md:ml-56">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-4 md:justify-end md:px-6">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <div className="flex items-center gap-4">
+            {headerActions && renderChildren?.(headerActions)}
+            {node.onLogout && (
+              <button
+                onClick={handleLogout}
+                className="hidden rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:block"
+              >
+                {node.logoutLabel ?? "退出"}
+              </button>
+            )}
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6">
+          {node.children && renderChildren?.(node.children)}
+        </main>
+      </div>
+
+      <A2UIToaster />
+    </div>
+  )
+}
+
+export function A2UIMaterialsTable({
+  node,
+  onAction,
+}: A2UIComponentProps<A2UIMaterialsTableNode>) {
+  const data = (node.data ?? []) as StyleAnalysis[]
+
+  return (
+    <MaterialsTable
+      data={data}
+      onClone={(id) => dispatchAction(onAction, node.onClone, [id])}
+      onDelete={(id) => dispatchAction(onAction, node.onDelete, [id])}
+      onViewDetail={(analysis) => dispatchAction(onAction, node.onViewDetail, [analysis.id])}
+    />
+  )
+}
+
+export function A2UIArticleViewerModal({
+  node,
+  onAction,
+}: A2UIComponentProps<A2UIArticleViewerModalNode>) {
+  if (!node.open) return null
+
+  return (
+    <ArticleViewerModal
+      isOpen={node.open}
+      onClose={() => dispatchAction(onAction, node.onClose)}
+      markdown={node.markdown}
+      title={node.title}
+    />
+  )
+}
+
+export function A2UICreateTaskModal({
+  node,
+  onAction,
+}: A2UIComponentProps<A2UICreateTaskModalNode>) {
+  if (!node.open) return null
+
+  return (
+    <CreateTaskModal
+      isOpen={node.open}
+      onClose={() => dispatchAction(onAction, node.onClose)}
+      onSuccess={() => dispatchAction(onAction, node.onSuccess)}
+      initialData={node.initialData as Record<string, string | undefined> | undefined}
+      isRegenerate={node.isRegenerate}
+    />
+  )
+}
+
+export function A2UIReverseSubmitModal({
+  node,
+  onAction,
+}: A2UIComponentProps<A2UIReverseSubmitModalNode>) {
+  if (!node.open) return null
+
+  return (
+    <ReverseSubmitModal
+      isOpen={node.open}
+      onClose={() => dispatchAction(onAction, node.onClose)}
+      onSuccess={() => dispatchAction(onAction, node.onSuccess)}
+    />
+  )
+}
+
+export function A2UIMarkdown({ node }: A2UIComponentProps<A2UIMarkdownNode>) {
+  return (
+    <article className="prose prose-neutral dark:prose-invert max-w-none" style={node.style}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {node.content}
+      </ReactMarkdown>
+    </article>
+  )
+}
+
+// ============================================================================
 // Registration Helper
 // ============================================================================
 
@@ -279,4 +529,11 @@ export function registerCustomComponents(registry: A2UIRegistry): void {
   registry.register("task-status-card", A2UITaskStatusCard, { source: "custom", priority: 10 })
   registry.register("stat-card", A2UIStatCard, { source: "custom", priority: 10 })
   registry.register("empty-state", A2UIEmptyState, { source: "custom", priority: 10 })
+  registry.register("app-shell", A2UIAppShell, { source: "custom", priority: 10 })
+  registry.register("theme-switcher", A2UIThemeSwitcher, { source: "custom", priority: 10 })
+  registry.register("materials-table", A2UIMaterialsTable, { source: "custom", priority: 10 })
+  registry.register("article-viewer-modal", A2UIArticleViewerModal, { source: "custom", priority: 10 })
+  registry.register("create-task-modal", A2UICreateTaskModal, { source: "custom", priority: 10 })
+  registry.register("reverse-submit-modal", A2UIReverseSubmitModal, { source: "custom", priority: 10 })
+  registry.register("markdown", A2UIMarkdown, { source: "custom", priority: 10 })
 }

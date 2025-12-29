@@ -2,7 +2,6 @@
 
 import { useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINavNode, A2UINode } from "@/lib/a2ui"
@@ -46,12 +45,16 @@ export function NavigationHeader({ onLogout }: NavigationHeaderProps) {
     children: navChildren,
   }
 
+  const themeNode: A2UINode = {
+    type: "theme-switcher",
+  }
+
   return (
     <header>
       <div className="relative">
         <A2UIRenderer node={navNode} onAction={handleAction} />
         <div className="absolute right-20 top-1/2 -translate-y-1/2">
-          <ThemeSwitcher />
+          <A2UIRenderer node={themeNode} />
         </div>
       </div>
     </header>

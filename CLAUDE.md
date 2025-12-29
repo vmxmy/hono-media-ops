@@ -450,7 +450,6 @@ const handleAction = (action: string, args?: unknown[]) => {
 
 Copy `.env.example` to `.env.local`:
 - `DATABASE_URL`: PostgreSQL connection string
-- `JWT_SECRET`: Secret for signing JWT tokens
 - `N8N_WEBHOOK_URL`: Endpoint for task processing webhooks
 
 ## Database Schema

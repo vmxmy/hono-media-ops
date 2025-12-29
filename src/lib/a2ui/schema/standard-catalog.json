@@ -791,6 +791,168 @@
           "description": "Custom color scheme"
         }
       }
+    },
+    "app-shell": {
+      "description": "Application shell layout with sidebar navigation and header",
+      "category": "custom",
+      "supportsChildren": true,
+      "properties": {
+        "brand": {
+          "type": "string",
+          "description": "Brand text"
+        },
+        "logoSrc": {
+          "type": "string",
+          "description": "Logo image source"
+        },
+        "logoAlt": {
+          "type": "string",
+          "description": "Logo image alt"
+        },
+        "navItems": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "label": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          },
+          "description": "Sidebar navigation items"
+        },
+        "activePath": {
+          "type": "string",
+          "description": "Active pathname for highlighting"
+        },
+        "onNavigate": {
+          "type": "action",
+          "description": "Navigate action"
+        },
+        "onLogout": {
+          "type": "action",
+          "description": "Logout action"
+        },
+        "logoutLabel": {
+          "type": "string",
+          "description": "Logout button text"
+        },
+        "headerActions": {
+          "type": "array",
+          "items": { "type": "node" },
+          "description": "Optional header action nodes"
+        }
+      }
+    },
+    "theme-switcher": {
+      "description": "Theme and locale switcher",
+      "category": "custom",
+      "properties": {}
+    },
+    "materials-table": {
+      "description": "Materials table for style analyses",
+      "category": "custom",
+      "properties": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "description": "Table row data"
+        },
+        "onClone": {
+          "type": "action",
+          "description": "Clone action"
+        },
+        "onDelete": {
+          "type": "action",
+          "description": "Delete action"
+        },
+        "onViewDetail": {
+          "type": "action",
+          "description": "View detail action"
+        }
+      }
+    },
+    "article-viewer-modal": {
+      "description": "Article viewer modal",
+      "category": "custom",
+      "properties": {
+        "open": {
+          "type": "boolean",
+          "required": true,
+          "description": "Open state"
+        },
+        "markdown": {
+          "type": "string",
+          "required": true,
+          "description": "Markdown content"
+        },
+        "title": {
+          "type": "string",
+          "description": "Modal title"
+        },
+        "onClose": {
+          "type": "action",
+          "description": "Close action"
+        }
+      }
+    },
+    "create-task-modal": {
+      "description": "Create task modal",
+      "category": "custom",
+      "properties": {
+        "open": {
+          "type": "boolean",
+          "required": true,
+          "description": "Open state"
+        },
+        "initialData": {
+          "type": "object",
+          "description": "Initial form data"
+        },
+        "isRegenerate": {
+          "type": "boolean",
+          "description": "Regenerate mode"
+        },
+        "onClose": {
+          "type": "action",
+          "description": "Close action"
+        },
+        "onSuccess": {
+          "type": "action",
+          "description": "Success action"
+        }
+      }
+    },
+    "reverse-submit-modal": {
+      "description": "Reverse analysis submit modal",
+      "category": "custom",
+      "properties": {
+        "open": {
+          "type": "boolean",
+          "required": true,
+          "description": "Open state"
+        },
+        "onClose": {
+          "type": "action",
+          "description": "Close action"
+        },
+        "onSuccess": {
+          "type": "action",
+          "description": "Success action"
+        }
+      }
+    },
+    "markdown": {
+      "description": "Markdown content renderer",
+      "category": "custom",
+      "properties": {
+        "content": {
+          "type": "string",
+          "required": true,
+          "description": "Markdown source content"
+        }
+      }
     }
   }
 }

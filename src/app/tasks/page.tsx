@@ -2,22 +2,18 @@
 
 import { useState, useCallback, useMemo } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
-import { AppLayout } from "@/components/app-layout"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
-import type { A2UIColumnNode, A2UINode, A2UICardNode, A2UIRowNode } from "@/lib/a2ui"
-
-// 延迟加载 CreateTaskModal 和 ArticleViewerModal
-import dynamic from "next/dynamic"
-const CreateTaskModal = dynamic(
-  () => import("@/components/create-task-modal").then((mod) => mod.CreateTaskModal),
-  { ssr: false }
-)
-const ArticleViewerModal = dynamic(
-  () => import("@/components/article-viewer-modal").then((mod) => mod.ArticleViewerModal),
-  { ssr: false }
-)
+import type {
+  A2UIAppShellNode,
+  A2UIColumnNode,
+  A2UINode,
+  A2UICardNode,
+  A2UIRowNode,
+} from "@/lib/a2ui"
+import { buildNavItems } from "@/lib/navigation"
 
 // Task type from API
 interface TaskWithMaterial {
@@ -38,8 +34,11 @@ interface TaskWithMaterial {
 export default function TasksPage() {
   const { t } = useI18n()
   const { status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/" })
+  const navItems = buildNavItems(t)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [articleViewerState, setArticleViewerState] = useState<{
     isOpen: boolean
@@ -129,48 +128,6 @@ export default function TasksPage() {
   const handleUpdate = useCallback((id: string, data: { topic?: string; keywords?: string }) => {
     updateMutation.mutate({ id, ...data })
   }, [updateMutation])
-
-  const handleA2UIAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "newTask":
-          handleNewTask()
-          break
-        case "stop":
-          handleStop(args?.[0] as string)
-          break
-        case "retry":
-          handleRetry(args?.[0] as string)
-          break
-        case "delete":
-          handleDelete(args?.[0] as string)
-          break
-        case "viewArticle":
-          handleViewArticle(args?.[0] as string, args?.[1] as string)
-          break
-        case "regenerate": {
-          const taskId = args?.[0] as string
-          const task = tasks.find((t) => t.id === taskId)
-          if (task) handleRegenerate(task)
-          break
-        }
-        // Editable text actions
-        case "updateTopic": {
-          const [newValue, taskId] = args as [string, string]
-          if (newValue?.trim()) {
-            handleUpdate(taskId, { topic: newValue.trim() })
-          }
-          break
-        }
-        case "updateKeywords": {
-          const [newValue, taskId] = args as [string, string]
-          handleUpdate(taskId, { keywords: newValue?.trim() || undefined })
-          break
-        }
-      }
-    },
-    [t, cancelMutation, retryMutation, deleteMutation, trpcUtils, tasks, handleUpdate]
-  )
 
   // Build A2UI task card
   const buildTaskCard = (task: TaskWithMaterial): A2UICardNode => {
@@ -394,6 +351,80 @@ export default function TasksPage() {
     refetch()
   }, [refetch])
 
+  const handleA2UIAction = useCallback(
+    (action: string, args?: unknown[]) => {
+      switch (action) {
+        case "navigate": {
+          const href = args?.[0] as string
+          if (href) router.push(href)
+          break
+        }
+        case "logout":
+          logout()
+          break
+        case "newTask":
+          handleNewTask()
+          break
+        case "stop":
+          handleStop(args?.[0] as string)
+          break
+        case "retry":
+          handleRetry(args?.[0] as string)
+          break
+        case "delete":
+          handleDelete(args?.[0] as string)
+          break
+        case "viewArticle":
+          handleViewArticle(args?.[0] as string, args?.[1] as string)
+          break
+        case "regenerate": {
+          const taskId = args?.[0] as string
+          const task = tasks.find((t) => t.id === taskId)
+          if (task) handleRegenerate(task)
+          break
+        }
+        case "closeCreateTask":
+          handleCreateTaskClose()
+          break
+        case "createTaskSuccess":
+          handleCreateTaskSuccess()
+          break
+        case "closeArticleViewer":
+          setArticleViewerState({ isOpen: false, markdown: "", title: "" })
+          break
+        // Editable text actions
+        case "updateTopic": {
+          const [newValue, taskId] = args as [string, string]
+          if (newValue?.trim()) {
+            handleUpdate(taskId, { topic: newValue.trim() })
+          }
+          break
+        }
+        case "updateKeywords": {
+          const [newValue, taskId] = args as [string, string]
+          handleUpdate(taskId, { keywords: newValue?.trim() || undefined })
+          break
+        }
+      }
+    },
+    [
+      router,
+      logout,
+      t,
+      trpcUtils,
+      tasks,
+      handleNewTask,
+      handleStop,
+      handleRetry,
+      handleDelete,
+      handleViewArticle,
+      handleRegenerate,
+      handleUpdate,
+      handleCreateTaskClose,
+      handleCreateTaskSuccess,
+    ]
+  )
+
   const createTaskInitialData = useMemo(
     () => regenerateData ?? undefined,
     [regenerateData]
@@ -403,25 +434,43 @@ export default function TasksPage() {
 
   if (!mounted) return null
 
-  return (
-    <AppLayout onLogout={logout}>
-      <div className="flex flex-col gap-4">
-        <A2UIRenderer node={headerNode} onAction={handleA2UIAction} />
-        <A2UIRenderer node={getTaskListContent()} onAction={handleA2UIAction} />
-      </div>
-      <CreateTaskModal
-        isOpen={isModalOpen}
-        onClose={handleCreateTaskClose}
-        onSuccess={handleCreateTaskSuccess}
-        initialData={createTaskInitialData}
-        isRegenerate={isRegenerate}
-      />
-      <ArticleViewerModal
-        isOpen={articleViewerState.isOpen}
-        onClose={() => setArticleViewerState({ isOpen: false, markdown: "", title: "" })}
-        markdown={articleViewerState.markdown}
-        title={articleViewerState.title}
-      />
-    </AppLayout>
-  )
+  const contentNode: A2UIColumnNode = {
+    type: "column",
+    gap: "1rem",
+    children: [headerNode, getTaskListContent()],
+  }
+
+  const appShellNode: A2UIAppShellNode = {
+    type: "app-shell",
+    brand: t("app.title"),
+    logoSrc: "/logo.png",
+    logoAlt: "Wonton",
+    navItems,
+    activePath: pathname,
+    onNavigate: { action: "navigate" },
+    onLogout: { action: "logout" },
+    logoutLabel: t("auth.logout"),
+    headerActions: [{ type: "theme-switcher" }],
+    children: [contentNode],
+  }
+
+  const modalNodes: A2UINode[] = [
+    {
+      type: "create-task-modal",
+      open: isModalOpen,
+      initialData: createTaskInitialData,
+      isRegenerate,
+      onClose: { action: "closeCreateTask" },
+      onSuccess: { action: "createTaskSuccess" },
+    },
+    {
+      type: "article-viewer-modal",
+      open: articleViewerState.isOpen,
+      markdown: articleViewerState.markdown,
+      title: articleViewerState.title,
+      onClose: { action: "closeArticleViewer" },
+    },
+  ]
+
+  return <A2UIRenderer node={[appShellNode, ...modalNodes]} onAction={handleA2UIAction} />
 }

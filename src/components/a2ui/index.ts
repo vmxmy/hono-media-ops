@@ -103,6 +103,14 @@ export type {
   A2UIChartBarNode,
   A2UIChartRadialBarNode,
   A2UIChartWordCloudNode,
+  // Custom
+  A2UIAppShellNode,
+  A2UIThemeSwitcherNode,
+  A2UIMaterialsTableNode,
+  A2UIArticleViewerModalNode,
+  A2UICreateTaskModalNode,
+  A2UIReverseSubmitModalNode,
+  A2UIMarkdownNode,
 } from "@/lib/a2ui"
 
 // Toast provider

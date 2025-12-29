@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-29T13:10:09.246Z
+// Generated at: 2025-12-29T17:51:44.683Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"
 
@@ -810,6 +810,167 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       },
     },
   },
+  {
+    type: "app-shell",
+    description: "Application shell layout with sidebar navigation and header",
+    category: "custom",
+    supportsChildren: true,
+    properties: {
+      brand: {
+        type: "string",
+        description: "Brand text",
+      },
+      logoSrc: {
+        type: "string",
+        description: "Logo image source",
+      },
+      logoAlt: {
+        type: "string",
+        description: "Logo image alt",
+      },
+      navItems: {
+        type: "array",
+        required: true,
+        description: "Sidebar navigation items",
+      },
+      activePath: {
+        type: "string",
+        description: "Active pathname for highlighting",
+      },
+      onNavigate: {
+        type: "action",
+        description: "Navigate action",
+      },
+      onLogout: {
+        type: "action",
+        description: "Logout action",
+      },
+      logoutLabel: {
+        type: "string",
+        description: "Logout button text",
+      },
+      headerActions: {
+        type: "array",
+        description: "Optional header action nodes",
+      },
+    },
+  },
+  {
+    type: "theme-switcher",
+    description: "Theme and locale switcher",
+    category: "custom",
+    properties: {
+    },
+  },
+  {
+    type: "materials-table",
+    description: "Materials table for style analyses",
+    category: "custom",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Table row data",
+      },
+      onClone: {
+        type: "action",
+        description: "Clone action",
+      },
+      onDelete: {
+        type: "action",
+        description: "Delete action",
+      },
+      onViewDetail: {
+        type: "action",
+        description: "View detail action",
+      },
+    },
+  },
+  {
+    type: "article-viewer-modal",
+    description: "Article viewer modal",
+    category: "custom",
+    properties: {
+      open: {
+        type: "boolean",
+        required: true,
+        description: "Open state",
+      },
+      markdown: {
+        type: "string",
+        required: true,
+        description: "Markdown content",
+      },
+      title: {
+        type: "string",
+        description: "Modal title",
+      },
+      onClose: {
+        type: "action",
+        description: "Close action",
+      },
+    },
+  },
+  {
+    type: "create-task-modal",
+    description: "Create task modal",
+    category: "custom",
+    properties: {
+      open: {
+        type: "boolean",
+        required: true,
+        description: "Open state",
+      },
+      initialData: {
+        type: "object",
+        description: "Initial form data",
+      },
+      isRegenerate: {
+        type: "boolean",
+        description: "Regenerate mode",
+      },
+      onClose: {
+        type: "action",
+        description: "Close action",
+      },
+      onSuccess: {
+        type: "action",
+        description: "Success action",
+      },
+    },
+  },
+  {
+    type: "reverse-submit-modal",
+    description: "Reverse analysis submit modal",
+    category: "custom",
+    properties: {
+      open: {
+        type: "boolean",
+        required: true,
+        description: "Open state",
+      },
+      onClose: {
+        type: "action",
+        description: "Close action",
+      },
+      onSuccess: {
+        type: "action",
+        description: "Success action",
+      },
+    },
+  },
+  {
+    type: "markdown",
+    description: "Markdown content renderer",
+    category: "custom",
+    properties: {
+      content: {
+        type: "string",
+        required: true,
+        description: "Markdown source content",
+      },
+    },
+  },
 ]
 
 // Create the standard catalog
@@ -830,5 +991,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","editable-text","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud"] as const
+export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","editable-text","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]
