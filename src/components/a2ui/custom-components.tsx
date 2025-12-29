@@ -266,12 +266,52 @@ export function A2UIThemeSwitcher({
   )
 }
 
+// Nav item icons
+const NavIcons: Record<string, React.ReactNode> = {
+  tasks: (
+    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  ),
+  reverse: (
+    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+  ),
+  insights: (
+    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+  prompts: (
+    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+}
+
 export function A2UIAppShell({
   node,
   onAction,
   renderChildren,
 }: A2UIComponentProps<A2UIAppShellNode>) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved !== null) {
+      setIsCollapsed(saved === "true")
+    }
+  }, [])
+
+  // Save collapsed state to localStorage
+  const toggleCollapsed = () => {
+    const newValue = !isCollapsed
+    setIsCollapsed(newValue)
+    localStorage.setItem("sidebar-collapsed", String(newValue))
+  }
 
   useEffect(() => {
     setIsMobileMenuOpen(false)
@@ -311,16 +351,20 @@ export function A2UIAppShell({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-border bg-card transition-transform duration-200 ease-in-out md:w-56 md:translate-x-0 ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed left-0 top-0 z-50 h-screen border-r border-border bg-card transition-all duration-200 ease-in-out md:translate-x-0 ${
+          isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
+        } ${isCollapsed ? "md:w-16" : "md:w-56"}`}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center justify-between border-b border-border px-4">
+          <div className="flex h-14 items-center justify-between border-b border-border px-3">
             {node.logoSrc ? (
-              <img src={node.logoSrc} alt={node.logoAlt ?? node.brand ?? ""} className="h-8 w-auto" />
+              isCollapsed ? (
+                <img src={node.logoSrc} alt={node.logoAlt ?? node.brand ?? ""} className="mx-auto h-8 w-8 object-contain" />
+              ) : (
+                <img src={node.logoSrc} alt={node.logoAlt ?? node.brand ?? ""} className="h-8 w-auto" />
+              )
             ) : (
-              <span className="text-lg font-semibold text-foreground">{node.brand}</span>
+              !isCollapsed && <span className="text-lg font-semibold text-foreground">{node.brand}</span>
             )}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -332,24 +376,45 @@ export function A2UIAppShell({
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 p-3">
+          <nav className="flex-1 space-y-1 p-2">
             {node.navItems.map((item) => {
               const isActive = node.activePath === item.path
+              const icon = NavIcons[item.key]
               return (
                 <button
                   key={item.key}
                   onClick={() => handleNavigate(item.path)}
-                  className={`flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  title={isCollapsed ? item.label : undefined}
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
+                  } ${isCollapsed ? "justify-center px-2" : ""}`}
                 >
-                  {item.label}
+                  {icon}
+                  {!isCollapsed && <span>{item.label}</span>}
                 </button>
               )
             })}
           </nav>
+
+          {/* Collapse toggle button (desktop only) */}
+          <div className="hidden border-t border-border p-2 md:block">
+            <button
+              onClick={toggleCollapsed}
+              className="flex w-full items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              title={isCollapsed ? "展开侧边栏" : "收起侧边栏"}
+            >
+              <svg
+                className={`h-5 w-5 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
 
           {node.onLogout && (
             <div className="border-t border-border p-3 md:hidden">
@@ -364,7 +429,7 @@ export function A2UIAppShell({
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col md:ml-56">
+      <div className={`flex flex-1 flex-col transition-all duration-200 ${isCollapsed ? "md:ml-16" : "md:ml-56"}`}>
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-4 md:justify-end md:px-6">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
