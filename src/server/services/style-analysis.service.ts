@@ -135,7 +135,7 @@ export const styleAnalysisService = {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Only select fields needed for list display (excludes large JSONB fields)
+    // Select fields needed for card display (includes JSONB for tabs, excludes rawJsonFull)
     const [data, countResult] = await Promise.all([
       db
         .select({
@@ -152,10 +152,18 @@ export const styleAnalysisService = {
           metricsBurstiness: styleAnalyses.metricsBurstiness,
           metricsTtr: styleAnalyses.metricsTtr,
           status: styleAnalyses.status,
-          // Include smaller JSONB fields needed for list display
+          // JSONB fields for tabs
           styleIdentityData: styleAnalyses.styleIdentityData,
           lexicalLogicData: styleAnalyses.lexicalLogicData,
           metricsConstraintsData: styleAnalyses.metricsConstraintsData,
+          rhetoricLogicData: styleAnalyses.rhetoricLogicData,
+          coreRulesData: styleAnalyses.coreRulesData,
+          blueprintData: styleAnalyses.blueprintData,
+          antiPatternsData: styleAnalyses.antiPatternsData,
+          goldenSampleData: styleAnalyses.goldenSampleData,
+          transferDemoData: styleAnalyses.transferDemoData,
+          executionPrompt: styleAnalyses.executionPrompt,
+          // Excluded: rawJsonFull (too large, rarely needed)
         })
         .from(styleAnalyses)
         .where(whereClause)
