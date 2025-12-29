@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
@@ -14,6 +14,9 @@ import type {
   A2UIRowNode,
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+
+// Mobile breakpoint (matches Tailwind md:)
+const MOBILE_BREAKPOINT = 768
 
 // Task type from API
 interface TaskWithMaterial {
@@ -51,6 +54,15 @@ export default function TasksPage() {
     coverPromptId?: string
     refMaterialId?: string
   } | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile screen
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const { data, isLoading, error, refetch } = api.tasks.getAll.useQuery(
     { page: 1, pageSize: 20 },
@@ -130,7 +142,8 @@ export default function TasksPage() {
   }, [updateMutation])
 
   // Build A2UI task card
-  const buildTaskCard = (task: TaskWithMaterial): A2UICardNode => {
+  const buildTaskCard = (task: TaskWithMaterial, options?: { compact?: boolean }): A2UICardNode => {
+    const isCompact = options?.compact ?? false
     const statusColors: Record<string, string> = {
       pending: "default",
       processing: "processing",
@@ -198,7 +211,10 @@ export default function TasksPage() {
         editable: canEdit,
         onChange: { action: "updateTopic", args: [task.id] },
       },
-      {
+    ]
+
+    if (!isCompact) {
+      contentChildren.push({
         type: "editable-text",
         value: task.keywords || "",
         placeholder: t("tasks.noKeywords"),
@@ -206,8 +222,8 @@ export default function TasksPage() {
         multiline: true,
         editable: canEdit,
         onChange: { action: "updateKeywords", args: [task.id] },
-      },
-    ]
+      })
+    }
 
     // Add reference material if exists
     if (task.refMaterial) {
@@ -288,7 +304,7 @@ export default function TasksPage() {
   }
 
   // Build task list content
-  const getTaskListContent = (): A2UINode => {
+  const getTaskListContent = (compact: boolean): A2UINode => {
     if (error) {
       return {
         type: "card",
@@ -318,7 +334,7 @@ export default function TasksPage() {
     return {
       type: "column",
       gap: "1rem",
-      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial)),
+      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial, { compact })),
     }
   }
 
@@ -434,11 +450,125 @@ export default function TasksPage() {
 
   if (!mounted) return null
 
-  const contentNode: A2UIColumnNode = {
-    type: "column",
-    gap: "1rem",
-    children: [headerNode, getTaskListContent()],
+  const isArticleOpen = articleViewerState.isOpen
+  // On mobile, show full screen article; on desktop, show split view
+  const isSplitView = isArticleOpen && !isMobile
+  const isMobileArticleView = isArticleOpen && isMobile
+
+  const listColumn: A2UINode = {
+    type: "container",
+    style: {
+      flex: 1,
+      minWidth: "280px",
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.75rem",
+      overflow: "hidden",
+    },
+    children: [
+      // Header stays fixed
+      {
+        type: "container",
+        style: { flexShrink: 0 },
+        children: [headerNode],
+      },
+      // Task list scrolls independently
+      {
+        type: "container",
+        style: { flex: 1, minHeight: 0, overflowY: "auto" },
+        children: [getTaskListContent(isSplitView)],
+      },
+    ],
   }
+
+  const viewerColumn: A2UINode = {
+    type: "container",
+    style: {
+      flex: isMobileArticleView ? 1 : 1.4,
+      minWidth: isMobileArticleView ? 0 : "320px",
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+    },
+    children: [
+      {
+        type: "container",
+        style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" },
+        children: [
+          {
+            type: "article-viewer-modal",
+            open: articleViewerState.isOpen,
+            markdown: articleViewerState.markdown,
+            title: articleViewerState.title,
+            onClose: { action: "closeArticleViewer" },
+          },
+        ],
+      },
+    ],
+  }
+
+  // Build content based on view mode
+  const buildContentNode = (): A2UINode => {
+    // Mobile: show only article viewer (full screen)
+    if (isMobileArticleView) {
+      return {
+        type: "container",
+        style: {
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        },
+        children: [viewerColumn],
+      }
+    }
+
+    // Desktop: split view with list and viewer side by side
+    if (isSplitView) {
+      return {
+        type: "container",
+        style: {
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "row",
+          gap: "1rem",
+          overflow: "hidden",
+        },
+        children: [listColumn, viewerColumn],
+      }
+    }
+
+    // Default: show only task list
+    return {
+      type: "container",
+      style: {
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.75rem",
+        overflow: "hidden",
+      },
+      children: [
+        {
+          type: "container",
+          style: { flexShrink: 0 },
+          children: [headerNode],
+        },
+        {
+          type: "container",
+          style: { flex: 1, minHeight: 0, overflowY: "auto" },
+          children: [getTaskListContent(false)],
+        },
+      ],
+    }
+  }
+
+  const contentNode = buildContentNode()
 
   const appShellNode: A2UIAppShellNode = {
     type: "app-shell",
@@ -462,13 +592,6 @@ export default function TasksPage() {
       isRegenerate,
       onClose: { action: "closeCreateTask" },
       onSuccess: { action: "createTaskSuccess" },
-    },
-    {
-      type: "article-viewer-modal",
-      open: articleViewerState.isOpen,
-      markdown: articleViewerState.markdown,
-      title: articleViewerState.title,
-      onClose: { action: "closeArticleViewer" },
     },
   ]
 

@@ -380,19 +380,22 @@ export function A2UIAppShell({
             {node.navItems.map((item) => {
               const isActive = node.activePath === item.path
               const icon = NavIcons[item.key]
+              // On mobile (when menu is open), always show labels
+              // On desktop, respect the isCollapsed state
+              const showLabel = isMobileMenuOpen || !isCollapsed
               return (
                 <button
                   key={item.key}
                   onClick={() => handleNavigate(item.path)}
-                  title={isCollapsed ? item.label : undefined}
+                  title={!showLabel ? item.label : undefined}
                   className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  } ${isCollapsed ? "justify-center px-2" : ""}`}
+                  } ${!showLabel ? "justify-center px-2 md:justify-center md:px-2" : ""}`}
                 >
                   {icon}
-                  {!isCollapsed && <span>{item.label}</span>}
+                  {showLabel && <span>{item.label}</span>}
                 </button>
               )
             })}
@@ -453,7 +456,7 @@ export function A2UIAppShell({
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
           {node.children && renderChildren?.(node.children)}
         </main>
       </div>

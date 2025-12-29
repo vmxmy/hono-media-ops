@@ -1288,7 +1288,7 @@ export default function ReversePage() {
       type: "container",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(550px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 550px), 1fr))",
         gap: "0.75rem",
       },
       children: logCards,
