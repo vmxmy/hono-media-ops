@@ -67,7 +67,7 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Logo with close button on mobile */}
           <div className="flex h-14 items-center justify-between border-b border-border px-4">
-            <span className="text-lg font-semibold">{t("app.title")}</span>
+            <img src="/logo.png" alt="Wonton" className="h-8 w-auto" />
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="rounded-md p-1 text-muted-foreground hover:bg-accent md:hidden"

@@ -75,9 +75,9 @@ export default function LoginPage() {
       {
         type: "column",
         gap: "0.5rem",
-        style: { textAlign: "center" },
+        style: { textAlign: "center", alignItems: "center" },
         children: [
-          { type: "text", text: t("app.title"), variant: "h2", weight: "bold" },
+          { type: "image", src: "/logo.png", alt: "Wonton", style: { height: "64px", width: "auto" } },
           { type: "text", text: t("app.description"), color: "muted" },
         ],
       },
