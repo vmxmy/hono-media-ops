@@ -101,6 +101,33 @@
     background-clip: text;
 }
 
+/* A2UI Scroll Area */
+.a2ui-scroll-area {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ds-muted-foreground) transparent;
+}
+
+.a2ui-scroll-area::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.a2ui-scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.a2ui-scroll-area::-webkit-scrollbar-thumb {
+    background-color: var(--ds-muted-foreground);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.a2ui-scroll-area::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ds-foreground);
+}
+
 /* A2UI Responsive utilities */
 @media (max-width: 767px) {
     .a2ui-row-responsive {

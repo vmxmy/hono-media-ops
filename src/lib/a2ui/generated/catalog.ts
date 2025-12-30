@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-29T17:51:44.683Z
+// Generated at: 2025-12-30T03:14:08.815Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"
 
@@ -61,6 +61,20 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
     category: "layout",
     supportsChildren: true,
     properties: {
+    },
+  },
+  {
+    type: "scroll-area",
+    description: "Scrollable container with custom scrollbar",
+    category: "layout",
+    supportsChildren: true,
+    properties: {
+      orientation: {
+        type: "string",
+        description: "Scroll direction",
+        enum: ["vertical","horizontal","both"],
+        default: "vertical",
+      },
     },
   },
   {
@@ -991,5 +1005,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","card","text","image","icon","divider","button","input","editable-text","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown"] as const
+export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

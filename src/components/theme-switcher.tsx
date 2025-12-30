@@ -70,73 +70,6 @@ export function ThemeSwitcher() {
     }
   }
 
-  // Render color bar for a theme
-  const renderColorBar = (colors: readonly string[], isSelected: boolean) => (
-    <div
-      style={{
-        display: "flex",
-        width: "3rem",
-        height: "0.75rem",
-        borderRadius: "0.25rem",
-        overflow: "hidden",
-        border: isSelected ? "2px solid var(--ds-foreground)" : "1px solid var(--ds-border)",
-        flexShrink: 0,
-      }}
-    >
-      {colors.map((color, i) => (
-        <div key={i} style={{ flex: 1, backgroundColor: color }} />
-      ))}
-    </div>
-  )
-
-  // Render theme list using React (not A2UI) to support color bars
-  const renderThemeList = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-      {/* Default theme */}
-      <button
-        onClick={() => handleAction("setPalette", [null])}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
-          !palette ? "text-primary font-medium" : "text-foreground"
-        }`}
-      >
-        <div
-          style={{
-            display: "flex",
-            width: "3rem",
-            height: "0.75rem",
-            borderRadius: "0.25rem",
-            overflow: "hidden",
-            border: !palette ? "2px solid var(--ds-foreground)" : "1px solid var(--ds-border)",
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ flex: 1, backgroundColor: "var(--ds-primary)" }} />
-          <div style={{ flex: 1, backgroundColor: "var(--ds-secondary)" }} />
-          <div style={{ flex: 1, backgroundColor: "var(--ds-accent)" }} />
-          <div style={{ flex: 1, backgroundColor: "var(--ds-muted)" }} />
-        </div>
-        <span>{t("settings.defaultTheme")}</span>
-      </button>
-
-      {/* Theme list */}
-      {tweakcnThemes.map((theme) => {
-        const isSelected = palette === theme.name
-        return (
-          <button
-            key={theme.name}
-            onClick={() => handleAction("setPalette", [theme.name])}
-            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
-              isSelected ? "text-primary font-medium" : "text-foreground"
-            }`}
-          >
-            {renderColorBar(theme.colors, isSelected)}
-            <span>{theme.title}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-
   const headerNode: A2UINode = {
     type: "row",
     justify: "between",
@@ -201,27 +134,70 @@ export function ThemeSwitcher() {
     style: { width: "2.25rem", height: "2.25rem", padding: 0 },
   }
 
+  const themeOptions = [
+    { key: "default", label: t("settings.defaultTheme"), value: null, selected: !palette },
+    ...tweakcnThemes.map((theme) => ({
+      key: theme.name,
+      label: theme.title,
+      value: theme.name,
+      selected: palette === theme.name,
+    })),
+  ]
+
+  const themeListNode: A2UINode = {
+    type: "column",
+    gap: "0.25rem",
+    children: themeOptions.map((option) => ({
+      type: "button",
+      text: option.label,
+      size: "sm",
+      variant: option.selected ? "primary" : "secondary",
+      fullWidth: true,
+      style: { justifyContent: "flex-start" },
+      onClick: { action: "setPalette", args: [option.value] },
+    })),
+  }
+
+  const dropdownNode: A2UINode = {
+    type: "container",
+    style: {
+      position: "absolute",
+      right: 0,
+      top: "100%",
+      marginTop: "0.5rem",
+      width: "16rem",
+      zIndex: 50,
+    },
+    children: [
+      {
+        type: "card",
+        hoverable: false,
+        style: { padding: "0.75rem" },
+        children: [
+          headerNode,
+          { type: "text", text: t("settings.theme"), variant: "caption", color: "muted", style: { marginTop: "0.75rem", marginBottom: "0.5rem" } },
+          {
+            type: "container",
+            style: { maxHeight: "12rem", overflowY: "auto" },
+            children: [themeListNode],
+          },
+          {
+            type: "text",
+            text: isDark ? t("settings.dark") : t("settings.light"),
+            variant: "caption",
+            color: "muted",
+            style: { marginTop: "0.5rem" },
+          },
+        ],
+      },
+    ],
+  }
+
+  const renderNodes: A2UINode[] = isOpen ? [triggerNode, dropdownNode] : [triggerNode]
+
   return (
-    <div ref={dropdownRef} style={{ position: "relative" }}>
-      <A2UIRenderer node={triggerNode} onAction={handleAction} />
-
-      {isOpen && (
-        <div
-          className="absolute right-0 top-full mt-2 w-64 z-50 rounded-lg border border-border bg-card p-3 shadow-lg"
-        >
-          <A2UIRenderer node={headerNode} onAction={handleAction} />
-
-          <p className="mt-3 mb-2 text-xs text-muted-foreground">{t("settings.theme")}</p>
-
-          <div style={{ maxHeight: "12rem", overflowY: "auto" }}>
-            {renderThemeList()}
-          </div>
-
-          <p className="mt-2 text-xs text-muted-foreground">
-            {isDark ? t("settings.dark") : t("settings.light")}
-          </p>
-        </div>
-      )}
+    <div ref={dropdownRef} className="relative">
+      <A2UIRenderer node={renderNodes} onAction={handleAction} />
     </div>
   )
 }

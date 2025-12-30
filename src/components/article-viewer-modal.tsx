@@ -48,7 +48,7 @@ export function ArticleViewerModal({
     return [
       {
         label: `📖 ${t("article.preview")}`,
-        content: { type: "markdown", content: markdown },
+        content: { type: "markdown", content: markdown } as A2UINode,
       },
       {
         label: `</> ${t("article.source")}`,
@@ -64,39 +64,97 @@ export function ArticleViewerModal({
             wordBreak: "break-word",
           },
           children: [{ type: "text", text: markdown }],
-        },
+        } as A2UINode,
       },
     ]
   }, [markdown, t])
 
-  const tabHeaderNode = useMemo<A2UINode>(() => {
-    return {
-      type: "row",
-      align: "stretch",
-      gap: "0.25rem",
-      style: {
-        borderBottom: "1px solid var(--ds-border)",
-        paddingBottom: "0.25rem",
-      },
-      children: tabs.map((tab, index) => {
-        const isActive = index === activeTab
-        return {
-          type: "button",
-          text: tab.label,
-          variant: "ghost",
-          size: "sm",
-          fullWidth: true,
-          style: {
-            flex: 1,
-            borderRadius: 0,
-            borderBottom: isActive ? "2px solid var(--ds-primary)" : "2px solid transparent",
-            color: isActive ? "var(--ds-foreground)" : "var(--ds-muted-foreground)",
+  // 第一段：标题栏
+  const titleSection: A2UINode = {
+    type: "container",
+    style: {
+      padding: "1rem",
+      flexShrink: 0,
+      borderBottom: "1px solid var(--ds-border)",
+    },
+    children: [
+      {
+        type: "row",
+        justify: "between",
+        align: "center",
+        gap: "0.5rem",
+        children: [
+          { type: "text", text: title ?? t("article.viewArticle"), variant: "h3", weight: "semibold" },
+          {
+            type: "row",
+            gap: "0.5rem",
+            children: [
+              {
+                type: "button",
+                text: copied ? t("article.copied") : t("article.copyMarkdown"),
+                variant: "secondary",
+                size: "sm",
+                onClick: { action: "copy" },
+              },
+              { type: "button", text: t("common.close"), variant: "ghost", size: "sm", onClick: { action: "close" } },
+            ],
           },
-          onClick: { action: "tab", args: [index] },
-        }
-      }),
-    }
-  }, [activeTab, tabs])
+        ],
+      },
+    ],
+  }
+
+  // 第二段：Tab 栏
+  const tabSection: A2UINode = {
+    type: "container",
+    style: {
+      padding: "0 1rem",
+      flexShrink: 0,
+      borderBottom: "1px solid var(--ds-border)",
+    },
+    children: [
+      {
+        type: "row",
+        align: "stretch",
+        gap: "0",
+        children: tabs.map((tab, index) => {
+          const isActive = index === activeTab
+          return {
+            type: "button",
+            text: tab.label,
+            variant: "ghost",
+            size: "sm",
+            style: {
+              flex: 1,
+              borderRadius: 0,
+              borderBottom: isActive ? "2px solid var(--ds-primary)" : "2px solid transparent",
+              color: isActive ? "var(--ds-foreground)" : "var(--ds-muted-foreground)",
+              marginBottom: "-1px",
+            },
+            onClick: { action: "tab", args: [index] },
+          }
+        }),
+      },
+    ],
+  }
+
+  // 第三段：内容区（带滚动条）
+  const contentSection: A2UINode = {
+    type: "scroll-area",
+    style: {
+      flex: 1,
+      minHeight: 0,
+    },
+    children: [
+      {
+        type: "container",
+        style: {
+          padding: "1rem",
+        },
+        children: [tabs[activeTab]?.content ?? { type: "text", text: "" }],
+      },
+    ],
+  }
 
   const panelNode: A2UINode = {
     type: "card",
@@ -109,67 +167,7 @@ export function ArticleViewerModal({
       padding: "0",
       overflow: "hidden",
     },
-    children: [
-      // Fixed header section
-      {
-        type: "container",
-        style: {
-          padding: "1rem 1rem 0 1rem",
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-        },
-        children: [
-          {
-            type: "row",
-            justify: "between",
-            align: "center",
-            gap: "0.5rem",
-            children: [
-              { type: "text", text: title ?? t("article.viewArticle"), variant: "h3", weight: "semibold" },
-              { type: "button", text: t("common.close"), variant: "secondary", size: "sm", onClick: { action: "close" } },
-            ],
-          },
-          tabHeaderNode,
-        ],
-      },
-      // Scrollable content area
-      {
-        type: "container",
-        style: {
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          padding: "1rem",
-        },
-        children: [(tabs[activeTab]?.content ?? { type: "text", text: "" }) as A2UINode],
-      },
-      // Fixed footer section
-      {
-        type: "container",
-        style: {
-          padding: "0.75rem 1rem",
-          borderTop: "1px solid var(--ds-border)",
-          flexShrink: 0,
-        },
-        children: [
-          {
-            type: "row",
-            justify: "end",
-            gap: "0.5rem",
-            children: [
-              {
-                type: "button",
-                text: copied ? t("article.copied") : t("article.copyMarkdown"),
-                variant: "primary",
-                onClick: { action: "copy" },
-              },
-            ],
-          },
-        ],
-      },
-    ],
+    children: [titleSection, tabSection, contentSection],
   }
 
   if (!isOpen) return null

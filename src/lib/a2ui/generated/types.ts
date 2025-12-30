@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-29T17:51:44.681Z
+// Generated at: 2025-12-30T03:14:08.814Z
 
 import type { CSSProperties } from "react"
 
@@ -22,6 +22,7 @@ export type A2UINode =
   | A2UIColumnNode
   | A2UIRowNode
   | A2UIContainerNode
+  | A2UIScrollAreaNode
   | A2UICardNode
   | A2UITextNode
   | A2UIImageNode
@@ -82,6 +83,13 @@ export interface A2UIRowNode extends A2UIBaseNode {
 export interface A2UIContainerNode extends A2UIBaseNode {
   type: "container"
   children?: A2UINode[]
+}
+
+// Scrollable container with custom scrollbar
+export interface A2UIScrollAreaNode extends A2UIBaseNode {
+  type: "scroll-area"
+  children?: A2UINode[]
+  orientation?: "vertical" | "horizontal" | "both" // Scroll direction
 }
 
 // Card container with optional click action

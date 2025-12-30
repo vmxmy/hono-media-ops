@@ -6,6 +6,7 @@ import {
   A2UIColumn,
   A2UIRow,
   A2UIContainer,
+  A2UIScrollArea,
   A2UICard,
   A2UIText,
   A2UIImage,
@@ -56,6 +57,7 @@ export function setupStandardRegistry(): A2UIRegistry {
   registry.register("column", A2UIColumn, { source: "standard" })
   registry.register("row", A2UIRow, { source: "standard" })
   registry.register("container", A2UIContainer, { source: "standard" })
+  registry.register("scroll-area", A2UIScrollArea, { source: "standard" })
   registry.register("card", A2UICard, { source: "standard" })
 
   // Register content components

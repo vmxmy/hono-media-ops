@@ -53,6 +53,19 @@
       "supportsChildren": true,
       "properties": {}
     },
+    "scroll-area": {
+      "description": "Scrollable container with custom scrollbar",
+      "category": "layout",
+      "supportsChildren": true,
+      "properties": {
+        "orientation": {
+          "type": "string",
+          "enum": ["vertical", "horizontal", "both"],
+          "default": "vertical",
+          "description": "Scroll direction"
+        }
+      }
+    },
     "card": {
       "description": "Card container with optional click action",
       "category": "layout",

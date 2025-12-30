@@ -6,6 +6,7 @@ import type {
   A2UIColumnNode,
   A2UIRowNode,
   A2UIContainerNode,
+  A2UIScrollAreaNode,
   A2UICardNode,
   A2UITextNode,
   A2UIButtonNode,
@@ -93,6 +94,24 @@ export function A2UIRow({ node, renderChildren }: A2UIComponentProps<A2UIRowNode
 export function A2UIContainer({ node, renderChildren }: A2UIComponentProps<A2UIContainerNode>) {
   return (
     <div style={node.style}>
+      {node.children && renderChildren?.(node.children)}
+    </div>
+  )
+}
+
+export function A2UIScrollArea({ node, renderChildren }: A2UIComponentProps<A2UIScrollAreaNode>) {
+  const orientation = node.orientation ?? "vertical"
+  const overflowStyle: CSSProperties = {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    overflowY: orientation === "horizontal" ? "hidden" : "auto",
+    overflowX: orientation === "vertical" ? "hidden" : "auto",
+    ...node.style,
+  }
+
+  return (
+    <div className="a2ui-scroll-area" style={overflowStyle}>
       {node.children && renderChildren?.(node.children)}
     </div>
   )
