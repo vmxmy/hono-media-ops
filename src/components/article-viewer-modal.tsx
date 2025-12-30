@@ -102,7 +102,8 @@ export function ArticleViewerModal({
     type: "card",
     hoverable: false,
     style: {
-      height: "100%",
+      flex: 1,
+      minHeight: 0,
       display: "flex",
       flexDirection: "column",
       padding: "0",
