@@ -650,7 +650,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "nav.settings": "设置",
         // Tasks
         "tasks.title": "写点东西",
-        "tasks.newTask": "新建任务",
+        "tasks.newTask": "写点啥",
         "tasks.noTasks": "暂无任务",
         "tasks.created": "创建时间",
         "tasks.untitledTask": "未命名任务",
