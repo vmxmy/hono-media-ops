@@ -171,6 +171,13 @@ export type ExecutionResult = {
   [key: string]: unknown;
 };
 
+// WeChat media upload result type
+export type WechatMediaInfo = {
+  media_id: string;
+  url: string;
+  item: unknown[];
+};
+
 export const taskExecutions = pgTable(
   "task_executions",
   {
@@ -187,6 +194,8 @@ export const taskExecutions = pgTable(
     // Article content (separate columns for performance)
     articleMarkdown: text("article_markdown"),
     articleHtml: text("article_html"),
+    // WeChat media upload result
+    wechatMediaInfo: jsonb("wechat_media_info").$type<WechatMediaInfo>(),
     // Timestamps
     startedAt: timestamp("started_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
@@ -440,6 +449,7 @@ export const styleAnalyses = pgTable(
 
     // ========== 备份 & 状态 ==========
     rawJsonFull: jsonb("raw_json_full"),
+    metadata: jsonb("metadata"), // 解析元数据 (parse_success, parser_version, validation_*)
     status: reverseLogStatusEnum("status").default("PENDING").notNull(),
   },
   (table) => ({
