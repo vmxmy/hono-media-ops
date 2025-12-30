@@ -135,12 +135,13 @@ export function ThemeSwitcher() {
   }
 
   const themeOptions = [
-    { key: "default", label: t("settings.defaultTheme"), value: null, selected: !palette },
+    { key: "default", label: t("settings.defaultTheme"), value: null, selected: !palette, colors: null },
     ...tweakcnThemes.map((theme) => ({
       key: theme.name,
       label: theme.title,
       value: theme.name,
       selected: palette === theme.name,
+      colors: theme.colors,
     })),
   ]
 
@@ -148,13 +149,42 @@ export function ThemeSwitcher() {
     type: "column",
     gap: "0.25rem",
     children: themeOptions.map((option) => ({
-      type: "button",
-      text: option.label,
-      size: "sm",
-      variant: option.selected ? "primary" : "secondary",
-      fullWidth: true,
-      style: { justifyContent: "flex-start" },
+      type: "card",
+      hoverable: true,
       onClick: { action: "setPalette", args: [option.value] },
+      style: {
+        padding: "0.5rem",
+        cursor: "pointer",
+        borderWidth: option.selected ? "2px" : "1px",
+        borderColor: option.selected ? "var(--ds-primary)" : "var(--ds-border)",
+        backgroundColor: option.selected ? "var(--ds-accent)" : undefined,
+      },
+      children: [
+        {
+          type: "row",
+          align: "center",
+          gap: "0.5rem",
+          children: [
+            // Color strip
+            ...(option.colors
+              ? [
+                  {
+                    type: "row" as const,
+                    gap: "0",
+                    style: { borderRadius: "0.25rem", overflow: "hidden", flexShrink: 0 },
+                    children: option.colors.map((color, idx) => ({
+                      type: "container" as const,
+                      style: { width: "0.75rem", height: "1.25rem", backgroundColor: color },
+                      id: `${option.key}-color-${idx}`,
+                    })),
+                  },
+                ]
+              : []),
+            // Label
+            { type: "text", text: option.label, variant: "body" },
+          ],
+        },
+      ],
     })),
   }
 
