@@ -85,7 +85,7 @@ export const tasksRouter = createTRPCRouter({
 
   getAll: protectedProcedure
     .input(getAllInputSchema)
-    .query(({ ctx, input }) => ctx.services.task.getAll(input)),
+    .query(({ ctx, input }) => ctx.services.task.getAll({ ...input, userId: ctx.user.id })),
 
   getById: protectedProcedure
     .input(idSchema)
