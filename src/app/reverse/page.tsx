@@ -1184,6 +1184,23 @@ export default function ReversePage() {
         tabs.push({ label: t("reverse.tabPrompt"), content: promptTabContent })
       }
 
+      const titleText = analysis.sourceTitle || styleName || t("reverse.untitled")
+      const titleNode: A2UINode = analysis.sourceUrl
+        ? {
+            type: "link",
+            text: titleText,
+            href: analysis.sourceUrl,
+            variant: "primary",
+            style: { fontSize: "1rem", fontWeight: 600, wordBreak: "break-word" },
+          }
+        : {
+            type: "text",
+            text: titleText,
+            variant: "h4",
+            weight: "semibold",
+            style: { wordBreak: "break-word" },
+          }
+
       return {
         type: "card",
         id: `log-${analysis.id}`,
@@ -1193,7 +1210,7 @@ export default function ReversePage() {
             type: "column",
             gap: "0.75rem",
             children: [
-              // Header row with style name, badges and actions
+              // Header row with source title, badges and actions
               {
                 type: "row",
                 justify: "between",
@@ -1206,32 +1223,14 @@ export default function ReversePage() {
                     gap: "0.5rem",
                     style: { flex: 1, minWidth: "200px" },
                     children: [
-                      {
-                        type: "link",
-                        text: styleName || analysis.sourceTitle || t("reverse.untitled"),
-                        variant: "default",
-                        style: { fontSize: "1rem", fontWeight: 600, cursor: "pointer", wordBreak: "break-word" },
-                        onClick: { action: "viewDetail", args: [analysis.id] },
-                      },
-                      // Show "Read Original" link with article title above badges
-                      ...(analysis.sourceUrl
+                      titleNode,
+                      ...(styleName && analysis.sourceTitle && styleName !== analysis.sourceTitle
                         ? [
                             {
-                              type: "row" as const,
-                              gap: "0.25rem",
-                              align: "center" as const,
-                              children: [
-                                { type: "icon" as const, name: "eye", size: 14, color: "var(--ds-primary)" },
-                                {
-                                  type: "link" as const,
-                                  text: analysis.sourceTitle && styleName && styleName !== analysis.sourceTitle
-                                    ? `${t("reverse.readOriginal")}《${analysis.sourceTitle}》`
-                                    : t("reverse.readOriginal"),
-                                  href: analysis.sourceUrl,
-                                  variant: "primary" as const,
-                                  style: { fontSize: "0.75rem" },
-                                },
-                              ],
+                              type: "text" as const,
+                              text: `${t("reverse.styleName")}: ${styleName}`,
+                              variant: "caption" as const,
+                              color: "muted" as const,
                             },
                           ]
                         : []),
