@@ -494,17 +494,11 @@ export default function TasksPage() {
     },
     children: [
       {
-        type: "container",
-        style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" },
-        children: [
-          {
-            type: "article-viewer-modal",
-            open: articleViewerState.isOpen,
-            markdown: articleViewerState.markdown,
-            title: articleViewerState.title,
-            onClose: { action: "closeArticleViewer" },
-          },
-        ],
+        type: "article-viewer-modal",
+        open: articleViewerState.isOpen,
+        markdown: articleViewerState.markdown,
+        title: articleViewerState.title,
+        onClose: { action: "closeArticleViewer" },
       },
     ],
   }
