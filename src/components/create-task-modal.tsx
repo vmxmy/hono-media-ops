@@ -332,6 +332,7 @@ export function CreateTaskModal({
   const buildMaterialCard = (material: {
     id: string
     sourceTitle: string | null
+    sourceUrl: string | null
     primaryType: string | null
     wordCount: number | null
     paraCount: number | null
@@ -372,11 +373,11 @@ export function CreateTaskModal({
             ...(archetype
               ? [
                   {
-                    type: "column",
+                    type: "column" as const,
                     gap: "0.25rem",
                     children: [
-                      { type: "text", text: t("reverse.archetype"), variant: "caption", color: "muted" },
-                      { type: "text", text: archetype },
+                      { type: "text" as const, text: t("reverse.archetype"), variant: "caption" as const, color: "muted" as const },
+                      { type: "text" as const, text: archetype },
                     ],
                   },
                 ]
@@ -384,11 +385,11 @@ export function CreateTaskModal({
             ...(targetAudience
               ? [
                   {
-                    type: "column",
+                    type: "column" as const,
                     gap: "0.25rem",
                     children: [
-                      { type: "text", text: t("reverse.targetAudience"), variant: "caption", color: "muted" },
-                      { type: "text", text: targetAudience },
+                      { type: "text" as const, text: t("reverse.targetAudience"), variant: "caption" as const, color: "muted" as const },
+                      { type: "text" as const, text: targetAudience },
                     ],
                   },
                 ]
@@ -396,13 +397,13 @@ export function CreateTaskModal({
             ...(toneKeywords.length > 0
               ? [
                   {
-                    type: "row",
+                    type: "row" as const,
                     gap: "0.25rem",
                     wrap: true,
                     children: toneKeywords.map((keyword, idx) => ({
-                      type: "badge",
+                      type: "badge" as const,
                       text: keyword,
-                      color: "default",
+                      color: "default" as const,
                       style: { fontWeight: 500 },
                       id: `${material.id}-tone-${idx}`,
                     })),
@@ -453,6 +454,17 @@ export function CreateTaskModal({
       badges.push({ type: "badge", text: t("common.selected"), color: "success" })
     }
 
+    const titleText = material.sourceTitle || styleName || t("reverse.untitled")
+    const titleNode: A2UINode = material.sourceUrl
+      ? {
+          type: "link",
+          text: titleText,
+          href: material.sourceUrl,
+          variant: "primary",
+          style: { fontWeight: 600 },
+        }
+      : { type: "text", text: titleText, weight: "medium" }
+
     const children: A2UINode[] = [
       {
         type: "row",
@@ -465,11 +477,11 @@ export function CreateTaskModal({
             gap: "0.25rem",
             style: { flex: 1, minWidth: 0 },
             children: [
-              { type: "text", text: styleName || material.sourceTitle || t("reverse.untitled"), weight: "medium" },
+              titleNode,
               ...(badges.length > 0
                 ? [
                     {
-                      type: "row",
+                      type: "row" as const,
                       gap: "0.25rem",
                       wrap: true,
                       children: badges,
@@ -479,10 +491,10 @@ export function CreateTaskModal({
               ...(styleName && material.sourceTitle && styleName !== material.sourceTitle
                 ? [
                     {
-                      type: "text",
-                      text: `《${material.sourceTitle}》`,
-                      variant: "caption",
-                      color: "muted",
+                      type: "text" as const,
+                      text: `${t("reverse.styleName")}: ${styleName}`,
+                      variant: "caption" as const,
+                      color: "muted" as const,
                     },
                   ]
                 : []),
@@ -572,22 +584,22 @@ export function CreateTaskModal({
             gap: "0.5rem",
             style: { flex: 1, minWidth: 0 },
             children: [
-              { type: "text", text: prompt.title, weight: "medium" },
+              { type: "text" as const, text: prompt.title, weight: "medium" as const },
               ...(badges.length > 0
-                ? [{ type: "row", gap: "0.25rem", wrap: true, children: badges }]
+                ? [{ type: "row" as const, gap: "0.25rem", wrap: true, children: badges }]
                 : []),
-              { type: "text", text: prompt.prompt, variant: "caption", color: "muted" },
+              { type: "text" as const, text: prompt.prompt, variant: "caption" as const, color: "muted" as const },
             ],
           },
           ...(prompt.previewUrl
             ? [
                 {
-                  type: "image",
+                  type: "image" as const,
                   src: prompt.previewUrl,
                   alt: prompt.title,
                   width: "64px",
                   height: "64px",
-                  style: { borderRadius: "0.5rem", objectFit: "cover" },
+                  style: { borderRadius: "0.5rem", objectFit: "cover" as const },
                 },
               ]
             : []),

@@ -19,6 +19,7 @@ export type {
   A2UIColumnNode,
   A2UIRowNode,
   A2UIContainerNode,
+  A2UIScrollAreaNode,
   A2UICardNode,
   A2UIPageNode,
   A2UINavNode,
