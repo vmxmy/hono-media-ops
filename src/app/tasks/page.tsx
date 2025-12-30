@@ -463,21 +463,26 @@ export default function TasksPage() {
       minHeight: 0,
       display: "flex",
       flexDirection: "column",
-      gap: "0.75rem",
       overflow: "hidden",
     },
     children: [
       // Header stays fixed
       {
         type: "container",
-        style: { flexShrink: 0 },
+        style: { flexShrink: 0, paddingBottom: "0.75rem" },
         children: [headerNode],
       },
       // Task list scrolls independently
       {
-        type: "container",
-        style: { flex: 1, minHeight: 0, overflowY: "auto" },
-        children: [getTaskListContent(isSplitView)],
+        type: "scroll-area",
+        style: { flex: 1, minHeight: 0 },
+        children: [
+          {
+            type: "container",
+            style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+            children: [getTaskListContent(isSplitView)],
+          },
+        ],
       },
     ],
   }
@@ -556,19 +561,24 @@ export default function TasksPage() {
         minHeight: 0,
         display: "flex",
         flexDirection: "column",
-        gap: "0.75rem",
         overflow: "hidden",
       },
       children: [
         {
           type: "container",
-          style: { flexShrink: 0 },
+          style: { flexShrink: 0, paddingBottom: "0.75rem" },
           children: [headerNode],
         },
         {
-          type: "container",
-          style: { flex: 1, minHeight: 0, overflowY: "auto" },
-          children: [getTaskListContent(false)],
+          type: "scroll-area",
+          style: { flex: 1, minHeight: 0 },
+          children: [
+            {
+              type: "container",
+              style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+              children: [getTaskListContent(false)],
+            },
+          ],
         },
       ],
     }
