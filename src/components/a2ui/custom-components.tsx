@@ -489,14 +489,12 @@ export function A2UIArticleViewerModal({
   if (!node.open) return null
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ArticleViewerModal
-        isOpen={node.open}
-        onClose={() => dispatchAction(onAction, node.onClose)}
-        markdown={node.markdown}
-        title={node.title}
-      />
-    </div>
+    <ArticleViewerModal
+      isOpen={node.open}
+      onClose={() => dispatchAction(onAction, node.onClose)}
+      markdown={node.markdown}
+      title={node.title}
+    />
   )
 }
 
