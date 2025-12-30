@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
@@ -8,6 +8,9 @@ import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+
+// Mobile breakpoint (matches Tailwind md:)
+const MOBILE_BREAKPOINT = 768
 
 // v7.3 Schema Types
 interface StyleIdentityData {
@@ -175,6 +178,15 @@ export default function ReversePage() {
   const [cloneMaterialId, setCloneMaterialId] = useState<string | null>(null)
   // 视图模式: 卡片 or 列表
   const [viewMode, setViewMode] = useState<"card" | "list">("card")
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile screen
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
 
   const utils = api.useUtils()
   const { data, isLoading } = api.reverseLogs.getAll.useQuery(
@@ -1288,7 +1300,7 @@ export default function ReversePage() {
       type: "container",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 550px), 1fr))",
+        gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 550px), 1fr))",
         gap: "0.75rem",
       },
       children: logCards,
@@ -1424,45 +1436,69 @@ export default function ReversePage() {
     }
   }
 
-  // Build page structure
-  const pageNode: A2UIColumnNode = {
-    type: "column",
-    gap: "1rem",
+  // Header section (fixed)
+  const headerNode: A2UINode = {
+    type: "row",
+    justify: "between",
+    align: "center",
+    wrap: true,
+    gap: "0.75rem",
     children: [
+      { type: "text", text: t("reverse.title"), variant: "h2" },
       {
         type: "row",
-        justify: "between",
+        gap: "0.5rem",
         align: "center",
-        wrap: true,
-        gap: "0.75rem",
         children: [
-          { type: "text", text: t("reverse.title"), variant: "h2" },
           {
-            type: "row",
-            gap: "0.5rem",
-            align: "center",
-            children: [
-              {
-                type: "button",
-                text: "▦",
-                variant: viewMode === "card" ? "primary" : "secondary",
-                size: "sm",
-                onClick: { action: "setViewCard" },
-              },
-              {
-                type: "button",
-                text: "☰",
-                variant: viewMode === "list" ? "primary" : "secondary",
-                size: "sm",
-                onClick: { action: "setViewList" },
-              },
-              { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
-            ],
+            type: "button",
+            text: "▦",
+            variant: viewMode === "card" ? "primary" : "secondary",
+            size: "sm",
+            onClick: { action: "setViewCard" },
+          },
+          {
+            type: "button",
+            text: "☰",
+            variant: viewMode === "list" ? "primary" : "secondary",
+            size: "sm",
+            onClick: { action: "setViewList" },
+          },
+          { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
+        ],
+      },
+    ],
+  }
+
+  // Build page structure with scroll-area
+  const pageNode: A2UINode = {
+    type: "container",
+    style: {
+      flex: 1,
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+    },
+    children: [
+      // Header stays fixed
+      {
+        type: "container",
+        style: { flexShrink: 0, paddingBottom: "0.75rem" },
+        children: [headerNode],
+      },
+      // Content scrolls independently
+      {
+        type: "scroll-area",
+        style: { flex: 1, minHeight: 0 },
+        children: [
+          {
+            type: "container",
+            style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+            children: viewMode === "card" ? [buildListNode()] : [buildTableNode()],
           },
         ],
       },
-      ...(viewMode === "card" ? [buildListNode()] : []),
-      ...(viewMode === "list" ? [buildTableNode()] : []),
     ],
   }
 
