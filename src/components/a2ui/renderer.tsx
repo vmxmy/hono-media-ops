@@ -78,11 +78,11 @@ export function A2UIRenderer({
     [handleAction, registry]
   )
 
+  const content = <A2UINodeRenderer node={node} />
+
   return (
     <A2UIContext.Provider value={contextValue}>
-      <div className={className}>
-        <A2UINodeRenderer node={node} />
-      </div>
+      {className ? <div className={className}>{content}</div> : content}
     </A2UIContext.Provider>
   )
 }
