@@ -176,6 +176,7 @@ export type WechatMediaInfo = {
   media_id: string;
   url: string;
   item: unknown[];
+  uploaded_at?: string;
 };
 
 export const taskExecutions = pgTable(

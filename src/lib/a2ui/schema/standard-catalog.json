@@ -904,6 +904,10 @@
           "type": "string",
           "description": "Modal title"
         },
+        "wechatMediaInfo": {
+          "type": "object",
+          "description": "WeChat media upload info"
+        },
         "onClose": {
           "type": "action",
           "description": "Close action"

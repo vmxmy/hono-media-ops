@@ -494,6 +494,7 @@ export function A2UIArticleViewerModal({
       onClose={() => dispatchAction(onAction, node.onClose)}
       markdown={node.markdown}
       title={node.title}
+      wechatMediaInfo={node.wechatMediaInfo as { media_id: string; url: string; item: unknown[]; uploaded_at?: string } | null | undefined}
     />
   )
 }

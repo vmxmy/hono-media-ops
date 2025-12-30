@@ -47,7 +47,8 @@ export default function TasksPage() {
     isOpen: boolean
     markdown: string
     title: string
-  }>({ isOpen: false, markdown: "", title: "" })
+    wechatMediaInfo?: { media_id: string; url: string; item: unknown[]; uploaded_at?: string } | null
+  }>({ isOpen: false, markdown: "", title: "", wechatMediaInfo: null })
   const [regenerateData, setRegenerateData] = useState<{
     topic?: string
     keywords?: string
@@ -123,6 +124,7 @@ export default function TasksPage() {
         isOpen: true,
         markdown: execution.articleMarkdown,
         title: taskTopic,
+        wechatMediaInfo: execution.wechatMediaInfo,
       })
     }
   }
@@ -513,6 +515,7 @@ export default function TasksPage() {
             open: articleViewerState.isOpen,
             markdown: articleViewerState.markdown,
             title: articleViewerState.title,
+            wechatMediaInfo: articleViewerState.wechatMediaInfo ?? undefined,
             onClose: { action: "closeArticleViewer" },
           },
         ],

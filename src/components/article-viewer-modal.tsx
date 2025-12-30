@@ -4,12 +4,14 @@ import { useCallback, useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode } from "@/lib/a2ui"
+import type { WechatMediaInfo } from "@/server/db/schema"
 
 interface ArticleViewerModalProps {
   isOpen: boolean
   onClose: () => void
   markdown: string
   title?: string
+  wechatMediaInfo?: WechatMediaInfo | null
 }
 
 export function ArticleViewerModal({
@@ -17,9 +19,11 @@ export function ArticleViewerModal({
   onClose,
   markdown,
   title,
+  wechatMediaInfo,
 }: ArticleViewerModalProps) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
+  const [mediaIdCopied, setMediaIdCopied] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
 
   const handleAction = useCallback(
@@ -31,6 +35,14 @@ export function ArticleViewerModal({
             setTimeout(() => setCopied(false), 2000)
           })
           break
+        case "copyMediaId":
+          if (wechatMediaInfo?.media_id) {
+            navigator.clipboard.writeText(wechatMediaInfo.media_id).then(() => {
+              setMediaIdCopied(true)
+              setTimeout(() => setMediaIdCopied(false), 2000)
+            })
+          }
+          break
         case "close":
           onClose()
           break
@@ -41,7 +53,7 @@ export function ArticleViewerModal({
         }
       }
     },
-    [markdown, onClose]
+    [markdown, onClose, wechatMediaInfo]
   )
 
   const tabs = useMemo(() => {
@@ -103,6 +115,53 @@ export function ArticleViewerModal({
       },
     ],
   }
+
+  // 微信素材信息栏（条件渲染）
+  const wechatInfoSection: A2UINode | null = wechatMediaInfo
+    ? {
+        type: "container",
+        style: {
+          padding: "0.5rem 1rem",
+          flexShrink: 0,
+          borderBottom: "1px solid var(--ds-border)",
+          backgroundColor: "var(--ds-accent)",
+        },
+        children: [
+          {
+            type: "row",
+            align: "center",
+            gap: "0.75rem",
+            wrap: true,
+            children: [
+              { type: "badge", text: "✅ 微信已上传", color: "success" },
+              {
+                type: "link",
+                text: "📷 查看素材",
+                href: wechatMediaInfo.url,
+                variant: "primary",
+              },
+              {
+                type: "button",
+                text: mediaIdCopied ? "已复制" : "复制 media_id",
+                variant: "ghost",
+                size: "sm",
+                onClick: { action: "copyMediaId" },
+              },
+              ...(wechatMediaInfo.uploaded_at
+                ? [
+                    {
+                      type: "text" as const,
+                      text: `上传于 ${new Date(wechatMediaInfo.uploaded_at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`,
+                      variant: "caption" as const,
+                      color: "muted" as const,
+                    },
+                  ]
+                : []),
+            ],
+          },
+        ],
+      }
+    : null
 
   // 第二段：Tab 栏
   const tabSection: A2UINode = {
@@ -167,7 +226,7 @@ export function ArticleViewerModal({
       padding: "0",
       overflow: "hidden",
     },
-    children: [titleSection, tabSection, contentSection],
+    children: [titleSection, ...(wechatInfoSection ? [wechatInfoSection] : []), tabSection, contentSection],
   }
 
   if (!isOpen) return null
