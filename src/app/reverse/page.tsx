@@ -179,6 +179,7 @@ export default function ReversePage() {
   // 视图模式: 卡片 or 列表
   const [viewMode, setViewMode] = useState<"card" | "list">("card")
   const [isMobile, setIsMobile] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Detect mobile screen
   useEffect(() => {
@@ -190,7 +191,7 @@ export default function ReversePage() {
 
   const utils = api.useUtils()
   const { data, isLoading } = api.reverseLogs.getAll.useQuery(
-    { page: 1, pageSize: 50 },
+    { page: 1, pageSize: 50, search: searchQuery || undefined },
     { enabled: mounted }
   )
 
@@ -218,11 +219,25 @@ export default function ReversePage() {
     }
 
     if (logs.length === 0) {
+      const hasSearch = searchQuery.trim().length > 0
       return {
         type: "card",
         hoverable: false,
         style: { padding: "2rem", textAlign: "center" },
-        children: [{ type: "text", text: t("reverse.noRecords"), color: "muted" }],
+        children: [
+          {
+            type: "column",
+            gap: "0.75rem",
+            style: { alignItems: "center" },
+            children: [
+              { type: "text", text: hasSearch ? t("reverse.noSearchResults") : t("reverse.noRecords"), color: "muted" },
+              ...(hasSearch ? [
+                { type: "text", text: t("reverse.tryDifferentKeywords"), variant: "caption", color: "muted" } as A2UINode,
+                { type: "button", text: t("reverse.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearSearch" } } as A2UINode,
+              ] : []),
+            ],
+          },
+        ],
       }
     }
 
@@ -1437,34 +1452,50 @@ export default function ReversePage() {
 
   // Header section (fixed)
   const headerNode: A2UINode = {
-    type: "row",
-    justify: "between",
-    align: "center",
-    wrap: true,
-    gap: "0.75rem",
+    type: "column",
+    gap: "1rem",
     children: [
-      { type: "text", text: t("reverse.title"), variant: "h2" },
       {
         type: "row",
-        gap: "0.5rem",
+        justify: "between",
         align: "center",
+        wrap: true,
+        gap: "0.75rem",
         children: [
+          { type: "text", text: t("reverse.title"), variant: "h2" },
           {
-            type: "button",
-            text: "▦",
-            variant: viewMode === "card" ? "primary" : "secondary",
-            size: "sm",
-            onClick: { action: "setViewCard" },
+            type: "row",
+            gap: "0.5rem",
+            align: "center",
+            children: [
+              {
+                type: "button",
+                text: "▦",
+                variant: viewMode === "card" ? "primary" : "secondary",
+                size: "sm",
+                onClick: { action: "setViewCard" },
+              },
+              {
+                type: "button",
+                text: "☰",
+                variant: viewMode === "list" ? "primary" : "secondary",
+                size: "sm",
+                onClick: { action: "setViewList" },
+              },
+              { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
+            ],
           },
-          {
-            type: "button",
-            text: "☰",
-            variant: viewMode === "list" ? "primary" : "secondary",
-            size: "sm",
-            onClick: { action: "setViewList" },
-          },
-          { type: "button", text: t("reverse.newAnalysis"), variant: "primary", onClick: { action: "newAnalysis" } },
         ],
+      },
+      // 搜索框
+      {
+        type: "input",
+        id: "search-materials",
+        value: searchQuery,
+        placeholder: t("reverse.searchPlaceholder"),
+        inputType: "text",
+        style: { maxWidth: "100%" },
+        onChange: { action: "setSearch" },
       },
     ],
   }
@@ -1593,6 +1624,12 @@ export default function ReversePage() {
           break
         case "setViewList":
           setViewMode("list")
+          break
+        case "setSearch":
+          setSearchQuery(args?.[0] as string ?? "")
+          break
+        case "clearSearch":
+          setSearchQuery("")
           break
         case "closeReverseSubmit":
           setIsModalOpen(false)

@@ -273,6 +273,10 @@ export type I18nKey =
     | "reverse.invalidUrl"
     | "reverse.newAnalysis"
     | "reverse.noRecords"
+    | "reverse.searchPlaceholder"
+    | "reverse.noSearchResults"
+    | "reverse.tryDifferentKeywords"
+    | "reverse.clearSearch"
     | "reverse.articleTitle"
     | "reverse.articleUrl"
     | "reverse.readOriginal"
@@ -676,6 +680,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.invalidUrl": "Please enter a valid URL",
         "reverse.newAnalysis": "Add Material",
         "reverse.noRecords": "No analysis records yet",
+        "reverse.searchPlaceholder": "Search materials by title...",
+        "reverse.noSearchResults": "No matching materials",
+        "reverse.tryDifferentKeywords": "Try different search keywords",
+        "reverse.clearSearch": "Clear Search",
         "reverse.articleTitle": "Article Title",
         "reverse.articleUrl": "Article URL",
         "reverse.readOriginal": "Read Original",
@@ -1068,6 +1076,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "reverse.invalidUrl": "请输入有效的网址",
         "reverse.newAnalysis": "添加素材",
         "reverse.noRecords": "暂无分析记录",
+        "reverse.searchPlaceholder": "搜索素材标题...",
+        "reverse.noSearchResults": "没有匹配的素材",
+        "reverse.tryDifferentKeywords": "试试其他搜索关键词",
+        "reverse.clearSearch": "清除搜索",
         "reverse.articleTitle": "文章标题",
         "reverse.articleUrl": "文章链接",
         "reverse.readOriginal": "阅读原文",
