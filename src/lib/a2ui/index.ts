@@ -74,19 +74,11 @@ export {
   type ComponentType,
 } from "./generated/catalog"
 
-// ============================================================================
-// Catalog System
-// ============================================================================
-export {
-  type A2UICatalog,
-  type A2UIComponentDefinition,
-  type A2UIPropertyDefinition,
-  createCatalog,
-  addComponentToCatalog,
-  catalogHasComponent,
-  getComponentDefinition,
-  mergeCatalogs,
-} from "./catalog"
+export type {
+  A2UICatalog,
+  A2UIComponentDefinition,
+  A2UIPropertyDefinition,
+} from "./catalog-types"
 
 // Create standard catalog using generated definitions
 export { createGeneratedCatalog as createStandardCatalog } from "./generated/catalog"
@@ -103,6 +95,7 @@ export {
   setDefaultRegistry,
   registerComponent,
   overrideComponent,
+  dispatchA2UIAction,
 } from "./registry"
 
 // ============================================================================
@@ -119,4 +112,3 @@ export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "./toast"
 // Legacy Compatibility
 // Keep the old type name for backward compatibility
 // ============================================================================
-export type { A2UIDividerNode as A2UIDeviderNode } from "./generated/types"

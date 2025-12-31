@@ -297,6 +297,10 @@
           "type": "string",
           "description": "Selected value"
         },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text when no value is selected"
+        },
         "options": {
           "type": "array",
           "required": true,
@@ -323,6 +327,10 @@
           "type": "boolean",
           "default": false,
           "description": "Checked state"
+        },
+        "label": {
+          "type": "string",
+          "description": "Label text for the checkbox"
         },
         "taskId": {
           "type": "string",
@@ -449,8 +457,15 @@
       "properties": {
         "text": {
           "type": "string",
-          "required": true,
-          "description": "Link text"
+          "description": "Link text (deprecated, use label)"
+        },
+        "label": {
+          "type": "string",
+          "description": "Link label text"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon name or React node key"
         },
         "href": {
           "type": "string",
@@ -534,6 +549,11 @@
           "enum": ["default", "muted", "primary"],
           "default": "primary",
           "description": "Link style"
+        },
+        "external": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open link in new tab"
         },
         "onClick": {
           "type": "action",
@@ -904,13 +924,21 @@
           "type": "string",
           "description": "Modal title"
         },
-        "wechatMediaInfo": {
+        "executionId": {
+          "type": "string",
+          "description": "Execution ID for updates"
+        },
+        "executionResult": {
           "type": "object",
-          "description": "WeChat media upload info"
+          "description": "Execution result containing coverUrl, wechatMediaId, etc."
         },
         "onClose": {
           "type": "action",
           "description": "Close action"
+        },
+        "onUpdateResult": {
+          "type": "action",
+          "description": "Update result action"
         }
       }
     },

@@ -1,8 +1,8 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-30T09:26:20.419Z
+// Generated at: 2025-12-31T05:26:46.056Z
 
-import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"
+import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
 // Catalog metadata
 export const CATALOG_ID = "standard"
@@ -318,6 +318,10 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "string",
         description: "Selected value",
       },
+      placeholder: {
+        type: "string",
+        description: "Placeholder text when no value is selected",
+      },
       options: {
         type: "array",
         required: true,
@@ -338,6 +342,10 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "boolean",
         description: "Checked state",
         default: false,
+      },
+      label: {
+        type: "string",
+        description: "Label text for the checkbox",
       },
       taskId: {
         type: "string",
@@ -464,8 +472,15 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
     properties: {
       text: {
         type: "string",
-        required: true,
-        description: "Link text",
+        description: "Link text (deprecated, use label)",
+      },
+      label: {
+        type: "string",
+        description: "Link label text",
+      },
+      icon: {
+        type: "string",
+        description: "Icon name or React node key",
       },
       href: {
         type: "string",
@@ -553,6 +568,11 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         description: "Link style",
         enum: ["default","muted","primary"],
         default: "primary",
+      },
+      external: {
+        type: "boolean",
+        description: "Open link in new tab",
+        default: false,
       },
       onClick: {
         type: "action",
@@ -919,13 +939,21 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "string",
         description: "Modal title",
       },
-      wechatMediaInfo: {
+      executionId: {
+        type: "string",
+        description: "Execution ID for updates",
+      },
+      executionResult: {
         type: "object",
-        description: "WeChat media upload info",
+        description: "Execution result containing coverUrl, wechatMediaId, etc.",
       },
       onClose: {
         type: "action",
         description: "Close action",
+      },
+      onUpdateResult: {
+        type: "action",
+        description: "Update result action",
       },
     },
   },

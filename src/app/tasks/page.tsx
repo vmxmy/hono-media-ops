@@ -14,6 +14,7 @@ import type {
   A2UIRowNode,
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
@@ -25,7 +26,9 @@ interface TaskWithMaterial {
   keywords: string | null
   status: "pending" | "processing" | "completed" | "failed" | "cancelled"
   createdAt: Date
+  totalWordCount: number
   coverPromptId: string | null
+  coverUrl?: string | null
   refMaterialId: string | null
   refMaterial?: {
     styleName: string | null
@@ -47,8 +50,10 @@ export default function TasksPage() {
     isOpen: boolean
     markdown: string
     title: string
-    wechatMediaInfo?: { media_id: string; url: string; item: unknown[]; uploaded_at?: string } | null
-  }>({ isOpen: false, markdown: "", title: "", wechatMediaInfo: null })
+    taskId?: string
+    executionId?: string
+    executionResult?: { coverUrl?: string; wechatMediaId?: string } | null
+  }>({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, executionResult: null })
   const [regenerateData, setRegenerateData] = useState<{
     topic?: string
     keywords?: string
@@ -124,8 +129,30 @@ export default function TasksPage() {
         isOpen: true,
         markdown: execution.articleMarkdown,
         title: taskTopic,
-        wechatMediaInfo: execution.wechatMediaInfo,
+        taskId,
+        executionId: execution.id,
+        executionResult: execution.result,
       })
+    }
+  }
+
+  const updateExecutionResultMutation = api.tasks.updateExecutionResult.useMutation({
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const handleUpdateExecutionResult = (result: { coverUrl?: string; wechatMediaId?: string }) => {
+    if (articleViewerState.executionId) {
+      updateExecutionResultMutation.mutate({
+        executionId: articleViewerState.executionId,
+        result,
+      })
+      // Update local state
+      setArticleViewerState((prev) => ({
+        ...prev,
+        executionResult: result,
+      }))
     }
   }
 
@@ -143,9 +170,15 @@ export default function TasksPage() {
     updateMutation.mutate({ id, ...data })
   }, [updateMutation])
 
+  const formatWordCount = (count?: number) => {
+    if (!count || count <= 0) return "字数未知"
+    return `约 ${count.toLocaleString("zh-CN")} 字`
+  }
+
   // Build A2UI task card
-  const buildTaskCard = (task: TaskWithMaterial, options?: { compact?: boolean }): A2UICardNode => {
+  const buildTaskCard = (task: TaskWithMaterial, options?: { compact?: boolean; highlighted?: boolean }): A2UICardNode => {
     const isCompact = options?.compact ?? false
+    const isHighlighted = options?.highlighted ?? false
     const statusColors: Record<string, string> = {
       pending: "default",
       processing: "processing",
@@ -203,8 +236,7 @@ export default function TasksPage() {
       onClick: { action: "delete", args: [task.id] },
     })
 
-    // Build children array with editable text and optional reference material
-    const contentChildren: A2UINode[] = [
+    const headerContentChildren: A2UINode[] = [
       {
         type: "editable-text",
         value: task.topic || t("tasks.untitledTask"),
@@ -215,8 +247,24 @@ export default function TasksPage() {
       },
     ]
 
-    if (!isCompact) {
-      contentChildren.push({
+    // Keywords and reference material move to body for consistent layout
+
+    const headerNodes: A2UINode[] = [
+      ...headerContentChildren,
+      {
+        type: "row",
+        align: "center",
+        gap: "0.5rem",
+        children: [
+          { type: "text", text: t(`status.${task.status}`), variant: "caption", color: "muted" },
+          { type: "text", text: "·", variant: "caption", color: "muted" },
+          { type: "text", text: formatWordCount(task.totalWordCount), variant: "caption", color: "muted" },
+        ],
+      } as A2UIRowNode,
+    ]
+
+    const bodyNodes: A2UINode[] = [
+      ...(!isCompact ? [{
         type: "editable-text",
         value: task.keywords || "",
         placeholder: t("tasks.noKeywords"),
@@ -224,16 +272,19 @@ export default function TasksPage() {
         multiline: true,
         editable: canEdit,
         onChange: { action: "updateKeywords", args: [task.id] },
-      })
-    }
-
-    // Add reference material if exists
-    if (task.refMaterial) {
-      contentChildren.push({
+        style: {
+          fontSize: "0.875rem",
+          lineHeight: "1.5",
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        },
+      } as A2UINode] : []),
+      ...(task.refMaterial ? [{
         type: "row",
         gap: "0.5rem",
         align: "center",
-        style: { marginTop: "0.25rem" },
         children: [
           { type: "text", text: "📄", variant: "caption" },
           task.refMaterial.sourceUrl
@@ -251,61 +302,85 @@ export default function TasksPage() {
                 color: "muted",
               },
         ],
-      } as A2UIRowNode)
-    }
+      } as A2UIRowNode] : []),
+    ]
 
-    return {
-      type: "card",
+    const footerNodes: A2UINode[] = [
+      {
+        type: "row",
+        justify: "between",
+        align: "center",
+        wrap: true,
+        gap: "0.5rem",
+        children: [
+          {
+            type: "row",
+            align: "center",
+            gap: "0.5rem",
+            children: [
+              {
+                type: "text",
+                text: `${t("tasks.created")}: ${new Date(task.createdAt).toLocaleString()}`,
+                variant: "caption",
+                color: "muted",
+              },
+              ...(task.refMaterial?.styleName
+                ? [{
+                    type: "badge",
+                    text: task.refMaterial.styleName,
+                    color: "default",
+                    style: { maxWidth: "10rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                  } as A2UINode]
+                : []),
+            ],
+          } as A2UIRowNode,
+          { type: "row", gap: "0.5rem", children: actions } as A2UIRowNode,
+        ],
+      } as A2UIRowNode,
+    ]
+
+    return buildStandardCardNode({
       id: `task-${task.id}`,
       hoverable: true,
-      children: [
-        {
-          type: "column",
-          gap: "0.75rem",
-          children: [
-            {
-              type: "row",
-              justify: "between",
-              align: "start",
-              wrap: true,
-              gap: "0.5rem",
-              children: [
-                {
-                  type: "column",
-                  gap: "0.25rem",
-                  style: { flex: 1, minWidth: "150px" },
-                  children: contentChildren,
-                },
-                {
-                  type: "badge",
-                  text: t(`status.${task.status}`),
-                  color: statusColors[task.status] || "default",
-                },
-              ],
-            } as A2UIRowNode,
-            {
-              type: "row",
-              justify: "between",
-              align: "center",
-              wrap: true,
-              gap: "0.5rem",
-              children: [
-                {
-                  type: "text",
-                  text: `${t("tasks.created")}: ${new Date(task.createdAt).toLocaleString()}`,
-                  variant: "caption",
-                  color: "muted",
-                },
-                { type: "row", gap: "0.5rem", children: actions } as A2UIRowNode,
-              ],
-            } as A2UIRowNode,
-          ],
-        },
-      ],
-    }
+      cover: task.coverUrl
+        ? {
+            type: "image",
+            src: task.coverUrl,
+            alt: task.topic,
+            style: { width: "100%", height: "160px", objectFit: "cover" },
+          }
+        : {
+            type: "container",
+            style: {
+              width: "100%",
+              height: "160px",
+              backgroundColor: "var(--muted)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            children: [{ type: "text", text: "任务", color: "muted" }],
+          },
+      header: headerNodes,
+      body: bodyNodes,
+      footer: footerNodes,
+      cardStyle: {
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        padding: 0,
+        ...(isHighlighted ? {
+          boxShadow: "0 0 0 2px var(--primary)",
+          backgroundColor: "var(--accent)",
+        } : {}),
+      },
+    })
   }
 
   // Build task list content
+  const viewingTaskId = articleViewerState.isOpen ? articleViewerState.taskId : undefined
+
   const getTaskListContent = (compact: boolean): A2UINode => {
     if (error) {
       return {
@@ -336,7 +411,10 @@ export default function TasksPage() {
     return {
       type: "column",
       gap: "1rem",
-      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial, { compact })),
+      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial, {
+        compact,
+        highlighted: task.id === viewingTaskId,
+      })),
     }
   }
 
@@ -408,8 +486,13 @@ export default function TasksPage() {
           handleCreateTaskSuccess()
           break
         case "closeArticleViewer":
-          setArticleViewerState({ isOpen: false, markdown: "", title: "" })
+          setArticleViewerState({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, executionResult: null })
           break
+        case "updateExecutionResult": {
+          const result = args?.[0] as { coverUrl?: string; wechatMediaId?: string }
+          handleUpdateExecutionResult(result)
+          break
+        }
         // Editable text actions
         case "updateTopic": {
           const [newValue, taskId] = args as [string, string]
@@ -440,6 +523,7 @@ export default function TasksPage() {
       handleUpdate,
       handleCreateTaskClose,
       handleCreateTaskSuccess,
+      handleUpdateExecutionResult,
     ]
   )
 
@@ -515,8 +599,10 @@ export default function TasksPage() {
             open: articleViewerState.isOpen,
             markdown: articleViewerState.markdown,
             title: articleViewerState.title,
-            wechatMediaInfo: articleViewerState.wechatMediaInfo ?? undefined,
+            executionId: articleViewerState.executionId,
+            executionResult: articleViewerState.executionResult ?? undefined,
             onClose: { action: "closeArticleViewer" },
+            onUpdateResult: { action: "updateExecutionResult" },
           },
         ],
       },

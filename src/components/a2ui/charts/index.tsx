@@ -500,3 +500,12 @@ export function A2UIChartWordCloud({ node }: A2UIComponentProps<A2UIChartWordClo
     </ChartContainer>
   )
 }
+
+export const ChartComponents = {
+  "chart-pie": A2UIChartPie,
+  "chart-radar": A2UIChartRadar,
+  "chart-line": A2UIChartLine,
+  "chart-bar": A2UIChartBar,
+  "chart-radial-bar": A2UIChartRadialBar,
+  "chart-word-cloud": A2UIChartWordCloud,
+}

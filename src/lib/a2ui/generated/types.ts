@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-30T09:26:20.417Z
+// Generated at: 2025-12-31T05:26:46.054Z
 
 import type { CSSProperties } from "react"
 
@@ -177,6 +177,7 @@ export interface A2UITextareaNode extends A2UIBaseNode {
 export interface A2UISelectNode extends A2UIBaseNode {
   type: "select"
   value?: string // Selected value
+  placeholder?: string // Placeholder text when no value is selected
   options: Array<{ label: string; value: string }> // Available options
   onChange?: A2UIAction // Change action handler
 }
@@ -185,6 +186,7 @@ export interface A2UISelectNode extends A2UIBaseNode {
 export interface A2UICheckboxNode extends A2UIBaseNode {
   type: "checkbox"
   checked?: boolean // Checked state
+  label?: string // Label text for the checkbox
   taskId?: string // Associated task ID
   onChange?: A2UIAction // Change action handler
 }
@@ -238,7 +240,9 @@ export interface A2UINavNode extends A2UIBaseNode {
 // Navigation link
 export interface A2UINavLinkNode extends A2UIBaseNode {
   type: "nav-link"
-  text: string // Link text
+  text?: string // Link text (deprecated, use label)
+  label?: string // Link label text
+  icon?: string // Icon name or React node key
   href?: string // Link URL
   active?: boolean // Active state
   onClick?: A2UIAction // Click action handler
@@ -273,6 +277,7 @@ export interface A2UILinkNode extends A2UIBaseNode {
   text: string // Link text
   href?: string // Link URL
   variant?: "default" | "muted" | "primary" // Link style
+  external?: boolean // Open link in new tab
   onClick?: A2UIAction // Click action handler
 }
 
@@ -396,8 +401,10 @@ export interface A2UIArticleViewerModalNode extends A2UIBaseNode {
   open: boolean // Open state
   markdown: string // Markdown content
   title?: string // Modal title
-  wechatMediaInfo?: Record<string, unknown> // WeChat media upload info
+  executionId?: string // Execution ID for updates
+  executionResult?: Record<string, unknown> // Execution result containing coverUrl, wechatMediaId, etc.
   onClose?: A2UIAction // Close action
+  onUpdateResult?: A2UIAction // Update result action
 }
 
 // Create task modal

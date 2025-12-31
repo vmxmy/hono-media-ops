@@ -2,8 +2,8 @@
 // Maps component types to React implementations
 
 import type { ComponentType } from "react"
-import type { A2UINode, A2UIActionHandler, A2UIBaseNode } from "./generated/types"
-import type { A2UICatalog } from "./catalog"
+import type { A2UINode, A2UIActionHandler, A2UIBaseNode, A2UIAction } from "./generated/types"
+import type { A2UICatalog } from "./catalog-types"
 
 /**
  * Props passed to every A2UI component
@@ -222,4 +222,14 @@ export function overrideComponent<T extends A2UIBaseNode>(
   component: A2UIComponent<T>
 ): void {
   getDefaultRegistry().override(type, component)
+}
+
+export function dispatchA2UIAction(
+  onAction: A2UIActionHandler,
+  action?: A2UIAction,
+  extraArgs?: unknown[]
+): void {
+  if (!action) return
+  const args = extraArgs ? [...extraArgs, ...(action.args ?? [])] : action.args
+  onAction(action.action, args)
 }

@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials"
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db } from "@/server/db"
 import { eq, and, isNull } from "drizzle-orm"
+import { hashPassword, isHashedPassword, verifyPassword } from "@/lib/password"
 import {
   users,
   accounts,
@@ -42,13 +43,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
+        const username = credentials.username as string
+        const accessCode = credentials.accessCode as string
+
         const [user] = await db
           .select()
           .from(users)
           .where(
             and(
-              eq(users.username, credentials.username as string),
-              eq(users.accessCode, credentials.accessCode as string),
+              eq(users.username, username),
+              eq(users.accessCode, accessCode),
               isNull(users.deletedAt)
             )
           )
@@ -56,6 +60,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) {
           return null
+        }
+
+        if (!user.accessCode) {
+          return null
+        }
+
+        const isValid = await verifyPassword(accessCode, user.accessCode)
+        if (!isValid) {
+          return null
+        }
+
+        if (!isHashedPassword(user.accessCode)) {
+          const hashed = await hashPassword(accessCode)
+          await db.update(users).set({ accessCode: hashed }).where(eq(users.id, user.id))
         }
 
         return {
@@ -68,7 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   pages: {
-    signIn: "/",
+    signIn: "/login",
   },
   callbacks: {
     jwt: ({ token, user }) => {

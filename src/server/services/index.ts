@@ -18,6 +18,12 @@ export type {
   MetricsTrendPoint,
 } from "./style-analysis.service";
 
+export { articleService } from "./article.service";
+export type { ArticleService, PublishedArticle, ArticleListItem, GetPublishedInput } from "./article.service";
+
+export { embeddingService } from "./embedding.service";
+export type { EmbeddingService, VectorSearchResult } from "./embedding.service";
+
 // Backwards compatibility alias
 export { styleAnalysisService as reverseLogService } from "./style-analysis.service";
 
@@ -27,11 +33,15 @@ export { styleAnalysisService as reverseLogService } from "./style-analysis.serv
 import { taskService } from "./task.service";
 import { imagePromptService } from "./image-prompt.service";
 import { styleAnalysisService } from "./style-analysis.service";
+import { articleService } from "./article.service";
+import { embeddingService } from "./embedding.service";
 
 export const services = {
   task: taskService,
   imagePrompt: imagePromptService,
   styleAnalysis: styleAnalysisService,
+  article: articleService,
+  embedding: embeddingService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;

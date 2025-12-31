@@ -1,6 +1,7 @@
 import type { I18nKey } from "@/contexts/i18n-context"
 
 export const NAV_ITEMS = [
+  { key: "articles", path: "/articles", labelKey: "nav.articles" as I18nKey },
   { key: "tasks", path: "/tasks", labelKey: "nav.tasks" as I18nKey },
   { key: "reverse", path: "/reverse", labelKey: "nav.reverse" as I18nKey },
   { key: "insights", path: "/insights", labelKey: "nav.insights" as I18nKey },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
@@ -33,50 +33,55 @@ const DEFAULT_FORM: ImagePromptFormData = {
   isPublic: false,
 }
 
-const MODEL_OPTIONS = [
-  { value: "jimeng-4.5", label: "Jimeng 4.5" },
-  { value: "jimeng-4.0", label: "Jimeng 4.0" },
-  { value: "jimeng-3.1", label: "Jimeng 3.1" },
-  { value: "nanobanana", label: "Nanobanana" },
-]
-
-const RATIO_OPTIONS = [
-  { value: "1:1", label: "1:1 (正方形)" },
-  { value: "16:9", label: "16:9 (横屏)" },
-  { value: "9:16", label: "9:16 (竖屏)" },
-  { value: "4:3", label: "4:3" },
-  { value: "3:4", label: "3:4" },
-  { value: "21:9", label: "21:9 (超宽)" },
-]
-
-const RESOLUTION_OPTIONS = [
-  { value: "1k", label: "1K" },
-  { value: "2k", label: "2K" },
-  { value: "4k", label: "4K" },
-]
-
-const CATEGORY_OPTIONS = [
-  { value: "general", label: "通用" },
-  { value: "cover", label: "封面" },
-  { value: "portrait", label: "人物" },
-  { value: "landscape", label: "风景" },
-  { value: "product", label: "产品" },
-  { value: "abstract", label: "抽象" },
-]
-
 export default function ImagePromptsPage() {
   const { t } = useI18n()
+
+  // Build options with i18n translations
+  const MODEL_OPTIONS = useMemo(() => [
+    { value: "jimeng-4.5", label: t("imagePrompts.model.jimeng45") },
+    { value: "jimeng-4.0", label: t("imagePrompts.model.jimeng40") },
+    { value: "jimeng-3.1", label: t("imagePrompts.model.jimeng31") },
+    { value: "nanobanana", label: t("imagePrompts.model.nanobanana") },
+  ], [t])
+
+  const RATIO_OPTIONS = useMemo(() => [
+    { value: "1:1", label: t("imagePrompts.ratio.square") },
+    { value: "16:9", label: t("imagePrompts.ratio.landscape") },
+    { value: "9:16", label: t("imagePrompts.ratio.portrait") },
+    { value: "4:3", label: t("imagePrompts.ratio.4_3") },
+    { value: "3:4", label: t("imagePrompts.ratio.3_4") },
+    { value: "21:9", label: t("imagePrompts.ratio.ultrawide") },
+  ], [t])
+
+  const RESOLUTION_OPTIONS = useMemo(() => [
+    { value: "1k", label: t("imagePrompts.resolution.1k") },
+    { value: "2k", label: t("imagePrompts.resolution.2k") },
+    { value: "4k", label: t("imagePrompts.resolution.4k") },
+  ], [t])
+
+  const CATEGORY_OPTIONS = useMemo(() => [
+    { value: "general", label: t("imagePrompts.category.general") },
+    { value: "cover", label: t("imagePrompts.category.cover") },
+    { value: "portrait", label: t("imagePrompts.category.portrait") },
+    { value: "landscape", label: t("imagePrompts.category.landscape") },
+    { value: "product", label: t("imagePrompts.category.product") },
+    { value: "abstract", label: t("imagePrompts.category.abstract") },
+  ], [t])
   const { status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/" })
   const navItems = buildNavItems(t)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ImagePromptFormData>(DEFAULT_FORM)
   const [page, setPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
+
+  const resetForm = useCallback(() => {
+    setEditingId(null)
+    setFormData(DEFAULT_FORM)
+  }, [])
 
   const utils = api.useUtils()
   const { data: promptsData, isLoading } = api.imagePrompts.getAll.useQuery(
@@ -121,77 +126,6 @@ export default function ImagePromptsPage() {
     },
   })
 
-  const resetForm = () => {
-    setEditingId(null)
-    setFormData(DEFAULT_FORM)
-  }
-
-  const handleSubmit = () => {
-    const tags = formData.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean)
-
-    if (editingId) {
-      updateMutation.mutate({
-        id: editingId,
-        title: formData.title,
-        prompt: formData.prompt,
-        negativePrompt: formData.negativePrompt || undefined,
-        model: formData.model,
-        ratio: formData.ratio,
-        resolution: formData.resolution,
-        category: formData.category,
-        tags: tags.length > 0 ? tags : undefined,
-        isPublic: formData.isPublic,
-      })
-    } else {
-      createMutation.mutate({
-        title: formData.title,
-        prompt: formData.prompt,
-        negativePrompt: formData.negativePrompt || undefined,
-        model: formData.model,
-        ratio: formData.ratio,
-        resolution: formData.resolution,
-        category: formData.category,
-        tags: tags.length > 0 ? tags : undefined,
-        isPublic: formData.isPublic,
-      })
-    }
-  }
-
-  const handleEdit = (id: string) => {
-    const prompt = promptsData?.items.find((p) => p.id === id)
-    if (!prompt) return
-
-    setEditingId(prompt.id)
-    setFormData({
-      title: prompt.title,
-      prompt: prompt.prompt,
-      negativePrompt: prompt.negativePrompt ?? "",
-      model: prompt.model ?? "jimeng-4.5",
-      ratio: prompt.ratio ?? "1:1",
-      resolution: prompt.resolution ?? "2k",
-      category: prompt.category ?? "general",
-      tags: prompt.tags?.join(", ") ?? "",
-      isPublic: prompt.isPublic === 1,
-    })
-  }
-
-  const handleDelete = (id: string) => {
-    if (confirm("确定要删除这个提示词吗？")) {
-      deleteMutation.mutate({ id })
-    }
-  }
-
-  const handleDuplicate = (id: string) => {
-    duplicateMutation.mutate({ id })
-  }
-
-  const handleTogglePublic = (id: string) => {
-    togglePublicMutation.mutate({ id })
-  }
-
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
@@ -201,7 +135,7 @@ export default function ImagePromptsPage() {
           break
         }
         case "logout":
-          logout()
+          signOut({ callbackUrl: "/" })
           break
         case "setTitle":
           setFormData((prev) => ({ ...prev, title: args?.[0] as string }))
@@ -230,24 +164,80 @@ export default function ImagePromptsPage() {
         case "setIsPublic":
           setFormData((prev) => ({ ...prev, isPublic: args?.[0] as boolean }))
           break
-        case "submitForm":
-          handleSubmit()
+        case "submitForm": {
+          const tags = formData.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+
+          if (editingId) {
+            updateMutation.mutate({
+              id: editingId,
+              title: formData.title,
+              prompt: formData.prompt,
+              negativePrompt: formData.negativePrompt || undefined,
+              model: formData.model,
+              ratio: formData.ratio,
+              resolution: formData.resolution,
+              category: formData.category,
+              tags: tags.length > 0 ? tags : undefined,
+              isPublic: formData.isPublic,
+            })
+          } else {
+            createMutation.mutate({
+              title: formData.title,
+              prompt: formData.prompt,
+              negativePrompt: formData.negativePrompt || undefined,
+              model: formData.model,
+              ratio: formData.ratio,
+              resolution: formData.resolution,
+              category: formData.category,
+              tags: tags.length > 0 ? tags : undefined,
+              isPublic: formData.isPublic,
+            })
+          }
           break
+        }
         case "resetForm":
-          resetForm()
+          setEditingId(null)
+          setFormData(DEFAULT_FORM)
           break
-        case "edit":
-          handleEdit(args?.[0] as string)
+        case "edit": {
+          const id = args?.[0] as string
+          const prompt = promptsData?.items.find((p) => p.id === id)
+          if (prompt) {
+            setEditingId(prompt.id)
+            setFormData({
+              title: prompt.title,
+              prompt: prompt.prompt,
+              negativePrompt: prompt.negativePrompt ?? "",
+              model: prompt.model ?? "jimeng-4.5",
+              ratio: prompt.ratio ?? "1:1",
+              resolution: prompt.resolution ?? "2k",
+              category: prompt.category ?? "general",
+              tags: prompt.tags?.join(", ") ?? "",
+              isPublic: prompt.isPublic === 1,
+            })
+          }
           break
-        case "delete":
-          handleDelete(args?.[0] as string)
+        }
+        case "delete": {
+          const id = args?.[0] as string
+          if (confirm(t("imagePrompts.deleteConfirm"))) {
+            deleteMutation.mutate({ id })
+          }
           break
-        case "duplicate":
-          handleDuplicate(args?.[0] as string)
+        }
+        case "duplicate": {
+          const id = args?.[0] as string
+          duplicateMutation.mutate({ id })
           break
-        case "togglePublic":
-          handleTogglePublic(args?.[0] as string)
+        }
+        case "togglePublic": {
+          const id = args?.[0] as string
+          togglePublicMutation.mutate({ id })
           break
+        }
         case "setCategoryFilter":
           setCategoryFilter(args?.[0] as string)
           setPage(1)
@@ -266,7 +256,7 @@ export default function ImagePromptsPage() {
           break
       }
     },
-    [router, logout, formData, editingId, promptsData, handleSubmit]
+    [router, formData, editingId, promptsData, page, createMutation, updateMutation, deleteMutation, duplicateMutation, togglePublicMutation, t]
   )
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
@@ -275,20 +265,20 @@ export default function ImagePromptsPage() {
   const formChildren: A2UINode[] = [
     {
       type: "form-field",
-      label: "标题",
+      label: t("imagePrompts.titleLabel"),
       required: true,
-      children: [{ type: "input", id: "title", value: formData.title, inputType: "text", placeholder: "提示词标题", onChange: { action: "setTitle" } }],
+      children: [{ type: "input", id: "title", value: formData.title, inputType: "text", placeholder: t("imagePrompts.titlePlaceholder"), onChange: { action: "setTitle" } }],
     },
     {
       type: "form-field",
-      label: "正向提示词",
+      label: t("imagePrompts.promptLabel"),
       required: true,
-      children: [{ type: "textarea", id: "prompt", value: formData.prompt, rows: 4, placeholder: "描述你想要生成的图片...", onChange: { action: "setPrompt" } }],
+      children: [{ type: "textarea", id: "prompt", value: formData.prompt, rows: 4, placeholder: t("imagePrompts.promptPlaceholder"), onChange: { action: "setPrompt" } }],
     },
     {
       type: "form-field",
-      label: "负向提示词",
-      children: [{ type: "textarea", id: "negativePrompt", value: formData.negativePrompt, rows: 2, placeholder: "不想出现的元素...", onChange: { action: "setNegativePrompt" } }],
+      label: t("imagePrompts.negativePromptLabel"),
+      children: [{ type: "textarea", id: "negativePrompt", value: formData.negativePrompt, rows: 2, placeholder: t("imagePrompts.negativePromptPlaceholder"), onChange: { action: "setNegativePrompt" } }],
     },
     {
       type: "row",
@@ -297,19 +287,19 @@ export default function ImagePromptsPage() {
       children: [
         {
           type: "form-field",
-          label: "模型",
+          label: t("imagePrompts.modelLabel"),
           style: { flex: 1 },
           children: [{ type: "select", id: "model", value: formData.model, options: MODEL_OPTIONS, onChange: { action: "setModel" } }],
         },
         {
           type: "form-field",
-          label: "比例",
+          label: t("imagePrompts.ratioLabel"),
           style: { flex: 1 },
           children: [{ type: "select", id: "ratio", value: formData.ratio, options: RATIO_OPTIONS, onChange: { action: "setRatio" } }],
         },
         {
           type: "form-field",
-          label: "分辨率",
+          label: t("imagePrompts.resolutionLabel"),
           style: { flex: 1 },
           children: [{ type: "select", id: "resolution", value: formData.resolution, options: RESOLUTION_OPTIONS, onChange: { action: "setResolution" } }],
         },
@@ -322,15 +312,15 @@ export default function ImagePromptsPage() {
       children: [
         {
           type: "form-field",
-          label: "分类",
+          label: t("imagePrompts.categoryLabel"),
           style: { flex: 1 },
           children: [{ type: "select", id: "category", value: formData.category, options: CATEGORY_OPTIONS, onChange: { action: "setCategory" } }],
         },
         {
           type: "form-field",
-          label: "标签",
+          label: t("imagePrompts.tagsLabel"),
           style: { flex: 2 },
-          children: [{ type: "input", id: "tags", value: formData.tags, inputType: "text", placeholder: "用逗号分隔, 如: 科技, 未来感, 极简", onChange: { action: "setTags" } }],
+          children: [{ type: "input", id: "tags", value: formData.tags, inputType: "text", placeholder: t("imagePrompts.tagsPlaceholder"), onChange: { action: "setTags" } }],
         },
       ],
     },
@@ -340,7 +330,7 @@ export default function ImagePromptsPage() {
       align: "center",
       children: [
         { type: "checkbox", id: "isPublic", checked: formData.isPublic, onChange: { action: "setIsPublic" } },
-        { type: "text", text: "公开 (其他用户可见)", variant: "body" },
+        { type: "text", text: `${t("imagePrompts.publicLabel")} (${t("imagePrompts.publicDescription")})`, variant: "body" },
       ],
     },
   ]
@@ -361,8 +351,8 @@ export default function ImagePromptsPage() {
         type: "column",
         gap: "1rem",
         children: [
-          { type: "text", text: editingId ? "编辑提示词" : "创建提示词", variant: "h3" },
-          { type: "form", onSubmit: { action: "submitForm" }, children: formChildren },
+          { type: "text", text: editingId ? t("imagePrompts.editTitle") : t("imagePrompts.createTitle"), variant: "h3" },
+          { type: "column", gap: "1rem", children: formChildren },
         ],
       },
     ],
@@ -375,8 +365,8 @@ export default function ImagePromptsPage() {
     responsive: true,
     align: "center",
     children: [
-      { type: "input", id: "search", value: searchQuery, inputType: "text", placeholder: "搜索提示词...", style: { flex: 1, minWidth: "200px" }, onChange: { action: "setSearchQuery" } },
-      { type: "select", id: "categoryFilter", value: categoryFilter, options: [{ value: "", label: "全部分类" }, ...CATEGORY_OPTIONS], onChange: { action: "setCategoryFilter" } },
+      { type: "input", id: "search", value: searchQuery, inputType: "text", placeholder: t("imagePrompts.searchPlaceholder"), style: { flex: 1, minWidth: "200px" }, onChange: { action: "setSearchQuery" } },
+      { type: "select", id: "categoryFilter", value: categoryFilter, options: [{ value: "", label: t("imagePrompts.allCategories") }, ...CATEGORY_OPTIONS], onChange: { action: "setCategoryFilter" } },
     ],
   }
 
@@ -394,80 +384,119 @@ export default function ImagePromptsPage() {
             type: "card",
             hoverable: false,
             style: { padding: "2rem", textAlign: "center" },
-            children: [{ type: "text", text: "暂无提示词", color: "muted" }],
+            children: [{ type: "text", text: t("imagePrompts.noPrompts"), color: "muted" }],
           },
         ],
       }
     }
 
-    const promptCards: A2UINode[] = promptsData.items.map((prompt) => ({
-      type: "card",
-      id: `prompt-${prompt.id}`,
-      hoverable: true,
-      children: [
+    const promptCards: A2UINode[] = promptsData.items.map((prompt) => {
+      // Build tag badges
+      const tagBadges: A2UINode[] = prompt.tags?.slice(0, 3).map((tag) => ({
+        type: "badge" as const,
+        text: tag,
+        color: "info" as const,
+      })) ?? []
+
+      // Build card content
+      const cardContent: A2UINode[] = [
+        // Header row
         {
-          type: "column",
-          gap: "0.75rem",
+          type: "row",
+          justify: "between",
+          align: "start",
+          gap: "0.5rem",
           children: [
-            // Header row
             {
-              type: "row",
-              justify: "between",
-              align: "start",
-              gap: "0.5rem",
+              type: "column",
+              gap: "0.25rem",
+              style: { flex: 1, minWidth: 0 },
               children: [
-                {
-                  type: "column",
-                  gap: "0.25rem",
-                  style: { flex: 1, minWidth: 0 },
-                  children: [
-                    { type: "text", text: prompt.title, variant: "h4" },
-                    {
-                      type: "row",
-                      gap: "0.5rem",
-                      wrap: true,
-                      children: [
-                        { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? "通用", color: "default" },
-                        { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "secondary" },
-                        { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "secondary" },
-                        prompt.isPublic === 1 ? { type: "badge", text: "公开", color: "success" } : null,
-                      ].filter(Boolean),
-                    },
-                  ],
-                },
+                { type: "text", text: prompt.title, variant: "h4" },
                 {
                   type: "row",
-                  gap: "0.25rem",
+                  gap: "0.5rem",
+                  wrap: true,
                   children: [
-                    { type: "button", text: "复制", variant: "ghost", size: "sm", onClick: { action: "duplicate", args: [prompt.id] } },
-                    { type: "button", text: prompt.isPublic === 1 ? "私有" : "公开", variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
-                    { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
-                    { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
-                  ],
+                    { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" },
+                    { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "secondary" },
+                    { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "secondary" },
+                    prompt.isPublic === 1 ? { type: "badge", text: t("imagePrompts.publicLabel"), color: "success" } : null,
+                  ].filter(Boolean),
                 },
               ],
-            } as A2UIRowNode,
-            // Prompt content
-            {
-              type: "text",
-              text: prompt.prompt.length > 120 ? prompt.prompt.slice(0, 120) + "..." : prompt.prompt,
-              variant: "body",
-              color: "muted",
-              style: { fontSize: "0.875rem" },
             },
-            // Stats row
             {
               type: "row",
-              gap: "1rem",
+              gap: "0.25rem",
               children: [
-                { type: "text", text: `使用 ${prompt.useCount} 次`, variant: "caption", color: "muted" },
-                (prompt.rating ?? 0) > 0 ? { type: "text", text: `${"★".repeat(prompt.rating!)}${"☆".repeat(5 - prompt.rating!)}`, variant: "caption", color: "warning" } : null,
-              ].filter(Boolean),
+                { type: "button", text: t("imagePrompts.duplicate"), variant: "ghost", size: "sm", onClick: { action: "duplicate", args: [prompt.id] } },
+                { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
+                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
+                { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
+              ],
             },
           ],
-        } as A2UIColumnNode,
-      ],
-    }))
+        } as A2UIRowNode,
+      ]
+
+      // Add preview image if available
+      if (prompt.previewUrl) {
+        cardContent.push({
+          type: "container",
+          style: { borderRadius: "0.375rem", overflow: "hidden", marginTop: "0.5rem" },
+          children: [{
+            type: "image",
+            src: prompt.previewUrl,
+            alt: prompt.title,
+            style: { width: "100%", maxHeight: "150px", objectFit: "cover" },
+          }],
+        } as A2UINode)
+      }
+
+      // Add prompt content
+      cardContent.push({
+        type: "text",
+        text: prompt.prompt.length > 120 ? prompt.prompt.slice(0, 120) + "..." : prompt.prompt,
+        variant: "body",
+        color: "muted",
+        style: { fontSize: "0.875rem" },
+      })
+
+      // Add tags if available
+      if (tagBadges.length > 0) {
+        cardContent.push({
+          type: "row",
+          gap: "0.25rem",
+          wrap: true,
+          children: tagBadges,
+        } as A2UIRowNode)
+      }
+
+      // Add stats row
+      const statsChildren: A2UINode[] = [
+        { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
+      ]
+      if ((prompt.rating ?? 0) > 0) {
+        statsChildren.push({ type: "text", text: `${"★".repeat(prompt.rating!)}${"☆".repeat(5 - prompt.rating!)}`, variant: "caption", color: "primary" })
+      }
+      cardContent.push({
+        type: "row",
+        gap: "1rem",
+        children: statsChildren,
+      })
+
+      return {
+        type: "card",
+        id: `prompt-${prompt.id}`,
+        hoverable: true,
+        children: [{
+          type: "column",
+          gap: "0.75rem",
+          children: cardContent,
+        } as A2UIColumnNode],
+      }
+    })
 
     return { type: "column", gap: "0.75rem", children: promptCards }
   }
@@ -482,9 +511,9 @@ export default function ImagePromptsPage() {
           align: "center",
           gap: "1rem",
           children: [
-            { type: "button", text: "上一页", variant: "secondary", size: "sm", disabled: page <= 1, onClick: { action: "prevPage" } },
+            { type: "button", text: t("imagePrompts.prevPage"), variant: "secondary", size: "sm", disabled: page <= 1, onClick: { action: "prevPage" } },
             { type: "text", text: `${page} / ${totalPages}`, variant: "body" },
-            { type: "button", text: "下一页", variant: "secondary", size: "sm", disabled: page >= totalPages, onClick: { action: "nextPage" } },
+            { type: "button", text: t("imagePrompts.nextPage"), variant: "secondary", size: "sm", disabled: page >= totalPages, onClick: { action: "nextPage" } },
           ],
         }
       : null
@@ -493,7 +522,7 @@ export default function ImagePromptsPage() {
     type: "column",
     gap: "1.5rem",
     children: [
-      { type: "text", text: "图片提示词库", variant: "h2" },
+      { type: "text", text: t("imagePrompts.title"), variant: "h2" },
       {
         type: "row",
         gap: "1.5rem",
@@ -508,7 +537,7 @@ export default function ImagePromptsPage() {
               filterBar,
               buildPromptsList(),
               ...(pagination ? [pagination] : []),
-              { type: "text", text: `共 ${promptsData?.total ?? 0} 条记录`, variant: "caption", color: "muted", style: { textAlign: "center" } },
+              { type: "text", text: t("imagePrompts.totalRecords", { count: promptsData?.total ?? 0 }), variant: "caption", color: "muted", style: { textAlign: "center" } },
             ],
           },
         ],

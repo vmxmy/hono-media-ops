@@ -16,48 +16,13 @@ export {
   setupStandardRegistry,
   initializeA2UI,
   getConfiguredRegistry,
+  registerBusinessComponents,
 } from "./setup"
 
-// Standard components (for custom registries)
-export {
-  A2UIColumn,
-  A2UIRow,
-  A2UIContainer,
-  A2UICard,
-  A2UIText,
-  A2UIImage,
-  A2UIIcon,
-  A2UIDivider,
-  A2UIButton,
-  A2UIInput,
-  A2UIEditableText,
-  A2UITextarea,
-  A2UISelect,
-  A2UICheckbox,
-  A2UITabs,
-  A2UIBadge,
-  A2UIProgress,
-  A2UIModal,
-  A2UIPage,
-  A2UINav,
-  A2UINavLink,
-  A2UISpacer,
-  A2UIForm,
-  A2UIFormField,
-  A2UIAlert,
-  A2UILink,
-  A2UIFallback,
-} from "./standard-components"
-
-// Chart components
-export {
-  A2UIChartPie,
-  A2UIChartRadar,
-  A2UIChartLine,
-  A2UIChartBar,
-  A2UIChartRadialBar,
-  A2UIChartWordCloud,
-} from "./chart-components"
+export * from "./core"
+export * from "./charts"
+export * from "./ext"
+export * from "./business"
 
 // Re-export types from generated
 export type {
@@ -120,4 +85,3 @@ export { A2UIToaster } from "./toaster"
 export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "@/lib/a2ui"
 
 // Legacy compatibility
-export type { A2UIDeviderNode } from "@/lib/a2ui"

@@ -68,6 +68,7 @@ export interface TaskWithExecutions extends Task {
 }
 
 export interface TaskWithMaterial extends Task {
+  coverUrl?: string | null;
   refMaterial?: {
     styleName: string | null;
     sourceTitle: string | null;
@@ -134,6 +135,15 @@ export const taskService = {
             sourceTitle: styleAnalyses.sourceTitle,
             sourceUrl: styleAnalyses.sourceUrl,
           },
+          coverUrl: sql<string>`
+            (
+              select ${taskExecutions.result}->>'coverUrl'
+              from ${taskExecutions}
+              where ${taskExecutions.taskId} = ${tasks.id}
+              order by ${taskExecutions.startedAt} desc
+              limit 1
+            )
+          `.as("cover_url"),
         })
         .from(tasks)
         .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
@@ -149,6 +159,7 @@ export const taskService = {
     // Flatten the result to include refMaterial in the task object
     const tasksWithMaterial: TaskWithMaterial[] = data.map((row) => ({
       ...row.task,
+      coverUrl: row.coverUrl ?? null,
       refMaterial: row.refMaterial?.styleName || row.refMaterial?.sourceTitle || row.refMaterial?.sourceUrl
         ? row.refMaterial
         : null,
@@ -567,6 +578,18 @@ export const taskService = {
       .limit(1);
 
     return execution ?? null;
+  },
+
+  async updateExecutionResult(
+    executionId: string,
+    result: ExecutionResult
+  ): Promise<{ success: boolean }> {
+    await db
+      .update(taskExecutions)
+      .set({ result })
+      .where(eq(taskExecutions.id, executionId));
+
+    return { success: true };
   },
 };
 

@@ -1,17 +1,20 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode } from "@/lib/a2ui"
-import type { WechatMediaInfo } from "@/server/db/schema"
+import type { ExecutionResult } from "@/server/db/schema"
 
 interface ArticleViewerModalProps {
   isOpen: boolean
   onClose: () => void
   markdown: string
   title?: string
-  wechatMediaInfo?: WechatMediaInfo | null
+  executionId?: string
+  executionResult?: ExecutionResult | null
+  onUpdateResult?: (result: ExecutionResult) => void
+  onUpdateMarkdown?: (markdown: string) => void
 }
 
 export function ArticleViewerModal({
@@ -19,25 +22,37 @@ export function ArticleViewerModal({
   onClose,
   markdown,
   title,
-  wechatMediaInfo,
+  executionId,
+  executionResult,
+  onUpdateResult,
+  onUpdateMarkdown,
 }: ArticleViewerModalProps) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const [mediaIdCopied, setMediaIdCopied] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editCoverUrl, setEditCoverUrl] = useState(executionResult?.coverUrl ?? "")
+  const [editMediaId, setEditMediaId] = useState(executionResult?.wechatMediaId ?? "")
+  const [editMarkdown, setEditMarkdown] = useState(markdown)
+
+  // Sync editMarkdown when markdown prop changes
+  useEffect(() => {
+    setEditMarkdown(markdown)
+  }, [markdown])
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
         case "copy":
-          navigator.clipboard.writeText(markdown).then(() => {
+          navigator.clipboard.writeText(editMarkdown).then(() => {
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
           })
           break
         case "copyMediaId":
-          if (wechatMediaInfo?.media_id) {
-            navigator.clipboard.writeText(wechatMediaInfo.media_id).then(() => {
+          if (executionResult?.wechatMediaId) {
+            navigator.clipboard.writeText(executionResult.wechatMediaId).then(() => {
               setMediaIdCopied(true)
               setTimeout(() => setMediaIdCopied(false), 2000)
             })
@@ -51,35 +66,124 @@ export function ArticleViewerModal({
           setActiveTab(nextIndex)
           break
         }
+        case "toggleEdit":
+          if (isEditing) {
+            // Cancel editing, reset values
+            setEditCoverUrl(executionResult?.coverUrl ?? "")
+            setEditMediaId(executionResult?.wechatMediaId ?? "")
+          }
+          setIsEditing(!isEditing)
+          break
+        case "saveResult":
+          if (onUpdateResult) {
+            onUpdateResult({
+              ...executionResult,
+              coverUrl: editCoverUrl || undefined,
+              wechatMediaId: editMediaId || undefined,
+            })
+          }
+          setIsEditing(false)
+          break
+        case "updateCoverUrl":
+          setEditCoverUrl(args?.[0] as string ?? "")
+          break
+        case "updateMediaId":
+          setEditMediaId(args?.[0] as string ?? "")
+          break
+        case "updateMarkdown":
+          setEditMarkdown(args?.[0] as string ?? "")
+          break
+        case "saveMarkdown":
+          if (onUpdateMarkdown) {
+            onUpdateMarkdown(editMarkdown)
+          }
+          break
       }
     },
-    [markdown, onClose, wechatMediaInfo]
+    [onClose, executionResult, isEditing, editCoverUrl, editMediaId, onUpdateResult, editMarkdown, onUpdateMarkdown]
   )
 
   const tabs = useMemo(() => {
+    const coverUrl = executionResult?.coverUrl
+    const previewChildren: A2UINode[] = []
+
+    // 添加封面图
+    if (coverUrl) {
+      previewChildren.push({
+        type: "container",
+        style: {
+          marginBottom: "1.5rem",
+          borderRadius: "0.5rem",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "image",
+            src: coverUrl,
+            alt: title ?? "Cover",
+            style: {
+              width: "100%",
+              maxHeight: "300px",
+              objectFit: "cover",
+            },
+          },
+        ],
+      } as A2UINode)
+    }
+
+    // 添加 markdown 内容 (使用编辑后的内容)
+    previewChildren.push({ type: "markdown", content: editMarkdown } as A2UINode)
+
+    // 判断内容是否有修改
+    const hasChanges = editMarkdown !== markdown
+
     return [
       {
         label: `📖 ${t("article.preview")}`,
-        content: { type: "markdown", content: markdown } as A2UINode,
+        content: {
+          type: "column",
+          gap: "0",
+          children: previewChildren,
+        } as A2UINode,
       },
       {
-        label: `</> ${t("article.source")}`,
+        label: `</> ${t("article.source")}${hasChanges ? " *" : ""}`,
         content: {
-          type: "container",
-          style: {
-            backgroundColor: "var(--ds-muted)",
-            borderRadius: "0.5rem",
-            padding: "1rem",
-            fontFamily: "var(--ds-font-mono)",
-            fontSize: "0.875rem",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          },
-          children: [{ type: "text", text: markdown }],
+          type: "column",
+          gap: "0.75rem",
+          children: [
+            {
+              type: "textarea",
+              id: "markdown-editor",
+              value: editMarkdown,
+              rows: 20,
+              style: {
+                fontFamily: "var(--ds-font-mono)",
+                fontSize: "0.875rem",
+                lineHeight: "1.5",
+              },
+              onChange: { action: "updateMarkdown" },
+            } as A2UINode,
+            ...(onUpdateMarkdown ? [{
+              type: "row",
+              justify: "end",
+              gap: "0.5rem",
+              children: [
+                {
+                  type: "button",
+                  text: t("common.save"),
+                  variant: "primary",
+                  size: "sm",
+                  disabled: !hasChanges,
+                  onClick: { action: "saveMarkdown" },
+                },
+              ],
+            } as A2UINode] : []),
+          ],
         } as A2UINode,
       },
     ]
-  }, [markdown, t])
+  }, [editMarkdown, markdown, t, executionResult?.coverUrl, title, onUpdateMarkdown])
 
   // 第一段：标题栏
   const titleSection: A2UINode = {
@@ -116,52 +220,133 @@ export function ArticleViewerModal({
     ],
   }
 
-  // 微信素材信息栏（条件渲染）
-  const wechatInfoSection: A2UINode | null = wechatMediaInfo
-    ? {
+  // 素材信息栏 - 显示/编辑模式
+  const buildResultSection = (): A2UINode | null => {
+    const hasCover = !!executionResult?.coverUrl
+    const hasMediaId = !!executionResult?.wechatMediaId
+
+    if (!hasCover && !hasMediaId && !isEditing) {
+      // 无数据时显示添加按钮
+      return {
         type: "container",
         style: {
           padding: "0.5rem 1rem",
+          flexShrink: 0,
+          borderBottom: "1px solid var(--ds-border)",
+          backgroundColor: "var(--ds-muted)",
+        },
+        children: [
+          {
+            type: "row",
+            align: "center",
+            gap: "0.5rem",
+            children: [
+              { type: "text", text: "暂无素材信息", color: "muted", variant: "caption" },
+              {
+                type: "button",
+                text: "添加",
+                variant: "ghost",
+                size: "sm",
+                onClick: { action: "toggleEdit" },
+              },
+            ],
+          },
+        ],
+      }
+    }
+
+    if (isEditing) {
+      // 编辑模式
+      return {
+        type: "container",
+        style: {
+          padding: "1rem",
           flexShrink: 0,
           borderBottom: "1px solid var(--ds-border)",
           backgroundColor: "var(--ds-accent)",
         },
         children: [
           {
-            type: "row",
-            align: "center",
+            type: "column",
             gap: "0.75rem",
-            wrap: true,
             children: [
-              { type: "badge", text: "✅ 微信已上传", color: "success" },
+              { type: "text", text: "编辑素材信息", variant: "caption", weight: "semibold" },
               {
-                type: "link",
-                text: "📷 查看素材",
-                href: wechatMediaInfo.url,
-                variant: "primary",
+                type: "input",
+                placeholder: "封面图 URL",
+                value: editCoverUrl,
+                onChange: { action: "updateCoverUrl" },
               },
               {
-                type: "button",
-                text: mediaIdCopied ? "已复制" : "复制 media_id",
-                variant: "ghost",
-                size: "sm",
-                onClick: { action: "copyMediaId" },
+                type: "input",
+                placeholder: "微信 Media ID",
+                value: editMediaId,
+                onChange: { action: "updateMediaId" },
               },
-              ...(wechatMediaInfo.uploaded_at
-                ? [
-                    {
-                      type: "text" as const,
-                      text: `上传于 ${new Date(wechatMediaInfo.uploaded_at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`,
-                      variant: "caption" as const,
-                      color: "muted" as const,
-                    },
-                  ]
-                : []),
+              {
+                type: "row",
+                gap: "0.5rem",
+                justify: "end",
+                children: [
+                  { type: "button", text: "取消", variant: "ghost", size: "sm", onClick: { action: "toggleEdit" } },
+                  { type: "button", text: "保存", variant: "primary", size: "sm", onClick: { action: "saveResult" } },
+                ],
+              },
             ],
           },
         ],
       }
-    : null
+    }
+
+    // 显示模式
+    return {
+      type: "container",
+      style: {
+        padding: "0.5rem 1rem",
+        flexShrink: 0,
+        borderBottom: "1px solid var(--ds-border)",
+        backgroundColor: "var(--ds-accent)",
+      },
+      children: [
+        {
+          type: "row",
+          align: "center",
+          gap: "0.75rem",
+          wrap: true,
+          children: [
+            ...(hasCover
+              ? [
+                  { type: "badge" as const, text: "✅ 有封面", color: "success" as const },
+                  { type: "link" as const, text: "📷 查看", href: executionResult.coverUrl, variant: "primary" as const, external: true },
+                ]
+              : [{ type: "badge" as const, text: "无封面", color: "default" as const }]),
+            ...(hasMediaId
+              ? [
+                  { type: "text" as const, text: "|", color: "muted" as const },
+                  { type: "badge" as const, text: "微信已上传", color: "success" as const },
+                  {
+                    type: "button" as const,
+                    text: mediaIdCopied ? "已复制" : "复制 ID",
+                    variant: "ghost" as const,
+                    size: "sm" as const,
+                    onClick: { action: "copyMediaId" },
+                  },
+                ]
+              : []),
+            {
+              type: "button",
+              text: "编辑",
+              variant: "ghost",
+              size: "sm",
+              onClick: { action: "toggleEdit" },
+            },
+          ],
+        },
+      ],
+    }
+  }
+
+  const resultSection = buildResultSection()
 
   // 第二段：Tab 栏
   const tabSection: A2UINode = {
@@ -226,7 +411,7 @@ export function ArticleViewerModal({
       padding: "0",
       overflow: "hidden",
     },
-    children: [titleSection, ...(wechatInfoSection ? [wechatInfoSection] : []), tabSection, contentSection],
+    children: [titleSection, ...(resultSection ? [resultSection] : []), tabSection, contentSection],
   }
 
   if (!isOpen) return null

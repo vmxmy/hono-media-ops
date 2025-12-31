@@ -44,10 +44,27 @@ export type I18nKey =
     | "auth.usernamePlaceholder"
     | "auth.accessCodePlaceholder"
     | "auth.orContinueWith"
+    | "profile.title"
+    | "profile.profileTitle"
+    | "profile.displayName"
+    | "profile.displayNamePlaceholder"
+    | "profile.nameRequired"
+    | "profile.passwordTitle"
+    | "profile.currentPassword"
+    | "profile.currentPasswordPlaceholder"
+    | "profile.newPassword"
+    | "profile.newPasswordPlaceholder"
+    | "profile.confirmPassword"
+    | "profile.confirmPasswordPlaceholder"
+    | "profile.updatePassword"
+    | "profile.passwordMismatch"
+    | "profile.profileUpdated"
+    | "profile.passwordUpdated"
     // Navigation
     | "nav.dashboard"
     | "nav.prompts"
     | "nav.tasks"
+    | "nav.articles"
     | "nav.settings"
     // Tasks
     | "tasks.title"
@@ -133,6 +150,56 @@ export type I18nKey =
     | "prompts.description"
     | "prompts.noPrompts"
     | "prompts.deleteConfirm"
+    // Image Prompts
+    | "imagePrompts.title"
+    | "imagePrompts.createTitle"
+    | "imagePrompts.editTitle"
+    | "imagePrompts.titleLabel"
+    | "imagePrompts.titlePlaceholder"
+    | "imagePrompts.promptLabel"
+    | "imagePrompts.promptPlaceholder"
+    | "imagePrompts.negativePromptLabel"
+    | "imagePrompts.negativePromptPlaceholder"
+    | "imagePrompts.modelLabel"
+    | "imagePrompts.ratioLabel"
+    | "imagePrompts.resolutionLabel"
+    | "imagePrompts.categoryLabel"
+    | "imagePrompts.tagsLabel"
+    | "imagePrompts.tagsPlaceholder"
+    | "imagePrompts.publicLabel"
+    | "imagePrompts.publicDescription"
+    | "imagePrompts.searchPlaceholder"
+    | "imagePrompts.allCategories"
+    | "imagePrompts.noPrompts"
+    | "imagePrompts.totalRecords"
+    | "imagePrompts.prevPage"
+    | "imagePrompts.nextPage"
+    | "imagePrompts.duplicate"
+    | "imagePrompts.makePrivate"
+    | "imagePrompts.makePublic"
+    | "imagePrompts.usageCount"
+    | "imagePrompts.deleteConfirm"
+    | "imagePrompts.duplicateSuffix"
+    // Image Prompt Options
+    | "imagePrompts.model.jimeng45"
+    | "imagePrompts.model.jimeng40"
+    | "imagePrompts.model.jimeng31"
+    | "imagePrompts.model.nanobanana"
+    | "imagePrompts.ratio.square"
+    | "imagePrompts.ratio.landscape"
+    | "imagePrompts.ratio.portrait"
+    | "imagePrompts.ratio.4_3"
+    | "imagePrompts.ratio.3_4"
+    | "imagePrompts.ratio.ultrawide"
+    | "imagePrompts.resolution.1k"
+    | "imagePrompts.resolution.2k"
+    | "imagePrompts.resolution.4k"
+    | "imagePrompts.category.general"
+    | "imagePrompts.category.cover"
+    | "imagePrompts.category.portrait"
+    | "imagePrompts.category.landscape"
+    | "imagePrompts.category.product"
+    | "imagePrompts.category.abstract"
     // Settings
     | "settings.title"
     | "settings.appearance"
@@ -304,6 +371,29 @@ export type I18nKey =
     | "article.copied"
     | "article.viewArticle"
     | "common.close"
+    // Articles page
+    | "articles.title"
+    | "articles.subtitle"
+    | "articles.searchPlaceholder"
+    | "articles.loadError"
+    | "articles.noArticles"
+    | "articles.noSearchResults"
+    | "articles.tryDifferentKeywords"
+    | "articles.moreContentComing"
+    | "articles.clearSearch"
+    | "articles.noCover"
+    | "articles.readingTime"
+    | "articles.lessThanOneMinute"
+    | "articles.prevPage"
+    | "articles.nextPage"
+    | "articles.readMore"
+    | "articles.backToList"
+    | "articles.loadingArticle"
+    | "articles.articleNotFound"
+    | "articles.loginBackend"
+    | "articles.aboutMinutes"
+    | "articles.wordCount"
+    | "articles.unknownWordCount"
 
 interface I18nContextValue {
     locale: Locale
@@ -349,10 +439,27 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.usernamePlaceholder": "Enter username",
         "auth.accessCodePlaceholder": "Enter access code",
         "auth.orContinueWith": "Or continue with",
+        "profile.title": "User Center",
+        "profile.profileTitle": "Profile",
+        "profile.displayName": "Display Name",
+        "profile.displayNamePlaceholder": "Enter display name",
+        "profile.nameRequired": "Display name is required",
+        "profile.passwordTitle": "Update Password",
+        "profile.currentPassword": "Current Password",
+        "profile.currentPasswordPlaceholder": "Enter current password",
+        "profile.newPassword": "New Password",
+        "profile.newPasswordPlaceholder": "Enter new password",
+        "profile.confirmPassword": "Confirm Password",
+        "profile.confirmPasswordPlaceholder": "Confirm new password",
+        "profile.updatePassword": "Update Password",
+        "profile.passwordMismatch": "Passwords do not match",
+        "profile.profileUpdated": "Profile updated",
+        "profile.passwordUpdated": "Password updated",
         // Navigation
         "nav.dashboard": "Dashboard",
         "nav.prompts": "Prompts",
         "nav.tasks": "Write",
+        "nav.articles": "Articles",
         "nav.settings": "Settings",
         // Tasks
         "tasks.title": "Write Something",
@@ -438,6 +545,56 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "prompts.description": "Description",
         "prompts.noPrompts": "No prompts yet",
         "prompts.deleteConfirm": "Are you sure you want to delete this prompt?",
+        // Image Prompts
+        "imagePrompts.title": "Image Prompt Library",
+        "imagePrompts.createTitle": "Create Prompt",
+        "imagePrompts.editTitle": "Edit Prompt",
+        "imagePrompts.titleLabel": "Title",
+        "imagePrompts.titlePlaceholder": "Prompt title",
+        "imagePrompts.promptLabel": "Positive Prompt",
+        "imagePrompts.promptPlaceholder": "Describe the image you want to generate...",
+        "imagePrompts.negativePromptLabel": "Negative Prompt",
+        "imagePrompts.negativePromptPlaceholder": "Elements to avoid...",
+        "imagePrompts.modelLabel": "Model",
+        "imagePrompts.ratioLabel": "Aspect Ratio",
+        "imagePrompts.resolutionLabel": "Resolution",
+        "imagePrompts.categoryLabel": "Category",
+        "imagePrompts.tagsLabel": "Tags",
+        "imagePrompts.tagsPlaceholder": "Separate with commas, e.g., tech, futuristic, minimal",
+        "imagePrompts.publicLabel": "Public",
+        "imagePrompts.publicDescription": "Visible to other users",
+        "imagePrompts.searchPlaceholder": "Search prompts...",
+        "imagePrompts.allCategories": "All Categories",
+        "imagePrompts.noPrompts": "No prompts yet",
+        "imagePrompts.totalRecords": "{count} records total",
+        "imagePrompts.prevPage": "Previous",
+        "imagePrompts.nextPage": "Next",
+        "imagePrompts.duplicate": "Duplicate",
+        "imagePrompts.makePrivate": "Make Private",
+        "imagePrompts.makePublic": "Make Public",
+        "imagePrompts.usageCount": "Used {count} times",
+        "imagePrompts.deleteConfirm": "Are you sure you want to delete this prompt?",
+        "imagePrompts.duplicateSuffix": "(Copy)",
+        // Image Prompt Options
+        "imagePrompts.model.jimeng45": "Jimeng 4.5",
+        "imagePrompts.model.jimeng40": "Jimeng 4.0",
+        "imagePrompts.model.jimeng31": "Jimeng 3.1",
+        "imagePrompts.model.nanobanana": "Nanobanana",
+        "imagePrompts.ratio.square": "1:1 (Square)",
+        "imagePrompts.ratio.landscape": "16:9 (Landscape)",
+        "imagePrompts.ratio.portrait": "9:16 (Portrait)",
+        "imagePrompts.ratio.4_3": "4:3",
+        "imagePrompts.ratio.3_4": "3:4",
+        "imagePrompts.ratio.ultrawide": "21:9 (Ultra Wide)",
+        "imagePrompts.resolution.1k": "1K",
+        "imagePrompts.resolution.2k": "2K",
+        "imagePrompts.resolution.4k": "4K",
+        "imagePrompts.category.general": "General",
+        "imagePrompts.category.cover": "Cover",
+        "imagePrompts.category.portrait": "Portrait",
+        "imagePrompts.category.landscape": "Landscape",
+        "imagePrompts.category.product": "Product",
+        "imagePrompts.category.abstract": "Abstract",
         // Settings
         "settings.title": "Settings",
         "settings.appearance": "Appearance",
@@ -609,6 +766,29 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "article.copied": "Copied!",
         "article.viewArticle": "View Article",
         "common.close": "Close",
+        // Articles page
+        "articles.title": "Articles",
+        "articles.subtitle": "Explore AI-generated content",
+        "articles.searchPlaceholder": "Search articles by title or keywords...",
+        "articles.loadError": "Failed to load: {error}",
+        "articles.noArticles": "No articles yet",
+        "articles.noSearchResults": "No matching articles found",
+        "articles.tryDifferentKeywords": "Try different keywords, or clear the search to view all content.",
+        "articles.moreContentComing": "Check back later, more content is being generated.",
+        "articles.clearSearch": "Clear Search",
+        "articles.noCover": "No cover",
+        "articles.readingTime": "{minutes} min read",
+        "articles.lessThanOneMinute": "Less than 1 min",
+        "articles.prevPage": "Previous",
+        "articles.nextPage": "Next",
+        "articles.readMore": "Read more →",
+        "articles.backToList": "← Back to articles",
+        "articles.loadingArticle": "Loading article...",
+        "articles.articleNotFound": "Article not found or not published yet",
+        "articles.loginBackend": "Login to dashboard",
+        "articles.aboutMinutes": "About {minutes} min read",
+        "articles.wordCount": "About {count} words",
+        "articles.unknownWordCount": "Unknown word count",
     },
     "zh-CN": {
         // Common
@@ -643,10 +823,27 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.usernamePlaceholder": "请输入用户名",
         "auth.accessCodePlaceholder": "请输入访问码",
         "auth.orContinueWith": "或使用以下方式登录",
+        "profile.title": "用户中心",
+        "profile.profileTitle": "个人资料",
+        "profile.displayName": "昵称",
+        "profile.displayNamePlaceholder": "请输入昵称",
+        "profile.nameRequired": "请填写昵称",
+        "profile.passwordTitle": "修改密码",
+        "profile.currentPassword": "当前密码",
+        "profile.currentPasswordPlaceholder": "请输入当前密码",
+        "profile.newPassword": "新密码",
+        "profile.newPasswordPlaceholder": "请输入新密码",
+        "profile.confirmPassword": "确认密码",
+        "profile.confirmPasswordPlaceholder": "请再次输入新密码",
+        "profile.updatePassword": "更新密码",
+        "profile.passwordMismatch": "两次密码不一致",
+        "profile.profileUpdated": "昵称已更新",
+        "profile.passwordUpdated": "密码已更新",
         // Navigation
         "nav.dashboard": "仪表盘",
         "nav.prompts": "提示词",
         "nav.tasks": "写点东西",
+        "nav.articles": "文章",
         "nav.settings": "设置",
         // Tasks
         "tasks.title": "写点东西",
@@ -732,6 +929,56 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "prompts.description": "描述",
         "prompts.noPrompts": "暂无提示词",
         "prompts.deleteConfirm": "确定要删除这个提示词吗？",
+        // Image Prompts
+        "imagePrompts.title": "图片提示词库",
+        "imagePrompts.createTitle": "创建提示词",
+        "imagePrompts.editTitle": "编辑提示词",
+        "imagePrompts.titleLabel": "标题",
+        "imagePrompts.titlePlaceholder": "提示词标题",
+        "imagePrompts.promptLabel": "正向提示词",
+        "imagePrompts.promptPlaceholder": "描述你想要生成的图片...",
+        "imagePrompts.negativePromptLabel": "负向提示词",
+        "imagePrompts.negativePromptPlaceholder": "不想出现的元素...",
+        "imagePrompts.modelLabel": "模型",
+        "imagePrompts.ratioLabel": "比例",
+        "imagePrompts.resolutionLabel": "分辨率",
+        "imagePrompts.categoryLabel": "分类",
+        "imagePrompts.tagsLabel": "标签",
+        "imagePrompts.tagsPlaceholder": "用逗号分隔, 如: 科技, 未来感, 极简",
+        "imagePrompts.publicLabel": "公开",
+        "imagePrompts.publicDescription": "其他用户可见",
+        "imagePrompts.searchPlaceholder": "搜索提示词...",
+        "imagePrompts.allCategories": "全部分类",
+        "imagePrompts.noPrompts": "暂无提示词",
+        "imagePrompts.totalRecords": "共 {count} 条记录",
+        "imagePrompts.prevPage": "上一页",
+        "imagePrompts.nextPage": "下一页",
+        "imagePrompts.duplicate": "复制",
+        "imagePrompts.makePrivate": "设为私有",
+        "imagePrompts.makePublic": "设为公开",
+        "imagePrompts.usageCount": "使用 {count} 次",
+        "imagePrompts.deleteConfirm": "确定要删除这个提示词吗？",
+        "imagePrompts.duplicateSuffix": "(副本)",
+        // Image Prompt Options
+        "imagePrompts.model.jimeng45": "Jimeng 4.5",
+        "imagePrompts.model.jimeng40": "Jimeng 4.0",
+        "imagePrompts.model.jimeng31": "Jimeng 3.1",
+        "imagePrompts.model.nanobanana": "Nanobanana",
+        "imagePrompts.ratio.square": "1:1 (正方形)",
+        "imagePrompts.ratio.landscape": "16:9 (横屏)",
+        "imagePrompts.ratio.portrait": "9:16 (竖屏)",
+        "imagePrompts.ratio.4_3": "4:3",
+        "imagePrompts.ratio.3_4": "3:4",
+        "imagePrompts.ratio.ultrawide": "21:9 (超宽)",
+        "imagePrompts.resolution.1k": "1K",
+        "imagePrompts.resolution.2k": "2K",
+        "imagePrompts.resolution.4k": "4K",
+        "imagePrompts.category.general": "通用",
+        "imagePrompts.category.cover": "封面",
+        "imagePrompts.category.portrait": "人物",
+        "imagePrompts.category.landscape": "风景",
+        "imagePrompts.category.product": "产品",
+        "imagePrompts.category.abstract": "抽象",
         // Settings
         "settings.title": "设置",
         "settings.appearance": "外观",
@@ -903,6 +1150,29 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "article.copied": "已复制！",
         "article.viewArticle": "查看文章",
         "common.close": "关闭",
+        // Articles page
+        "articles.title": "文章阅读",
+        "articles.subtitle": "探索 AI 生成的精彩内容",
+        "articles.searchPlaceholder": "搜索文章标题或关键词...",
+        "articles.loadError": "加载失败: {error}",
+        "articles.noArticles": "暂无文章",
+        "articles.noSearchResults": "未找到相关文章",
+        "articles.tryDifferentKeywords": "尝试更换关键词，或清空搜索查看全部内容。",
+        "articles.moreContentComing": "稍后再来看看，更多内容正在生成中。",
+        "articles.clearSearch": "清空搜索",
+        "articles.noCover": "无封面",
+        "articles.readingTime": "{minutes} 分钟阅读",
+        "articles.lessThanOneMinute": "少于 1 分钟",
+        "articles.prevPage": "上一页",
+        "articles.nextPage": "下一页",
+        "articles.readMore": "阅读全文 →",
+        "articles.backToList": "← 返回文章列表",
+        "articles.loadingArticle": "加载文章中...",
+        "articles.articleNotFound": "文章不存在或尚未发布",
+        "articles.loginBackend": "登录后台",
+        "articles.aboutMinutes": "约 {minutes} 分钟阅读",
+        "articles.wordCount": "约 {count} 字",
+        "articles.unknownWordCount": "字数未知",
     },
 }
 

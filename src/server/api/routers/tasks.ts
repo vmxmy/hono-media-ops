@@ -153,6 +153,22 @@ export const tasksRouter = createTRPCRouter({
     .input(idSchema)
     .mutation(({ ctx, input }) => ctx.services.task.duplicate(input.id)),
 
+  updateExecutionResult: protectedProcedure
+    .input(
+      z.object({
+        executionId: z.string(),
+        result: z.object({
+          coverUrl: z.string().optional(),
+          wechatMediaId: z.string().optional(),
+          coverR2Key: z.string().optional(),
+          wechatDraftId: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.services.task.updateExecutionResult(input.executionId, input.result)
+    ),
+
   // ==================== Batch Operations ====================
 
   batchDelete: protectedProcedure
