@@ -78,6 +78,7 @@ export default function ImagePromptsPage() {
   const [page, setPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const resetForm = useCallback(() => {
     setEditingId(null)
@@ -237,6 +238,8 @@ export default function ImagePromptsPage() {
           const prompt = promptsData?.items.find((p) => p.id === id)
           if (prompt) {
             navigator.clipboard.writeText(prompt.prompt)
+            setCopiedId(id)
+            setTimeout(() => setCopiedId(null), 2000)
           }
           break
         }
@@ -432,7 +435,7 @@ export default function ImagePromptsPage() {
               type: "row",
               gap: "0.25rem",
               children: [
-                { type: "button", text: t("imagePrompts.copyPrompt"), variant: "ghost", size: "sm", onClick: { action: "copy", args: [prompt.id] } },
+                { type: "button", text: copiedId === prompt.id ? `✓ ${t("common.copied")}` : t("imagePrompts.copyPrompt"), variant: copiedId === prompt.id ? "secondary" : "ghost", size: "sm", disabled: copiedId === prompt.id, onClick: { action: "copy", args: [prompt.id] } },
                 { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
                 { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
                 { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },

@@ -31,6 +31,7 @@ export type I18nKey =
     | "common.disabled"
     | "common.saved"
     | "common.copy"
+    | "common.copied"
     // Auth
     | "auth.login"
     | "auth.logout"
@@ -429,6 +430,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.disabled": "Disabled",
         "common.saved": "Saved",
         "common.copy": "Copy",
+        "common.copied": "Copied",
         // Auth
         "auth.login": "Login",
         "auth.logout": "Logout",
@@ -816,6 +818,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.disabled": "已关闭",
         "common.saved": "已保存",
         "common.copy": "复制",
+        "common.copied": "已复制",
         // Auth
         "auth.login": "登录",
         "auth.logout": "退出登录",
