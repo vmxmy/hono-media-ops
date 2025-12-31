@@ -29,6 +29,7 @@ export type I18nKey =
     | "common.date"
     | "common.enabled"
     | "common.disabled"
+    | "common.saved"
     // Auth
     | "auth.login"
     | "auth.logout"
@@ -424,6 +425,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.date": "Date",
         "common.enabled": "Enabled",
         "common.disabled": "Disabled",
+        "common.saved": "Saved",
         // Auth
         "auth.login": "Login",
         "auth.logout": "Logout",
@@ -808,6 +810,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.date": "日期",
         "common.enabled": "已开启",
         "common.disabled": "已关闭",
+        "common.saved": "已保存",
         // Auth
         "auth.login": "登录",
         "auth.logout": "退出登录",

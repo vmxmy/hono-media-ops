@@ -289,6 +289,36 @@
         }
       }
     },
+    "markdown-editor": {
+      "description": "Markdown editor with toolbar and live preview",
+      "category": "interactive",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Markdown content"
+        },
+        "height": {
+          "type": "number",
+          "default": 400,
+          "description": "Editor height in pixels"
+        },
+        "preview": {
+          "type": "string",
+          "enum": ["edit", "live", "preview"],
+          "default": "edit",
+          "description": "Preview mode: edit (no preview), live (side by side), preview (read only)"
+        },
+        "hideToolbar": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide the toolbar"
+        },
+        "onChange": {
+          "type": "action",
+          "description": "Content change handler"
+        }
+      }
+    },
     "select": {
       "description": "Dropdown selection",
       "category": "interactive",
@@ -939,6 +969,10 @@
         "onUpdateResult": {
           "type": "action",
           "description": "Update result action"
+        },
+        "onUpdateMarkdown": {
+          "type": "action",
+          "description": "Update markdown content action"
         }
       }
     },

@@ -144,10 +144,6 @@ export default function ArticleDetailPage({ params }: Props) {
                 { type: "text" as const, text: formatDate(article.createdAt), variant: "caption" as const, color: "muted" as const },
                 { type: "text" as const, text: "·", color: "muted" as const },
                 { type: "text" as const, text: t("articles.aboutMinutes", { minutes: readingTime }), variant: "caption" as const, color: "muted" as const },
-                ...(article.keywords ? [
-                  { type: "text" as const, text: "·", color: "muted" as const },
-                  { type: "badge" as const, text: article.keywords, color: "default" as const }
-                ] : []),
               ],
             },
           ],

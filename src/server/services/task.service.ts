@@ -591,6 +591,18 @@ export const taskService = {
 
     return { success: true };
   },
+
+  async updateExecutionMarkdown(
+    executionId: string,
+    markdown: string
+  ): Promise<{ success: boolean }> {
+    await db
+      .update(taskExecutions)
+      .set({ articleMarkdown: markdown })
+      .where(eq(taskExecutions.id, executionId));
+
+    return { success: true };
+  },
 };
 
 export type TaskService = typeof taskService;

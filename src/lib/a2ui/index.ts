@@ -36,6 +36,7 @@ export type {
   A2UIInputNode,
   A2UIEditableTextNode,
   A2UITextareaNode,
+  A2UIMarkdownEditorNode,
   A2UISelectNode,
   A2UICheckboxNode,
   A2UITabsNode,

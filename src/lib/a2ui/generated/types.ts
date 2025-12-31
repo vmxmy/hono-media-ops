@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-31T05:26:46.054Z
+// Generated at: 2025-12-31T12:38:06.557Z
 
 import type { CSSProperties } from "react"
 
@@ -32,6 +32,7 @@ export type A2UINode =
   | A2UIInputNode
   | A2UIEditableTextNode
   | A2UITextareaNode
+  | A2UIMarkdownEditorNode
   | A2UISelectNode
   | A2UICheckboxNode
   | A2UITabsNode
@@ -171,6 +172,16 @@ export interface A2UITextareaNode extends A2UIBaseNode {
   placeholder?: string // Placeholder text
   rows?: number // Number of visible rows
   onChange?: A2UIAction // Change action handler
+}
+
+// Markdown editor with toolbar and live preview
+export interface A2UIMarkdownEditorNode extends A2UIBaseNode {
+  type: "markdown-editor"
+  value?: string // Markdown content
+  height?: number // Editor height in pixels
+  preview?: "edit" | "live" | "preview" // Preview mode: edit (no preview), live (side by side), preview (read only)
+  hideToolbar?: boolean // Hide the toolbar
+  onChange?: A2UIAction // Content change handler
 }
 
 // Dropdown selection
@@ -405,6 +416,7 @@ export interface A2UIArticleViewerModalNode extends A2UIBaseNode {
   executionResult?: Record<string, unknown> // Execution result containing coverUrl, wechatMediaId, etc.
   onClose?: A2UIAction // Close action
   onUpdateResult?: A2UIAction // Update result action
+  onUpdateMarkdown?: A2UIAction // Update markdown content action
 }
 
 // Create task modal

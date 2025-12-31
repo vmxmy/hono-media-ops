@@ -169,6 +169,17 @@ export const tasksRouter = createTRPCRouter({
       ctx.services.task.updateExecutionResult(input.executionId, input.result)
     ),
 
+  updateExecutionMarkdown: protectedProcedure
+    .input(
+      z.object({
+        executionId: z.string(),
+        markdown: z.string(),
+      })
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.services.task.updateExecutionMarkdown(input.executionId, input.markdown)
+    ),
+
   // ==================== Batch Operations ====================
 
   batchDelete: protectedProcedure

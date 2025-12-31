@@ -156,6 +156,30 @@ export default function TasksPage() {
     }
   }
 
+  const updateExecutionMarkdownMutation = api.tasks.updateExecutionMarkdown.useMutation({
+    onSuccess: () => {
+      refetch()
+      a2uiToast.success(t("common.saved"))
+    },
+    onError: () => {
+      a2uiToast.error(t("task.updateFailed"))
+    },
+  })
+
+  const handleUpdateMarkdown = (markdown: string) => {
+    if (articleViewerState.executionId) {
+      updateExecutionMarkdownMutation.mutate({
+        executionId: articleViewerState.executionId,
+        markdown,
+      })
+      // Update local state
+      setArticleViewerState((prev) => ({
+        ...prev,
+        markdown,
+      }))
+    }
+  }
+
   const handleRegenerate = (task: TaskWithMaterial) => {
     setRegenerateData({
       topic: task.topic,
@@ -281,28 +305,6 @@ export default function TasksPage() {
           overflow: "hidden",
         },
       } as A2UINode] : []),
-      ...(task.refMaterial ? [{
-        type: "row",
-        gap: "0.5rem",
-        align: "center",
-        children: [
-          { type: "text", text: "📄", variant: "caption" },
-          task.refMaterial.sourceUrl
-            ? {
-                type: "link",
-                text: task.refMaterial.styleName || task.refMaterial.sourceTitle || t("tasks.refMaterial"),
-                href: task.refMaterial.sourceUrl,
-                external: true,
-                style: { fontSize: "0.75rem" },
-              }
-            : {
-                type: "text",
-                text: task.refMaterial.styleName || task.refMaterial.sourceTitle || t("tasks.refMaterial"),
-                variant: "caption",
-                color: "muted",
-              },
-        ],
-      } as A2UIRowNode] : []),
     ]
 
     const footerNodes: A2UINode[] = [
@@ -314,26 +316,66 @@ export default function TasksPage() {
         gap: "0.5rem",
         children: [
           {
-            type: "row",
-            align: "center",
-            gap: "0.5rem",
+            type: "column",
+            gap: "0.35rem",
             children: [
-              {
-                type: "text",
-                text: `${t("tasks.created")}: ${new Date(task.createdAt).toLocaleString()}`,
-                variant: "caption",
-                color: "muted",
-              },
-              ...(task.refMaterial?.styleName
-                ? [{
-                    type: "badge",
-                    text: task.refMaterial.styleName,
-                    color: "default",
-                    style: { maxWidth: "10rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-                  } as A2UINode]
+              ...(task.refMaterial
+                ? [
+                    {
+                      type: "column" as const,
+                      gap: "0.35rem",
+                      children: [
+                        {
+                          type: "text",
+                          text: `风格: ${task.refMaterial.styleName ?? t("tasks.refMaterial")}`,
+                          variant: "caption",
+                          color: "primary",
+                        } as A2UINode,
+                        task.refMaterial.sourceUrl
+                          ? ({
+                              type: "link",
+                              text: `原文: ${task.refMaterial.sourceTitle ?? task.refMaterial.sourceUrl}`,
+                              href: task.refMaterial.sourceUrl,
+                              external: true,
+                              style: {
+                                fontSize: "0.75rem",
+                                maxWidth: "var(--a2ui-ref-title-max)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "var(--a2ui-ref-title-white-space)",
+                              },
+                            } as A2UINode)
+                          : ({
+                              type: "text",
+                              text: `原文: ${task.refMaterial.sourceTitle ?? "-"}`,
+                              variant: "caption",
+                              color: "muted",
+                              style: {
+                                maxWidth: "var(--a2ui-ref-title-max)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "var(--a2ui-ref-title-white-space)",
+                              },
+                            } as A2UINode),
+                      ],
+                    } as A2UINode,
+                  ]
                 : []),
+              {
+                type: "row",
+                align: "center",
+                gap: "0.5rem",
+                children: [
+                  {
+                    type: "text",
+                    text: `${t("tasks.created")}: ${new Date(task.createdAt).toLocaleString()}`,
+                    variant: "caption",
+                    color: "muted",
+                  },
+                ],
+              } as A2UIRowNode,
             ],
-          } as A2UIRowNode,
+          } as A2UINode,
           { type: "row", gap: "0.5rem", children: actions } as A2UIRowNode,
         ],
       } as A2UIRowNode,
@@ -493,6 +535,11 @@ export default function TasksPage() {
           handleUpdateExecutionResult(result)
           break
         }
+        case "updateMarkdown": {
+          const markdown = args?.[0] as string
+          handleUpdateMarkdown(markdown)
+          break
+        }
         // Editable text actions
         case "updateTopic": {
           const [newValue, taskId] = args as [string, string]
@@ -524,6 +571,7 @@ export default function TasksPage() {
       handleCreateTaskClose,
       handleCreateTaskSuccess,
       handleUpdateExecutionResult,
+      handleUpdateMarkdown,
     ]
   )
 
@@ -603,6 +651,7 @@ export default function TasksPage() {
             executionResult: articleViewerState.executionResult ?? undefined,
             onClose: { action: "closeArticleViewer" },
             onUpdateResult: { action: "updateExecutionResult" },
+            onUpdateMarkdown: { action: "updateMarkdown" },
           },
         ],
       },

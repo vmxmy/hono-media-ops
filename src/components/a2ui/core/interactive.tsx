@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect } from "react"
 import type { ChangeEvent, FormEvent, KeyboardEvent, MouseEvent } from "react"
+import dynamic from "next/dynamic"
 import type {
   A2UIButtonNode,
   A2UIInputNode,
   A2UIEditableTextNode,
   A2UITextareaNode,
+  A2UIMarkdownEditorNode,
   A2UISelectNode,
   A2UICheckboxNode,
   A2UITabsNode,
@@ -14,6 +16,9 @@ import type {
   A2UIFormFieldNode,
   A2UICollapsibleNode,
 } from "@/lib/a2ui"
+
+// Dynamic import for SSR compatibility
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false })
 import type { A2UIComponentProps } from "@/lib/a2ui/registry"
 
 function GoogleIcon() {
@@ -237,6 +242,27 @@ export function A2UITextarea({ node, onAction }: A2UIComponentProps<A2UITextarea
       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       style={node.style}
     />
+  )
+}
+
+export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMarkdownEditorNode>) {
+  const handleChange = (value?: string) => {
+    if (node.onChange) {
+      onAction(node.onChange.action, [value ?? "", ...(node.onChange.args ?? [])])
+    }
+  }
+
+  return (
+    <div data-color-mode="auto" style={node.style}>
+      <MDEditor
+        value={node.value ?? ""}
+        onChange={handleChange}
+        height={node.height ?? 400}
+        preview={node.preview ?? "edit"}
+        hideToolbar={node.hideToolbar}
+        visibleDragbar={false}
+      />
+    </div>
   )
 }
 

@@ -180,7 +180,7 @@ function generateCatalog(schema: CatalogSchema): string {
   lines.push("// Generated from: src/lib/a2ui/schema/standard-catalog.json")
   lines.push(`// Generated at: ${new Date().toISOString()}`)
   lines.push("")
-  lines.push('import type { A2UIComponentDefinition, A2UICatalog } from "../catalog"')
+  lines.push('import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"')
   lines.push("")
 
   // Schema metadata

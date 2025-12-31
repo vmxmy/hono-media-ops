@@ -150,40 +150,31 @@ export function ArticleViewerModal({
         label: `</> ${t("article.source")}${hasChanges ? " *" : ""}`,
         content: {
           type: "column",
-          gap: "0.75rem",
+          gap: "0",
+          style: {
+            height: "100%",
+            minHeight: "400px",
+          },
           children: [
             {
-              type: "textarea",
+              type: "markdown-editor",
               id: "markdown-editor",
               value: editMarkdown,
-              rows: 20,
+              height: 500,
+              preview: "edit",
               style: {
-                fontFamily: "var(--ds-font-mono)",
-                fontSize: "0.875rem",
-                lineHeight: "1.5",
+                flex: 1,
               },
               onChange: { action: "updateMarkdown" },
             } as A2UINode,
-            ...(onUpdateMarkdown ? [{
-              type: "row",
-              justify: "end",
-              gap: "0.5rem",
-              children: [
-                {
-                  type: "button",
-                  text: t("common.save"),
-                  variant: "primary",
-                  size: "sm",
-                  disabled: !hasChanges,
-                  onClick: { action: "saveMarkdown" },
-                },
-              ],
-            } as A2UINode] : []),
           ],
         } as A2UINode,
       },
     ]
   }, [editMarkdown, markdown, t, executionResult?.coverUrl, title, onUpdateMarkdown])
+
+  // 判断内容是否有修改
+  const hasMarkdownChanges = editMarkdown !== markdown
 
   // 第一段：标题栏
   const titleSection: A2UINode = {
@@ -205,6 +196,14 @@ export function ArticleViewerModal({
             type: "row",
             gap: "0.5rem",
             children: [
+              // 保存按钮 - 仅在有修改且提供了回调时显示
+              ...(hasMarkdownChanges && onUpdateMarkdown ? [{
+                type: "button" as const,
+                text: t("common.save"),
+                variant: "primary" as const,
+                size: "sm" as const,
+                onClick: { action: "saveMarkdown" },
+              }] : []),
               {
                 type: "button",
                 text: copied ? t("article.copied") : t("article.copyMarkdown"),
@@ -383,22 +382,36 @@ export function ArticleViewerModal({
   }
 
   // 第三段：内容区（带滚动条）
-  const contentSection: A2UINode = {
-    type: "scroll-area",
-    style: {
-      flex: 1,
-      minHeight: 0,
-    },
-    children: [
-      {
+  // 源码 tab 使用自己的滚动，预览 tab 使用外层滚动
+  const isSourceTab = activeTab === 1
+  const contentSection: A2UINode = isSourceTab
+    ? {
         type: "container",
         style: {
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
           padding: "1rem",
         },
         children: [tabs[activeTab]?.content ?? { type: "text", text: "" }],
-      },
-    ],
-  }
+      }
+    : {
+        type: "scroll-area",
+        style: {
+          flex: 1,
+          minHeight: 0,
+        },
+        children: [
+          {
+            type: "container",
+            style: {
+              padding: "1rem",
+            },
+            children: [tabs[activeTab]?.content ?? { type: "text", text: "" }],
+          },
+        ],
+      }
 
   const panelNode: A2UINode = {
     type: "card",

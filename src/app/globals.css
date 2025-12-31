@@ -11,6 +11,10 @@
     * {
         @apply border-border outline-ring/50;
     }
+    :root {
+        --a2ui-ref-title-max: clamp(calc(var(--ds-spacing) * 24), 60vw, calc(var(--ds-spacing) * 44));
+        --a2ui-ref-title-white-space: nowrap;
+    }
     body {
         @apply bg-background text-foreground font-sans antialiased;
         letter-spacing: var(--tracking-normal);
@@ -171,5 +175,12 @@
 
     .a2ui-tabs-mobile::-webkit-scrollbar {
         display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --a2ui-ref-title-max: none;
+        --a2ui-ref-title-white-space: normal;
     }
 }
