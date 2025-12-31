@@ -30,6 +30,7 @@ export type I18nKey =
     | "common.enabled"
     | "common.disabled"
     | "common.saved"
+    | "common.copy"
     // Auth
     | "auth.login"
     | "auth.logout"
@@ -176,6 +177,7 @@ export type I18nKey =
     | "imagePrompts.prevPage"
     | "imagePrompts.nextPage"
     | "imagePrompts.duplicate"
+    | "imagePrompts.copyPrompt"
     | "imagePrompts.makePrivate"
     | "imagePrompts.makePublic"
     | "imagePrompts.usageCount"
@@ -426,6 +428,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.enabled": "Enabled",
         "common.disabled": "Disabled",
         "common.saved": "Saved",
+        "common.copy": "Copy",
         // Auth
         "auth.login": "Login",
         "auth.logout": "Logout",
@@ -572,6 +575,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "imagePrompts.prevPage": "Previous",
         "imagePrompts.nextPage": "Next",
         "imagePrompts.duplicate": "Duplicate",
+        "imagePrompts.copyPrompt": "Copy Prompt",
         "imagePrompts.makePrivate": "Make Private",
         "imagePrompts.makePublic": "Make Public",
         "imagePrompts.usageCount": "Used {count} times",
@@ -811,6 +815,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "common.enabled": "已开启",
         "common.disabled": "已关闭",
         "common.saved": "已保存",
+        "common.copy": "复制",
         // Auth
         "auth.login": "登录",
         "auth.logout": "退出登录",
@@ -957,6 +962,7 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "imagePrompts.prevPage": "上一页",
         "imagePrompts.nextPage": "下一页",
         "imagePrompts.duplicate": "复制",
+        "imagePrompts.copyPrompt": "复制提示词",
         "imagePrompts.makePrivate": "设为私有",
         "imagePrompts.makePublic": "设为公开",
         "imagePrompts.usageCount": "使用 {count} 次",

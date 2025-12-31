@@ -30,6 +30,7 @@ export function ArticleViewerModal({
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const [mediaIdCopied, setMediaIdCopied] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [editCoverUrl, setEditCoverUrl] = useState(executionResult?.coverUrl ?? "")
@@ -96,6 +97,8 @@ export function ArticleViewerModal({
         case "saveMarkdown":
           if (onUpdateMarkdown) {
             onUpdateMarkdown(editMarkdown)
+            setIsSaved(true)
+            setTimeout(() => setIsSaved(false), 2000)
           }
           break
       }
@@ -196,12 +199,13 @@ export function ArticleViewerModal({
             type: "row",
             gap: "0.5rem",
             children: [
-              // 保存按钮 - 仅在有修改且提供了回调时显示
-              ...(hasMarkdownChanges && onUpdateMarkdown ? [{
+              // 保存按钮 - 仅在有修改或刚保存完成时显示
+              ...((hasMarkdownChanges || isSaved) && onUpdateMarkdown ? [{
                 type: "button" as const,
-                text: t("common.save"),
-                variant: "primary" as const,
+                text: isSaved ? `✓ ${t("common.saved")}` : t("common.save"),
+                variant: isSaved ? "secondary" as const : "primary" as const,
                 size: "sm" as const,
+                disabled: isSaved,
                 onClick: { action: "saveMarkdown" },
               }] : []),
               {

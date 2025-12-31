@@ -7,6 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+import { a2uiToast } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
 
 interface ImagePromptFormData {
@@ -109,12 +110,6 @@ export default function ImagePromptsPage() {
   })
 
   const deleteMutation = api.imagePrompts.delete.useMutation({
-    onSuccess: () => {
-      utils.imagePrompts.getAll.invalidate()
-    },
-  })
-
-  const duplicateMutation = api.imagePrompts.duplicate.useMutation({
     onSuccess: () => {
       utils.imagePrompts.getAll.invalidate()
     },
@@ -223,19 +218,26 @@ export default function ImagePromptsPage() {
         }
         case "delete": {
           const id = args?.[0] as string
-          if (confirm(t("imagePrompts.deleteConfirm"))) {
-            deleteMutation.mutate({ id })
-          }
-          break
-        }
-        case "duplicate": {
-          const id = args?.[0] as string
-          duplicateMutation.mutate({ id })
+          a2uiToast.warning(t("imagePrompts.deleteConfirm"), {
+            duration: 5000,
+            action: {
+              label: t("common.confirm"),
+              onClick: () => deleteMutation.mutate({ id }),
+            },
+          })
           break
         }
         case "togglePublic": {
           const id = args?.[0] as string
           togglePublicMutation.mutate({ id })
+          break
+        }
+        case "copy": {
+          const id = args?.[0] as string
+          const prompt = promptsData?.items.find((p) => p.id === id)
+          if (prompt) {
+            navigator.clipboard.writeText(prompt.prompt)
+          }
           break
         }
         case "setCategoryFilter":
@@ -256,7 +258,7 @@ export default function ImagePromptsPage() {
           break
       }
     },
-    [router, formData, editingId, promptsData, page, createMutation, updateMutation, deleteMutation, duplicateMutation, togglePublicMutation, t]
+    [router, formData, editingId, promptsData, page, createMutation, updateMutation, deleteMutation, togglePublicMutation, t]
   )
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
@@ -430,7 +432,7 @@ export default function ImagePromptsPage() {
               type: "row",
               gap: "0.25rem",
               children: [
-                { type: "button", text: t("imagePrompts.duplicate"), variant: "ghost", size: "sm", onClick: { action: "duplicate", args: [prompt.id] } },
+                { type: "button", text: t("imagePrompts.copyPrompt"), variant: "ghost", size: "sm", onClick: { action: "copy", args: [prompt.id] } },
                 { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
                 { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
                 { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
