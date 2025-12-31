@@ -61,6 +61,7 @@ export default function TasksPage() {
     refMaterialId?: string
   } | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Detect mobile screen
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function TasksPage() {
   }, [])
 
   const { data, isLoading, error, refetch } = api.tasks.getAll.useQuery(
-    { page: 1, pageSize: 20 },
+    { page: 1, pageSize: 20, search: searchQuery || undefined },
     { enabled: mounted }
   )
 
@@ -442,11 +443,25 @@ export default function TasksPage() {
     }
 
     if (tasks.length === 0) {
+      const hasSearch = searchQuery.trim().length > 0
       return {
         type: "card",
         hoverable: false,
         style: { padding: "2rem", textAlign: "center" },
-        children: [{ type: "text", text: t("tasks.noTasks"), color: "muted" }],
+        children: [
+          {
+            type: "column",
+            gap: "0.75rem",
+            style: { alignItems: "center" },
+            children: [
+              { type: "text", text: hasSearch ? t("tasks.noSearchResults") : t("tasks.noTasks"), color: "muted" },
+              ...(hasSearch ? [
+                { type: "text", text: t("tasks.tryDifferentKeywords"), variant: "caption", color: "muted" } as A2UINode,
+                { type: "button", text: t("tasks.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearSearch" } } as A2UINode,
+              ] : []),
+            ],
+          },
+        ],
       }
     }
 
@@ -475,6 +490,16 @@ export default function TasksPage() {
           { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
           { type: "button", text: t("tasks.newTask"), variant: "primary", size: "md", onClick: { action: "newTask" } },
         ],
+      },
+      // 搜索框
+      {
+        type: "input",
+        id: "search-tasks",
+        value: searchQuery,
+        placeholder: t("tasks.searchPlaceholder"),
+        inputType: "text",
+        style: { maxWidth: "100%" },
+        onChange: { action: "setSearch" },
       },
     ],
   }
@@ -553,6 +578,12 @@ export default function TasksPage() {
           handleUpdate(taskId, { keywords: newValue?.trim() || undefined })
           break
         }
+        case "setSearch":
+          setSearchQuery(args?.[0] as string ?? "")
+          break
+        case "clearSearch":
+          setSearchQuery("")
+          break
       }
     },
     [

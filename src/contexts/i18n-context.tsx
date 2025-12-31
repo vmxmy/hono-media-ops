@@ -78,6 +78,10 @@ export type I18nKey =
     | "tasks.noKeywords"
     | "tasks.polling"
     | "tasks.refMaterial"
+    | "tasks.searchPlaceholder"
+    | "tasks.noSearchResults"
+    | "tasks.tryDifferentKeywords"
+    | "tasks.clearSearch"
     // Task Status
     | "status.pending"
     | "status.processing"
@@ -477,6 +481,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.noKeywords": "No keywords",
         "tasks.polling": "{count} task(s) processing, auto-refreshing...",
         "tasks.refMaterial": "Reference material",
+        "tasks.searchPlaceholder": "Search tasks by topic or keywords...",
+        "tasks.noSearchResults": "No matching tasks",
+        "tasks.tryDifferentKeywords": "Try different search keywords",
+        "tasks.clearSearch": "Clear Search",
         // Task Status
         "status.pending": "Pending",
         "status.processing": "Processing",
@@ -865,6 +873,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.noKeywords": "无关键词",
         "tasks.polling": "{count} 个任务处理中，自动刷新中...",
         "tasks.refMaterial": "参考素材",
+        "tasks.searchPlaceholder": "搜索任务主题或关键词...",
+        "tasks.noSearchResults": "没有匹配的任务",
+        "tasks.tryDifferentKeywords": "试试其他搜索关键词",
+        "tasks.clearSearch": "清除搜索",
         // Task Status
         "status.pending": "等待中",
         "status.processing": "处理中",
