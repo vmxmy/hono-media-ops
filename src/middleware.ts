@@ -94,7 +94,10 @@ async function isUserActive(userId: string): Promise<boolean> {
 }
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET })
+  // Auth.js v5 uses 'authjs' prefix instead of 'next-auth'
+  const isSecure = req.nextUrl.protocol === "https:"
+  const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token"
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET, cookieName })
 
   // Debug logging for authentication issues
   if (process.env.DEBUG_AUTH === "true") {
@@ -117,9 +120,9 @@ export async function middleware(req: NextRequest) {
     if (!isActive) {
       // User has been disabled/deleted - clear their session
       const response = NextResponse.redirect(new URL("/login?error=AccountDisabled", req.url))
-      // Clear the session cookie
-      response.cookies.delete("next-auth.session-token")
-      response.cookies.delete("__Secure-next-auth.session-token")
+      // Clear the session cookie (Auth.js v5 naming)
+      response.cookies.delete("authjs.session-token")
+      response.cookies.delete("__Secure-authjs.session-token")
       return response
     }
   }
