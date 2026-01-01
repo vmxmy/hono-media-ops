@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-01T15:04:04.050Z
+// Generated at: 2026-01-01T16:17:53.069Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -249,6 +249,14 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         enum: ["text","password","email","number"],
         default: "text",
       },
+      name: {
+        type: "string",
+        description: "Input name attribute for form submission and accessibility",
+      },
+      autocomplete: {
+        type: "string",
+        description: "Autocomplete hint for browsers (e.g., username, current-password, email)",
+      },
       onChange: {
         type: "action",
         description: "Change action handler",
@@ -325,8 +333,8 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         description: "Markdown content",
       },
       height: {
-        type: "number",
-        description: "Editor height in pixels",
+        type: "undefined",
+        description: "Editor height in pixels, or '100%' for full height",
         default: 400,
       },
       preview: {
@@ -540,6 +548,12 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
     category: "interactive",
     supportsChildren: true,
     properties: {
+      autocomplete: {
+        type: "string",
+        description: "Form autocomplete setting",
+        enum: ["on","off"],
+        default: "on",
+      },
       onSubmit: {
         type: "action",
         description: "Submit action handler",
@@ -653,7 +667,7 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         description: "Summary text shown when collapsed (always visible)",
       },
       previewChildren: {
-        type: "array",
+        type: "nodeArray",
         description: "Children nodes always visible (shown when collapsed and expanded)",
       },
       defaultOpen: {
@@ -921,7 +935,7 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         description: "Logout button text",
       },
       headerActions: {
-        type: "array",
+        type: "nodeArray",
         description: "Optional header action nodes",
       },
     },
@@ -1058,6 +1072,100 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       },
     },
   },
+  {
+    type: "stat-card",
+    description: "Statistics card displaying a metric with optional change indicator",
+    category: "ext",
+    properties: {
+      label: {
+        type: "string",
+        required: true,
+        description: "Label text for the metric",
+      },
+      value: {
+        type: "string",
+        required: true,
+        description: "Display value (number or formatted string)",
+      },
+      change: {
+        type: "object",
+        description: "Change indicator with value and direction",
+      },
+      icon: {
+        type: "string",
+        description: "Icon emoji or name",
+      },
+    },
+  },
+  {
+    type: "empty-state",
+    description: "Empty state placeholder with optional action button",
+    category: "ext",
+    properties: {
+      title: {
+        type: "string",
+        required: true,
+        description: "Main title text",
+      },
+      description: {
+        type: "string",
+        description: "Secondary description text",
+      },
+      icon: {
+        type: "string",
+        description: "Icon emoji or name",
+      },
+      actionLabel: {
+        type: "string",
+        description: "Action button label",
+      },
+      onAction: {
+        type: "action",
+        description: "Action handler when button is clicked",
+      },
+    },
+  },
+  {
+    type: "task-status-card",
+    description: "Task status card with progress and action buttons",
+    category: "ext",
+    properties: {
+      taskId: {
+        type: "string",
+        required: true,
+        description: "Unique task identifier",
+      },
+      title: {
+        type: "string",
+        required: true,
+        description: "Task title",
+      },
+      description: {
+        type: "string",
+        description: "Task description",
+      },
+      status: {
+        type: "string",
+        required: true,
+        description: "Current task status",
+        enum: ["pending","processing","completed","failed","cancelled"],
+      },
+      progress: {
+        type: "number",
+        description: "Progress percentage (0-100)",
+      },
+      createdAt: {
+        type: "string",
+        required: true,
+        description: "ISO timestamp of task creation",
+      },
+      showActions: {
+        type: "boolean",
+        description: "Show action buttons (retry, cancel, delete)",
+        default: false,
+      },
+    },
+  },
 ]
 
 // Create the standard catalog
@@ -1078,5 +1186,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown"] as const
+export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown","stat-card","empty-state","task-status-card"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

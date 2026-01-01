@@ -63,6 +63,10 @@ export type {
   A2UICreateTaskModalNode,
   A2UIReverseSubmitModalNode,
   A2UIMarkdownNode,
+  // Ext
+  A2UIStatCardNode,
+  A2UIEmptyStateNode,
+  A2UITaskStatusCardNode,
 } from "./generated/types"
 
 export {

@@ -16,20 +16,21 @@ const __dirname = path.dirname(__filename)
 
 // Types for schema parsing
 interface PropertyDefinition {
-  type: "string" | "number" | "boolean" | "array" | "object" | "action" | "node"
+  type: "string" | "number" | "boolean" | "array" | "object" | "action" | "node" | "nodeArray"
   required?: boolean
   description?: string
   enum?: string[]
   default?: unknown
+  properties?: Record<string, PropertyDefinition>
   items?: {
     type: string
-    properties?: Record<string, { type: string }>
+    properties?: Record<string, PropertyDefinition>
   }
 }
 
 interface ComponentDefinition {
   description: string
-  category: "layout" | "content" | "interactive" | "feedback" | "custom"
+  category: "layout" | "content" | "interactive" | "feedback" | "custom" | "chart" | "ext"
   supportsChildren?: boolean
   properties: Record<string, PropertyDefinition>
 }
@@ -56,6 +57,19 @@ function pascalCase(str: string): string {
     .join("")
 }
 
+function generateObjectType(props: Record<string, PropertyDefinition>, allRequired = false): string {
+  const fields = Object.entries(props)
+    .map(([k, v]) => {
+      const fieldType = generatePropertyType(v)
+      // In nested objects (array items), treat fields as required by default unless explicitly optional
+      const isRequired = allRequired || v.required === true
+      const optional = isRequired ? "" : "?"
+      return `${k}${optional}: ${fieldType}`
+    })
+    .join("; ")
+  return `{ ${fields} }`
+}
+
 function generatePropertyType(prop: PropertyDefinition): string {
   if (prop.enum) {
     return prop.enum.map((v) => `"${v}"`).join(" | ")
@@ -72,22 +86,22 @@ function generatePropertyType(prop: PropertyDefinition): string {
       return "A2UIAction"
     case "node":
       return "A2UINode"
+    case "nodeArray":
+      return "A2UINode[]"
     case "array":
-      if (prop.items?.type === "object") {
-        const itemProps = prop.items.properties
-        if (itemProps) {
-          const fields = Object.entries(itemProps)
-            .map(([k, v]) => {
-              // Map property types correctly
-              const fieldType = v.type === "node" ? "A2UINode" : v.type
-              return `${k}: ${fieldType}`
-            })
-            .join("; ")
-          return `Array<{ ${fields} }>`
-        }
+      if (prop.items?.type === "object" && prop.items.properties) {
+        // Array item properties are required by default
+        return `Array<${generateObjectType(prop.items.properties as Record<string, PropertyDefinition>, true)}>`
+      }
+      if (prop.items?.type === "array" && prop.items.properties) {
+        // Nested array (e.g., data.data in charts)
+        return `Array<${generateObjectType(prop.items.properties as Record<string, PropertyDefinition>, true)}>`
       }
       return "unknown[]"
     case "object":
+      if (prop.properties) {
+        return generateObjectType(prop.properties)
+      }
       return "Record<string, unknown>"
     default:
       return "unknown"

@@ -19,56 +19,56 @@ export {
   registerBusinessComponents,
 } from "./setup"
 
+// Component implementations
 export * from "./core"
 export * from "./charts"
 export * from "./ext"
 export * from "./business"
 
-// Re-export types from generated
+// Re-export all types from lib/a2ui (single source of truth)
 export type {
+  // Base types
   A2UINode,
   A2UIBaseNode,
   A2UIAction,
   A2UIActionHandler,
   A2UIResponse,
-  // Layout
+  // All node types (generated from schema)
   A2UIColumnNode,
   A2UIRowNode,
   A2UIContainerNode,
+  A2UIScrollAreaNode,
   A2UICardNode,
   A2UIPageNode,
   A2UINavNode,
   A2UINavLinkNode,
   A2UISpacerNode,
-  // Content
   A2UITextNode,
   A2UIImageNode,
   A2UIIconNode,
   A2UIDividerNode,
   A2UILinkNode,
-  // Interactive
   A2UIButtonNode,
   A2UIInputNode,
   A2UIEditableTextNode,
   A2UITextareaNode,
+  A2UIMarkdownEditorNode,
   A2UISelectNode,
   A2UICheckboxNode,
   A2UITabsNode,
   A2UIFormNode,
   A2UIFormFieldNode,
-  // Feedback
+  A2UICollapsibleNode,
   A2UIBadgeNode,
   A2UIProgressNode,
   A2UIModalNode,
   A2UIAlertNode,
-  // Chart
   A2UIChartPieNode,
   A2UIChartRadarNode,
   A2UIChartLineNode,
   A2UIChartBarNode,
   A2UIChartRadialBarNode,
   A2UIChartWordCloudNode,
-  // Custom
   A2UIAppShellNode,
   A2UIThemeSwitcherNode,
   A2UIMaterialsTableNode,
@@ -76,6 +76,10 @@ export type {
   A2UICreateTaskModalNode,
   A2UIReverseSubmitModalNode,
   A2UIMarkdownNode,
+  // New ext types (generated from schema)
+  A2UIStatCardNode,
+  A2UIEmptyStateNode,
+  A2UITaskStatusCardNode,
 } from "@/lib/a2ui"
 
 // Toast provider
@@ -83,5 +87,3 @@ export { A2UIToaster } from "./toaster"
 
 // Toast API (re-export from lib)
 export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "@/lib/a2ui"
-
-// Legacy compatibility
