@@ -1,4 +1,7 @@
 DATABASE_URL=postgresql://media-ops:your-password@localhost:5432/media-ops
-JWT_SECRET=change-me
 N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/task-webhook-id
 N8N_REVERSE_WEBHOOK_URL=https://your-n8n-instance/webhook/reverse-webhook-id
+
+# NextAuth v5 (Auth.js) Configuration
+NEXTAUTH_URL=http://localhost:3000
+AUTH_SECRET=generate-with-openssl-rand-base64-32
