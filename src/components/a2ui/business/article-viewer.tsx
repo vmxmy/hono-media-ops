@@ -12,15 +12,17 @@ export function A2UIArticleViewerModal({
   if (!node.open) return null
 
   return (
-    <ArticleViewerModal
-      isOpen={node.open}
-      onClose={() => dispatchA2UIAction(onAction, node.onClose)}
-      markdown={node.markdown}
-      title={node.title}
-      executionId={node.executionId}
-      executionResult={node.executionResult as { coverUrl?: string; wechatMediaId?: string } | null | undefined}
-      onUpdateResult={(result) => dispatchA2UIAction(onAction, node.onUpdateResult, [result])}
-      onUpdateMarkdown={(markdown) => dispatchA2UIAction(onAction, node.onUpdateMarkdown, [markdown])}
-    />
+    <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}>
+      <ArticleViewerModal
+        isOpen={node.open}
+        onClose={() => dispatchA2UIAction(onAction, node.onClose)}
+        markdown={node.markdown}
+        title={node.title}
+        executionId={node.executionId}
+        executionResult={node.executionResult as { coverUrl?: string; wechatMediaId?: string } | null | undefined}
+        onUpdateResult={(result) => dispatchA2UIAction(onAction, node.onUpdateResult, [result])}
+        onUpdateMarkdown={(markdown) => dispatchA2UIAction(onAction, node.onUpdateMarkdown, [markdown])}
+      />
+    </div>
   )
 }

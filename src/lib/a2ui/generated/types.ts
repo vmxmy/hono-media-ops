@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-01T15:04:04.049Z
+// Generated at: 2026-01-01T16:17:53.067Z
 
 import type { CSSProperties } from "react"
 
@@ -61,6 +61,9 @@ export type A2UINode =
   | A2UICreateTaskModalNode
   | A2UIReverseSubmitModalNode
   | A2UIMarkdownNode
+  | A2UIStatCardNode
+  | A2UIEmptyStateNode
+  | A2UITaskStatusCardNode
 
 // Vertical flex container
 export interface A2UIColumnNode extends A2UIBaseNode {
@@ -152,6 +155,8 @@ export interface A2UIInputNode extends A2UIBaseNode {
   value?: string // Input value
   placeholder?: string // Placeholder text
   inputType?: "text" | "password" | "email" | "number" // Input type
+  name?: string // Input name attribute for form submission and accessibility
+  autocomplete?: string // Autocomplete hint for browsers (e.g., username, current-password, email)
   onChange?: A2UIAction // Change action handler
 }
 
@@ -179,7 +184,7 @@ export interface A2UITextareaNode extends A2UIBaseNode {
 export interface A2UIMarkdownEditorNode extends A2UIBaseNode {
   type: "markdown-editor"
   value?: string // Markdown content
-  height?: number // Editor height in pixels
+  height?: number | "100%" // Editor height in pixels, or '100%' for full height
   preview?: "edit" | "live" | "preview" // Preview mode: edit (no preview), live (side by side), preview (read only)
   hideToolbar?: boolean // Hide the toolbar
   onChange?: A2UIAction // Content change handler
@@ -264,6 +269,7 @@ export interface A2UINavLinkNode extends A2UIBaseNode {
 export interface A2UIFormNode extends A2UIBaseNode {
   type: "form"
   children?: A2UINode[]
+  autocomplete?: "on" | "off" // Form autocomplete setting
   onSubmit?: A2UIAction // Submit action handler
 }
 
@@ -307,7 +313,7 @@ export interface A2UICollapsibleNode extends A2UIBaseNode {
   title: string // Header title text
   subtitle?: string // Optional subtitle text shown in header
   summary?: string // Summary text shown when collapsed (always visible)
-  previewChildren?: unknown[] // Children nodes always visible (shown when collapsed and expanded)
+  previewChildren?: A2UINode[] // Children nodes always visible (shown when collapsed and expanded)
   defaultOpen?: boolean // Initial open state
   badges?: Array<{ text: string; color: string }> // Optional badges to display in header
 }
@@ -315,7 +321,7 @@ export interface A2UICollapsibleNode extends A2UIBaseNode {
 // Pie/Donut chart for distribution data visualization
 export interface A2UIChartPieNode extends A2UIBaseNode {
   type: "chart-pie"
-  data: unknown[] // Chart data array with id, label, and value
+  data: Array<{ id: string; label: string; value: number; color: string }> // Chart data array with id, label, and value
   innerRadius?: number // Inner radius for donut effect (0-1)
   height?: number // Chart height in pixels
   title?: string // Chart title
@@ -336,7 +342,7 @@ export interface A2UIChartRadarNode extends A2UIBaseNode {
 // Line/Area chart for time series data
 export interface A2UIChartLineNode extends A2UIBaseNode {
   type: "chart-line"
-  data: unknown[] // Series data with id and data points
+  data: Array<{ id: string; color: string; data: Array<{ x: string; y: number }> }> // Series data with id and data points
   height?: number // Chart height in pixels
   title?: string // Chart title
   enableArea?: boolean // Fill area under line
@@ -361,7 +367,7 @@ export interface A2UIChartBarNode extends A2UIBaseNode {
 // Radial bar / gauge chart for metrics display
 export interface A2UIChartRadialBarNode extends A2UIBaseNode {
   type: "chart-radial-bar"
-  data: unknown[] // Radial data with id and data points
+  data: Array<{ id: string; data: Array<{ x: string; y: number }> }> // Radial data with id and data points
   maxValue?: number // Maximum value for scale
   height?: number // Chart height in pixels
   title?: string // Chart title
@@ -372,7 +378,7 @@ export interface A2UIChartRadialBarNode extends A2UIBaseNode {
 // Word cloud for keyword visualization
 export interface A2UIChartWordCloudNode extends A2UIBaseNode {
   type: "chart-word-cloud"
-  words: unknown[] // Words array with text and value
+  words: Array<{ text: string; value: number }> // Words array with text and value
   height?: number // Chart height in pixels
   title?: string // Chart title
   colors?: unknown[] // Custom color scheme
@@ -390,7 +396,7 @@ export interface A2UIAppShellNode extends A2UIBaseNode {
   onNavigate?: A2UIAction // Navigate action
   onLogout?: A2UIAction // Logout action
   logoutLabel?: string // Logout button text
-  headerActions?: unknown[] // Optional header action nodes
+  headerActions?: A2UINode[] // Optional header action nodes
 }
 
 // Theme and locale switcher
@@ -442,6 +448,37 @@ export interface A2UIReverseSubmitModalNode extends A2UIBaseNode {
 export interface A2UIMarkdownNode extends A2UIBaseNode {
   type: "markdown"
   content: string // Markdown source content
+}
+
+// Statistics card displaying a metric with optional change indicator
+export interface A2UIStatCardNode extends A2UIBaseNode {
+  type: "stat-card"
+  label: string // Label text for the metric
+  value: string // Display value (number or formatted string)
+  change?: { value?: number; direction?: "up" | "down" } // Change indicator with value and direction
+  icon?: string // Icon emoji or name
+}
+
+// Empty state placeholder with optional action button
+export interface A2UIEmptyStateNode extends A2UIBaseNode {
+  type: "empty-state"
+  title: string // Main title text
+  description?: string // Secondary description text
+  icon?: string // Icon emoji or name
+  actionLabel?: string // Action button label
+  onAction?: A2UIAction // Action handler when button is clicked
+}
+
+// Task status card with progress and action buttons
+export interface A2UITaskStatusCardNode extends A2UIBaseNode {
+  type: "task-status-card"
+  taskId: string // Unique task identifier
+  title: string // Task title
+  description?: string // Task description
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled" // Current task status
+  progress?: number // Progress percentage (0-100)
+  createdAt: string // ISO timestamp of task creation
+  showActions?: boolean // Show action buttons (retry, cancel, delete)
 }
 
 // A2UI Response format (from server)

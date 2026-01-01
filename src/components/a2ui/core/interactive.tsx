@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import type { ChangeEvent, FormEvent, KeyboardEvent, MouseEvent } from "react"
 import dynamic from "next/dynamic"
 import type {
@@ -119,10 +119,13 @@ export function A2UIInput({ node, onAction }: A2UIComponentProps<A2UIInputNode>)
 
   return (
     <input
+      id={node.id}
+      name={node.name}
       type={node.inputType ?? "text"}
       value={node.value ?? ""}
       onChange={handleChange}
       placeholder={node.placeholder}
+      autoComplete={node.autocomplete}
       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       style={node.style}
     />
@@ -247,10 +250,56 @@ export function A2UITextarea({ node, onAction }: A2UIComponentProps<A2UITextarea
 }
 
 export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMarkdownEditorNode>) {
-  const handleChange = (value?: string) => {
-    if (node.onChange) {
-      onAction(node.onChange.action, [value ?? "", ...(node.onChange.args ?? [])])
-    }
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState<number>(400)
+
+  const handleChange = useCallback(
+    (value?: string) => {
+      if (node.onChange) {
+        onAction(node.onChange.action, [value ?? "", ...(node.onChange.args ?? [])])
+      }
+    },
+    [node.onChange, onAction]
+  )
+
+  // 支持 height: "100%" 自适应或固定数值
+  const useFullHeight = node.height === "100%" || node.style?.flex === 1
+
+  useEffect(() => {
+    if (!useFullHeight || !containerRef.current) return
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) {
+        setHeight(entry.contentRect.height)
+      }
+    })
+
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [useFullHeight])
+
+  if (useFullHeight) {
+    return (
+      <div
+        ref={containerRef}
+        data-color-mode="auto"
+        style={{
+          ...node.style,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <MDEditor
+          value={node.value ?? ""}
+          onChange={handleChange}
+          height={height}
+          preview={node.preview ?? "edit"}
+          hideToolbar={node.hideToolbar}
+          visibleDragbar={false}
+        />
+      </div>
+    )
   }
 
   return (
@@ -258,7 +307,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
       <MDEditor
         value={node.value ?? ""}
         onChange={handleChange}
-        height={node.height ?? 400}
+        height={(node.height as number) ?? 400}
         preview={node.preview ?? "edit"}
         hideToolbar={node.hideToolbar}
         visibleDragbar={false}
@@ -352,7 +401,13 @@ export function A2UIForm({ node, onAction, renderChildren }: A2UIComponentProps<
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" style={node.style}>
+    <form
+      id={node.id}
+      onSubmit={handleSubmit}
+      autoComplete={node.autocomplete ?? "on"}
+      className="space-y-4"
+      style={node.style}
+    >
       {node.children && renderChildren?.(node.children)}
     </form>
   )

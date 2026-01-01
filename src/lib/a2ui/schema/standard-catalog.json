@@ -231,6 +231,14 @@
           "default": "text",
           "description": "Input type"
         },
+        "name": {
+          "type": "string",
+          "description": "Input name attribute for form submission and accessibility"
+        },
+        "autocomplete": {
+          "type": "string",
+          "description": "Autocomplete hint for browsers (e.g., username, current-password, email)"
+        },
         "onChange": {
           "type": "action",
           "description": "Change action handler"
@@ -304,9 +312,12 @@
           "description": "Markdown content"
         },
         "height": {
-          "type": "number",
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string", "enum": ["100%"] }
+          ],
           "default": 400,
-          "description": "Editor height in pixels"
+          "description": "Editor height in pixels, or '100%' for full height"
         },
         "preview": {
           "type": "string",
@@ -523,6 +534,12 @@
       "category": "interactive",
       "supportsChildren": true,
       "properties": {
+        "autocomplete": {
+          "type": "string",
+          "enum": ["on", "off"],
+          "default": "on",
+          "description": "Form autocomplete setting"
+        },
         "onSubmit": {
           "type": "action",
           "description": "Submit action handler"
@@ -631,8 +648,7 @@
           "description": "Summary text shown when collapsed (always visible)"
         },
         "previewChildren": {
-          "type": "array",
-          "items": { "type": "node" },
+          "type": "nodeArray",
           "description": "Children nodes always visible (shown when collapsed and expanded)"
         },
         "defaultOpen": {
@@ -660,6 +676,15 @@
         "data": {
           "type": "array",
           "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "value": { "type": "number" },
+              "color": { "type": "string" }
+            }
+          },
           "description": "Chart data array with id, label, and value"
         },
         "innerRadius": {
@@ -723,6 +748,23 @@
         "data": {
           "type": "array",
           "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "color": { "type": "string" },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "x": { "type": "string" },
+                    "y": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
           "description": "Series data with id and data points"
         },
         "height": {
@@ -809,6 +851,22 @@
         "data": {
           "type": "array",
           "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "x": { "type": "string" },
+                    "y": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
           "description": "Radial data with id and data points"
         },
         "maxValue": {
@@ -844,6 +902,13 @@
         "words": {
           "type": "array",
           "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          },
           "description": "Words array with text and value"
         },
         "height": {
@@ -908,8 +973,7 @@
           "description": "Logout button text"
         },
         "headerActions": {
-          "type": "array",
-          "items": { "type": "node" },
+          "type": "nodeArray",
           "description": "Optional header action nodes"
         }
       }
@@ -1036,6 +1100,101 @@
           "type": "string",
           "required": true,
           "description": "Markdown source content"
+        }
+      }
+    },
+    "stat-card": {
+      "description": "Statistics card displaying a metric with optional change indicator",
+      "category": "ext",
+      "properties": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Label text for the metric"
+        },
+        "value": {
+          "type": "string",
+          "required": true,
+          "description": "Display value (number or formatted string)"
+        },
+        "change": {
+          "type": "object",
+          "description": "Change indicator with value and direction",
+          "properties": {
+            "value": { "type": "number" },
+            "direction": { "type": "string", "enum": ["up", "down"] }
+          }
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon emoji or name"
+        }
+      }
+    },
+    "empty-state": {
+      "description": "Empty state placeholder with optional action button",
+      "category": "ext",
+      "properties": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Main title text"
+        },
+        "description": {
+          "type": "string",
+          "description": "Secondary description text"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon emoji or name"
+        },
+        "actionLabel": {
+          "type": "string",
+          "description": "Action button label"
+        },
+        "onAction": {
+          "type": "action",
+          "description": "Action handler when button is clicked"
+        }
+      }
+    },
+    "task-status-card": {
+      "description": "Task status card with progress and action buttons",
+      "category": "ext",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "required": true,
+          "description": "Unique task identifier"
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Task title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Task description"
+        },
+        "status": {
+          "type": "string",
+          "required": true,
+          "enum": ["pending", "processing", "completed", "failed", "cancelled"],
+          "description": "Current task status"
+        },
+        "progress": {
+          "type": "number",
+          "description": "Progress percentage (0-100)"
+        },
+        "createdAt": {
+          "type": "string",
+          "required": true,
+          "description": "ISO timestamp of task creation"
+        },
+        "showActions": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show action buttons (retry, cancel, delete)"
         }
       }
     }

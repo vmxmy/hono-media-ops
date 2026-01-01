@@ -155,18 +155,19 @@ export function ArticleViewerModal({
           type: "column",
           gap: "0",
           style: {
-            height: "100%",
-            minHeight: "400px",
+            flex: 1,
+            minHeight: 0,
           },
           children: [
             {
               type: "markdown-editor",
               id: "markdown-editor",
               value: editMarkdown,
-              height: 500,
-              preview: "edit",
+              preview: "live",
+              height: "100%",
               style: {
                 flex: 1,
+                minHeight: 0,
               },
               onChange: { action: "updateMarkdown" },
             } as A2UINode,
@@ -276,14 +277,20 @@ export function ArticleViewerModal({
               { type: "text", text: "编辑素材信息", variant: "caption", weight: "semibold" },
               {
                 type: "input",
+                id: "cover-url",
+                name: "cover-url",
                 placeholder: "封面图 URL",
                 value: editCoverUrl,
+                autocomplete: "off",
                 onChange: { action: "updateCoverUrl" },
               },
               {
                 type: "input",
+                id: "media-id",
+                name: "media-id",
                 placeholder: "微信 Media ID",
                 value: editMediaId,
+                autocomplete: "off",
                 onChange: { action: "updateMediaId" },
               },
               {
@@ -433,5 +440,9 @@ export function ArticleViewerModal({
 
   if (!isOpen) return null
 
-  return <A2UIRenderer node={panelNode} onAction={handleAction} />
+  return (
+    <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}>
+      <A2UIRenderer node={panelNode} onAction={handleAction} />
+    </div>
+  )
 }
