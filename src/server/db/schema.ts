@@ -468,6 +468,11 @@ export const styleAnalyses = pgTable(
     rawJsonFull: jsonb("raw_json_full"),
     metadata: jsonb("metadata"), // 解析元数据 (parse_success, parser_version, validation_*)
     status: reverseLogStatusEnum("status").default("PENDING").notNull(),
+
+    // ========== 向量搜索 ==========
+    embedding: vector("embedding", { dimensions: 1024 }), // DashScope text-embedding-v3
+    embeddingContentHash: text("embedding_content_hash"), // 用于检测内容变化
+    embeddingModelVersion: text("embedding_model_version"), // 嵌入模型版本
   },
   (table) => ({
     // 用户查询（最常用）

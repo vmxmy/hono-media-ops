@@ -330,6 +330,30 @@ export const styleAnalysesRouter = createTRPCRouter({
         executionPrompt: ctx.services.styleAnalysis.generateExecutionPromptFromRecord(analysis),
       };
     }),
+
+  // ==================== Embedding & Vector Search ====================
+
+  /** 混合搜索 (关键词 + 向量) */
+  hybridSearch: protectedProcedure
+    .input(getAllInputSchema.extend({ useVectorSearch: z.boolean().default(true) }))
+    .query(({ ctx, input }) => ctx.services.styleAnalysis.hybridSearch({
+      ...input,
+      userId: ctx.user.id,
+    })),
+
+  /** 为单个素材生成 embedding */
+  generateEmbedding: protectedProcedure
+    .input(idSchema)
+    .mutation(({ ctx, input }) => ctx.services.styleAnalysis.generateAndStoreEmbedding(input.id)),
+
+  /** 批量生成缺失的 embeddings */
+  generateMissingEmbeddings: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(100).default(50) }))
+    .mutation(({ ctx, input }) => ctx.services.styleAnalysis.generateMissingEmbeddings(input.limit)),
+
+  /** 获取 embedding 统计 */
+  getEmbeddingStats: protectedProcedure
+    .query(({ ctx }) => ctx.services.styleAnalysis.getEmbeddingStats()),
 });
 
 // Backwards compatibility - export as reverseLogsRouter
