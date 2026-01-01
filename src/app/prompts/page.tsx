@@ -131,7 +131,7 @@ export default function ImagePromptsPage() {
           break
         }
         case "logout":
-          signOut({ callbackUrl: "/" })
+          signOut({ callbackUrl: "/login" })
           break
         case "setTitle":
           setFormData((prev) => ({ ...prev, title: args?.[0] as string }))

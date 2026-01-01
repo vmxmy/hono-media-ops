@@ -15,7 +15,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const pathname = usePathname()
   const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/" })
+  const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
 
   const { data: profile } = api.users.getProfile.useQuery(undefined, { enabled: mounted })

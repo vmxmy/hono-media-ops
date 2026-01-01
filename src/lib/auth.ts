@@ -52,7 +52,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .where(
             and(
               eq(users.username, username),
-              eq(users.accessCode, accessCode),
               isNull(users.deletedAt)
             )
           )

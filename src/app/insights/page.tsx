@@ -32,7 +32,7 @@ export default function InsightsPage() {
   const router = useRouter()
   const pathname = usePathname()
   const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/" })
+  const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
   const [trendDays, setTrendDays] = useState(30)
 

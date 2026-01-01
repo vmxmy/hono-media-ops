@@ -43,7 +43,7 @@ export default function TasksPage() {
   const router = useRouter()
   const pathname = usePathname()
   const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/" })
+  const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [articleViewerState, setArticleViewerState] = useState<{

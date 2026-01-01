@@ -25,7 +25,7 @@ export default function ArticleDetailPage({ params }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/" })
+  const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
 
   const { data: article, isLoading, error } = api.articles.getById.useQuery({ id })
