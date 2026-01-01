@@ -98,6 +98,7 @@ export function A2UIButton({ node, onAction }: A2UIComponentProps<A2UIButtonNode
 
   return (
     <button
+      type={node.buttonType ?? "button"}
       onClick={handleClick}
       disabled={node.disabled}
       className={`flex items-center justify-center gap-3 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${node.fullWidth ? "w-full" : ""}`}

@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2025-12-31T12:38:06.559Z
+// Generated at: 2026-01-01T15:04:04.050Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -217,6 +217,12 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "boolean",
         description: "Make button full width",
         default: false,
+      },
+      buttonType: {
+        type: "string",
+        description: "HTML button type attribute",
+        enum: ["button","submit","reset"],
+        default: "button",
       },
       onClick: {
         type: "action",

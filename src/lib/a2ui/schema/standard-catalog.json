@@ -201,6 +201,12 @@
           "default": false,
           "description": "Make button full width"
         },
+        "buttonType": {
+          "type": "string",
+          "enum": ["button", "submit", "reset"],
+          "default": "button",
+          "description": "HTML button type attribute"
+        },
         "onClick": {
           "type": "action",
           "description": "Click action handler"

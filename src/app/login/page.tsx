@@ -85,54 +85,60 @@ function LoginPageContent() {
       },
       // Credentials Form
       {
-        type: "column",
-        gap: "1rem",
+        type: "form",
+        onSubmit: { action: "submitCredentials" },
         children: [
-          // Username field
           {
-            type: "form-field",
-            label: t("auth.username"),
-            required: true,
+            type: "column",
+            gap: "1rem",
             children: [
+              // Username field
               {
-                type: "input",
-                id: "username",
-                value: username,
-                placeholder: t("auth.usernamePlaceholder"),
-                inputType: "text",
-                onChange: { action: "setUsername" },
-              } as A2UINode,
-            ],
-          },
-          // Access code field
-          {
-            type: "form-field",
-            label: t("auth.accessCode"),
-            required: true,
-            children: [
+                type: "form-field",
+                label: t("auth.username"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "username",
+                    value: username,
+                    placeholder: t("auth.usernamePlaceholder"),
+                    inputType: "text",
+                    onChange: { action: "setUsername" },
+                  } as A2UINode,
+                ],
+              },
+              // Access code field
               {
-                type: "input",
-                id: "accessCode",
-                value: accessCode,
-                placeholder: t("auth.accessCodePlaceholder"),
-                inputType: "password",
-                onChange: { action: "setAccessCode" },
-              } as A2UINode,
+                type: "form-field",
+                label: t("auth.accessCode"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "accessCode",
+                    value: accessCode,
+                    placeholder: t("auth.accessCodePlaceholder"),
+                    inputType: "password",
+                    onChange: { action: "setAccessCode" },
+                  } as A2UINode,
+                ],
+              },
+              // Error message
+              ...(error
+                ? [{ type: "alert", message: error, variant: "error" } as A2UINode]
+                : []),
+              // Submit button
+              {
+                type: "button",
+                text: isLoading ? t("common.loading") : t("auth.signIn"),
+                variant: "primary",
+                size: "lg",
+                fullWidth: true,
+                disabled: isLoading,
+                buttonType: "submit",
+              },
             ],
-          },
-          // Error message
-          ...(error
-            ? [{ type: "alert", message: error, variant: "error" } as A2UINode]
-            : []),
-          // Submit button
-          {
-            type: "button",
-            text: isLoading ? t("common.loading") : t("auth.signIn"),
-            variant: "primary",
-            size: "lg",
-            fullWidth: true,
-            disabled: isLoading,
-            onClick: { action: "submitCredentials" },
           },
         ],
       },
