@@ -18,6 +18,7 @@ import type {
   A2UIFormFieldNode,
   A2UICollapsibleNode,
 } from "@/lib/a2ui"
+import { remarkPlugins, rehypePlugins } from "@/lib/markdown"
 import { useI18n } from "@/contexts/i18n-context"
 
 // Dynamic import for SSR compatibility
@@ -258,6 +259,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
   const [height, setHeight] = useState<number>(400)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const scrollSyncLock = useRef<"textarea" | "preview" | null>(null)
   const toolbarCommands = useMemo(() => {
     if (locale === "zh-CN") {
       return {
@@ -446,6 +448,103 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
     return () => observer.disconnect()
   }, [useFullHeight])
 
+  // Scroll sync between textarea and preview
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    let textarea: HTMLTextAreaElement | null = null
+    let previewOuter: HTMLElement | null = null
+    let cleanupFn: (() => void) | null = null
+
+    const syncScroll = (source: HTMLElement, target: HTMLElement, sourceType: "textarea" | "preview") => {
+      if (scrollSyncLock.current && scrollSyncLock.current !== sourceType) return
+
+      scrollSyncLock.current = sourceType
+
+      const sourceScrollHeight = source.scrollHeight - source.clientHeight
+      const targetScrollHeight = target.scrollHeight - target.clientHeight
+
+      if (sourceScrollHeight > 0 && targetScrollHeight > 0) {
+        const ratio = source.scrollTop / sourceScrollHeight
+        target.scrollTop = ratio * targetScrollHeight
+      }
+
+      requestAnimationFrame(() => {
+        scrollSyncLock.current = null
+      })
+    }
+
+    const setupListeners = () => {
+      textarea = container.querySelector<HTMLTextAreaElement>(".w-md-editor-text-input")
+      previewOuter = container.querySelector<HTMLElement>(".w-md-editor-preview")
+      const editorArea = container.querySelector<HTMLElement>(".w-md-editor-area")
+        ?? container.querySelector<HTMLElement>(".w-md-editor-input")
+
+      if (!textarea || !previewOuter) return false
+
+      const getEditorScrollElement = (): HTMLElement => {
+        if (textarea && textarea.scrollHeight > textarea.clientHeight) return textarea
+        if (editorArea && editorArea.scrollHeight > editorArea.clientHeight) return editorArea
+        return textarea!
+      }
+
+      const handleTextareaScroll = () => {
+        if (!previewOuter) return
+        const source = getEditorScrollElement()
+        const target = previewOuter.scrollHeight > previewOuter.clientHeight
+          ? previewOuter
+          : previewOuter.querySelector<HTMLElement>(".wmde-markdown") ?? previewOuter
+        syncScroll(source, target, "textarea")
+      }
+
+      const handleContainerScroll = (e: Event) => {
+        if (!previewOuter) return
+        const target = e.target as HTMLElement
+        const editorScrollEl = getEditorScrollElement()
+
+        const isFromEditor = target === textarea || target === editorArea ||
+          (editorArea && editorArea.contains(target)) ||
+          (textarea && target.contains(textarea))
+
+        if (isFromEditor) return
+
+        if (previewOuter.contains(target) || target === previewOuter) {
+          const source = target.scrollHeight > target.clientHeight ? target : previewOuter
+          syncScroll(source, editorScrollEl, "preview")
+        }
+      }
+
+      textarea.addEventListener("scroll", handleTextareaScroll, { passive: true })
+      editorArea?.addEventListener("scroll", handleTextareaScroll, { passive: true })
+      container.addEventListener("scroll", handleContainerScroll, { passive: true, capture: true })
+
+      cleanupFn = () => {
+        textarea?.removeEventListener("scroll", handleTextareaScroll)
+        editorArea?.removeEventListener("scroll", handleTextareaScroll)
+        container.removeEventListener("scroll", handleContainerScroll, { capture: true })
+      }
+
+      return true
+    }
+
+    // MDEditor is dynamically imported, wait for elements to be available
+    const checkInterval = setInterval(() => {
+      if (setupListeners()) {
+        clearInterval(checkInterval)
+      }
+    }, 100)
+
+    // Stop checking after 5 seconds
+    const timeout = setTimeout(() => clearInterval(checkInterval), 5000)
+
+    return () => {
+      clearInterval(checkInterval)
+      clearTimeout(timeout)
+      cleanupFn?.()
+    }
+  }, [])
+
   // Upload overlay component
   const UploadOverlay = () =>
     isUploading ? (
@@ -482,6 +581,10 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
           commands={toolbarCommands.commands}
           extraCommands={toolbarCommands.extraCommands}
           visibleDragbar={false}
+          previewOptions={{
+            remarkPlugins,
+            rehypePlugins,
+          }}
         />
       </div>
     )
@@ -506,6 +609,10 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
         commands={toolbarCommands.commands}
         extraCommands={toolbarCommands.extraCommands}
         visibleDragbar={false}
+        previewOptions={{
+          remarkPlugins,
+          rehypePlugins,
+        }}
       />
     </div>
   )
