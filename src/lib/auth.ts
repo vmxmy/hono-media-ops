@@ -6,6 +6,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db } from "@/server/db"
 import { eq, and, isNull } from "drizzle-orm"
 import { hashPassword, isHashedPassword, verifyPassword } from "@/lib/password"
+import { isValidCallbackUrl, checkRateLimit, recordFailedAttempt, clearRateLimit } from "@/lib/security"
 import {
   users,
   accounts,
@@ -38,13 +39,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         username: { label: "Username", type: "text" },
         accessCode: { label: "Access Code", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.username || !credentials?.accessCode) {
           return null
         }
 
         const username = credentials.username as string
         const accessCode = credentials.accessCode as string
+
+        // Rate limiting by username to prevent credential stuffing
+        const rateLimitKey = `login:${username.toLowerCase()}`
+        const rateLimit = checkRateLimit(rateLimitKey)
+
+        if (!rateLimit.allowed) {
+          // Silently reject - don't reveal rate limit to potential attackers
+          return null
+        }
 
         const [user] = await db
           .select()
@@ -58,17 +68,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .limit(1)
 
         if (!user) {
+          recordFailedAttempt(rateLimitKey)
           return null
         }
 
         if (!user.accessCode) {
+          recordFailedAttempt(rateLimitKey)
           return null
         }
 
         const isValid = await verifyPassword(accessCode, user.accessCode)
         if (!isValid) {
+          recordFailedAttempt(rateLimitKey)
           return null
         }
+
+        // Clear rate limit on successful login
+        clearRateLimit(rateLimitKey)
 
         if (!isHashedPassword(user.accessCode)) {
           const hashed = await hashPassword(accessCode)
@@ -88,6 +104,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    // Prevent open redirect attacks by validating callback URLs
+    redirect: ({ url, baseUrl }) => {
+      if (isValidCallbackUrl(url, baseUrl)) {
+        // For relative paths, prepend baseUrl
+        if (url.startsWith("/")) {
+          return `${baseUrl}${url}`
+        }
+        return url
+      }
+      // Default to home page if URL is invalid
+      return `${baseUrl}/tasks`
+    },
     jwt: ({ token, user }) => {
       if (user) {
         token.id = user.id
