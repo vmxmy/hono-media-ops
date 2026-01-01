@@ -65,11 +65,12 @@ export function CreateTaskModal({
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState(defaultFormData)
   const [expandedMaterialId, setExpandedMaterialId] = useState<string | null>(null)
+  const [materialSearchQuery, setMaterialSearchQuery] = useState("")
 
   // Fetch materials for step 2
   const { data: materialsData, isLoading: materialsLoading } =
     api.reverseLogs.getAll.useQuery(
-      { page: 1, pageSize: 50 },
+      { page: 1, pageSize: 50, search: materialSearchQuery || undefined },
       { enabled: isOpen && currentStep === 2 }
     )
 
@@ -111,6 +112,7 @@ export function CreateTaskModal({
         setFormData(defaultFormData)
       }
       setCurrentStep(1)
+      setMaterialSearchQuery("")
     }
     prevIsOpenRef.current = isOpen
   }, [isOpen, initialData])
@@ -132,6 +134,7 @@ export function CreateTaskModal({
   const handleClose = useCallback(() => {
     setFormData(defaultFormData)
     setCurrentStep(1)
+    setMaterialSearchQuery("")
     onClose()
   }, [onClose])
 
@@ -208,6 +211,12 @@ export function CreateTaskModal({
           break
         case "selectCoverPrompt":
           handleSelectCoverPrompt(args?.[0] as string)
+          break
+        case "setMaterialSearch":
+          setMaterialSearchQuery(args?.[0] as string ?? "")
+          break
+        case "clearMaterialSearch":
+          setMaterialSearchQuery("")
           break
       }
     },
@@ -528,11 +537,23 @@ export function CreateTaskModal({
 
   const buildStep2Content = (): A2UINode => {
     const body: A2UINode[] = []
+    const hasSearch = materialSearchQuery.trim().length > 0
 
     if (materialsLoading) {
       body.push({ type: "text", text: t("common.loading"), color: "muted" })
     } else if (!materialsData?.logs.length) {
-      body.push({ type: "text", text: t("taskForm.noMaterials"), color: "muted" })
+      body.push({
+        type: "column",
+        gap: "0.5rem",
+        style: { alignItems: "center", padding: "1rem" },
+        children: [
+          { type: "text", text: hasSearch ? t("reverse.noSearchResults") : t("taskForm.noMaterials"), color: "muted" },
+          ...(hasSearch ? [
+            { type: "text", text: t("reverse.tryDifferentKeywords"), variant: "caption", color: "muted" } as A2UINode,
+            { type: "button", text: t("reverse.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearMaterialSearch" } } as A2UINode,
+          ] : []),
+        ],
+      })
     } else {
       body.push(
         ...materialsData.logs.map((material) => buildMaterialCard(material))
@@ -550,6 +571,15 @@ export function CreateTaskModal({
             { type: "text", text: t("taskForm.step2Title"), variant: "h3", weight: "semibold" },
             { type: "text", text: t("taskForm.step2Desc"), variant: "caption", color: "muted" },
           ],
+        },
+        // 搜索框
+        {
+          type: "input",
+          id: "material-search",
+          value: materialSearchQuery,
+          placeholder: t("reverse.searchPlaceholder"),
+          inputType: "text",
+          onChange: { action: "setMaterialSearch" },
         },
         { type: "column", gap: "0.75rem", children: body },
       ],
