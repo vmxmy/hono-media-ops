@@ -66,6 +66,31 @@ export type I18nKey =
     | "profile.passwordMismatch"
     | "profile.profileUpdated"
     | "profile.passwordUpdated"
+    | "profile.tabProfile"
+    | "profile.tabPassword"
+    | "profile.tabStorage"
+    // Storage Config
+    | "profile.storageTitle"
+    | "profile.storageProvider"
+    | "profile.storageBucket"
+    | "profile.storageAccessKey"
+    | "profile.storageSecretKey"
+    | "profile.storagePublicDomain"
+    | "profile.storageR2AccountId"
+    | "profile.storageS3Region"
+    | "profile.storageS3Endpoint"
+    | "profile.storageConfigName"
+    | "profile.storageLocal"
+    | "profile.storageR2"
+    | "profile.storageS3"
+    | "profile.storageTest"
+    | "profile.storageTestSuccess"
+    | "profile.storageTestFailed"
+    | "profile.storageSaved"
+    | "profile.storageActive"
+    | "profile.storageInactive"
+    | "profile.storageActivate"
+    | "profile.storageDeactivate"
     // Navigation
     | "nav.dashboard"
     | "nav.prompts"
@@ -476,6 +501,31 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "profile.passwordMismatch": "Passwords do not match",
         "profile.profileUpdated": "Profile updated",
         "profile.passwordUpdated": "Password updated",
+        "profile.tabProfile": "Profile",
+        "profile.tabPassword": "Password",
+        "profile.tabStorage": "Storage",
+        // Storage Config
+        "profile.storageTitle": "Storage Configuration",
+        "profile.storageProvider": "Storage Provider",
+        "profile.storageBucket": "Bucket Name",
+        "profile.storageAccessKey": "Access Key ID",
+        "profile.storageSecretKey": "Secret Access Key",
+        "profile.storagePublicDomain": "Public Domain URL",
+        "profile.storageR2AccountId": "R2 Account ID",
+        "profile.storageS3Region": "Region",
+        "profile.storageS3Endpoint": "Custom Endpoint (Optional)",
+        "profile.storageConfigName": "Config Name (Optional)",
+        "profile.storageLocal": "Local (System Default)",
+        "profile.storageR2": "Cloudflare R2",
+        "profile.storageS3": "AWS S3",
+        "profile.storageTest": "Test Connection",
+        "profile.storageTestSuccess": "Connection successful",
+        "profile.storageTestFailed": "Connection failed",
+        "profile.storageSaved": "Storage configuration saved",
+        "profile.storageActive": "Active",
+        "profile.storageInactive": "Inactive",
+        "profile.storageActivate": "Activate",
+        "profile.storageDeactivate": "Deactivate",
         // Navigation
         "nav.dashboard": "Dashboard",
         "nav.prompts": "Prompts",
@@ -875,6 +925,31 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "profile.passwordMismatch": "两次密码不一致",
         "profile.profileUpdated": "昵称已更新",
         "profile.passwordUpdated": "密码已更新",
+        "profile.tabProfile": "个人资料",
+        "profile.tabPassword": "修改密码",
+        "profile.tabStorage": "存储配置",
+        // Storage Config
+        "profile.storageTitle": "存储配置",
+        "profile.storageProvider": "存储服务",
+        "profile.storageBucket": "存储桶名称",
+        "profile.storageAccessKey": "Access Key ID",
+        "profile.storageSecretKey": "Secret Access Key",
+        "profile.storagePublicDomain": "公开访问域名",
+        "profile.storageR2AccountId": "R2 账户 ID",
+        "profile.storageS3Region": "区域",
+        "profile.storageS3Endpoint": "自定义端点 (可选)",
+        "profile.storageConfigName": "配置名称 (可选)",
+        "profile.storageLocal": "本地 (系统默认)",
+        "profile.storageR2": "Cloudflare R2",
+        "profile.storageS3": "AWS S3",
+        "profile.storageTest": "测试连接",
+        "profile.storageTestSuccess": "连接成功",
+        "profile.storageTestFailed": "连接失败",
+        "profile.storageSaved": "存储配置已保存",
+        "profile.storageActive": "已启用",
+        "profile.storageInactive": "未启用",
+        "profile.storageActivate": "启用",
+        "profile.storageDeactivate": "停用",
         // Navigation
         "nav.dashboard": "仪表盘",
         "nav.prompts": "提示词",

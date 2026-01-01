@@ -53,6 +53,12 @@ export const reverseLogStatusEnum = pgEnum("reverse_log_status", [
   "FAILED",
 ]);
 
+export const storageProviderEnum = pgEnum("storage_provider", [
+  "local",
+  "r2",
+  "s3",
+]);
+
 // ==================== Users Table ====================
 
 export const users = pgTable(
@@ -131,9 +137,57 @@ export const verificationTokens = pgTable(
   ]
 );
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   tasks: many(tasks),
   styleAnalyses: many(styleAnalyses),
+  storageConfig: one(userStorageConfigs),
+}));
+
+// ==================== User Storage Configs Table ====================
+
+export const userStorageConfigs = pgTable(
+  "user_storage_configs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+
+    // Provider type
+    provider: storageProviderEnum("provider").default("local").notNull(),
+    isActive: integer("is_active").default(0).notNull(), // 0=inactive, 1=active
+
+    // Common S3-compatible fields
+    bucket: text("bucket"),
+    accessKeyId: text("access_key_id"),
+    secretAccessKey: text("secret_access_key"), // Should be encrypted in production
+    publicDomain: text("public_domain"),
+
+    // R2 specific
+    r2AccountId: text("r2_account_id"),
+
+    // S3 specific
+    s3Region: text("s3_region").default("us-east-1"),
+    s3Endpoint: text("s3_endpoint"),
+
+    // Metadata
+    name: text("name"), // User-friendly name like "My R2 Storage"
+
+    // Timestamps
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: uniqueIndex("idx_user_storage_configs_user_id").on(table.userId),
+  })
+);
+
+export const userStorageConfigsRelations = relations(userStorageConfigs, ({ one }) => ({
+  user: one(users, {
+    fields: [userStorageConfigs.userId],
+    references: [users.id],
+  }),
 }));
 
 // ==================== Tasks Table ====================
@@ -575,6 +629,9 @@ export type NewStyleAnalysis = typeof styleAnalyses.$inferInsert;
 
 export type ArticleEmbedding = typeof articleEmbeddings.$inferSelect;
 export type NewArticleEmbedding = typeof articleEmbeddings.$inferInsert;
+
+export type UserStorageConfig = typeof userStorageConfigs.$inferSelect;
+export type NewUserStorageConfig = typeof userStorageConfigs.$inferInsert;
 
 // Backwards compatibility aliases (deprecated)
 export type ReverseEngineering = StyleAnalysis;
