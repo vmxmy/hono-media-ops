@@ -7,9 +7,9 @@ import { getToken } from "next-auth/jwt"
 const userStatusCache = new Map<string, { active: boolean; timestamp: number }>()
 const CACHE_TTL_MS = 60 * 1000
 
-// Security policy: fail-open (default) vs fail-closed
-// Set USER_STATUS_CHECK_FAIL_CLOSED=true for stricter security
-const FAIL_CLOSED = process.env.USER_STATUS_CHECK_FAIL_CLOSED === "true"
+// Security policy: fail-closed (default) vs fail-open
+// Set USER_STATUS_CHECK_FAIL_OPEN=true only if availability is critical
+const FAIL_OPEN = process.env.USER_STATUS_CHECK_FAIL_OPEN === "true"
 
 /**
  * Gets the application base URL from environment variables
@@ -77,9 +77,9 @@ async function isUserActive(userId: string): Promise<boolean> {
 
     if (!response.ok) {
       // Log warning for monitoring
-      console.warn(`[Security] User status check failed for ${userId}: HTTP ${response.status}. Policy: ${FAIL_CLOSED ? "fail-closed" : "fail-open"}`)
-      // Apply configured security policy
-      return !FAIL_CLOSED
+      console.warn(`[Security] User status check failed for ${userId}: HTTP ${response.status}. Policy: ${FAIL_OPEN ? "fail-open" : "fail-closed"}`)
+      // Apply configured security policy (default: fail-closed)
+      return FAIL_OPEN
     }
 
     const data = await response.json() as { active: boolean }
@@ -87,9 +87,9 @@ async function isUserActive(userId: string): Promise<boolean> {
     return data.active
   } catch (error) {
     // Log warning for monitoring
-    console.warn(`[Security] User status check error for ${userId}: ${error instanceof Error ? error.message : "Unknown error"}. Policy: ${FAIL_CLOSED ? "fail-closed" : "fail-open"}`)
-    // Apply configured security policy
-    return !FAIL_CLOSED
+    console.warn(`[Security] User status check error for ${userId}: ${error instanceof Error ? error.message : "Unknown error"}. Policy: ${FAIL_OPEN ? "fail-open" : "fail-closed"}`)
+    // Apply configured security policy (default: fail-closed)
+    return FAIL_OPEN
   }
 }
 
