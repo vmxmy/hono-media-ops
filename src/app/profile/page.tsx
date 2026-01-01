@@ -102,36 +102,46 @@ export default function ProfilePage() {
     type: "card",
     children: [
       {
-        type: "column",
-        gap: "1rem",
+        type: "form",
+        id: "profile-form",
+        onSubmit: { action: "saveProfile" },
         children: [
-          { type: "text", text: t("profile.profileTitle"), variant: "h3", weight: "semibold" },
           {
-            type: "form-field",
-            label: t("profile.displayName"),
-            required: true,
+            type: "column",
+            gap: "1rem",
             children: [
+              { type: "text", text: t("profile.profileTitle"), variant: "h3", weight: "semibold" },
               {
-                type: "input",
-                value: displayName,
-                placeholder: t("profile.displayNamePlaceholder"),
-                onChange: { action: "setDisplayName" },
-              } as A2UINode,
+                type: "form-field",
+                label: t("profile.displayName"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "display-name",
+                    name: "display-name",
+                    value: displayName,
+                    placeholder: t("profile.displayNamePlaceholder"),
+                    autocomplete: "name",
+                    onChange: { action: "setDisplayName" },
+                  } as A2UINode,
+                ],
+              },
+              {
+                type: "row",
+                justify: "end",
+                children: [
+                  {
+                    type: "button",
+                    text: t("common.save"),
+                    variant: "primary",
+                    buttonType: "submit",
+                    disabled: updateProfile.isPending,
+                  },
+                ],
+              } as A2UIRowNode,
             ],
           },
-          {
-            type: "row",
-            justify: "end",
-            children: [
-              {
-                type: "button",
-                text: t("common.save"),
-                variant: "primary",
-                onClick: { action: "saveProfile" },
-                disabled: updateProfile.isPending,
-              },
-            ],
-          } as A2UIRowNode,
         ],
       },
     ],
@@ -141,65 +151,91 @@ export default function ProfilePage() {
     type: "card",
     children: [
       {
-        type: "column",
-        gap: "1rem",
+        type: "form",
+        id: "password-form",
+        onSubmit: { action: "savePassword" },
         children: [
-          { type: "text", text: t("profile.passwordTitle"), variant: "h3", weight: "semibold" },
           {
-            type: "form-field",
-            label: t("profile.currentPassword"),
-            required: true,
+            type: "column",
+            gap: "1rem",
             children: [
+              { type: "text", text: t("profile.passwordTitle"), variant: "h3", weight: "semibold" },
+              // Hidden username field for password managers accessibility
               {
                 type: "input",
-                value: currentPassword,
-                placeholder: t("profile.currentPasswordPlaceholder"),
-                inputType: "password",
-                onChange: { action: "setCurrentPassword" },
+                id: "username-for-password",
+                name: "username",
+                value: profile?.email ?? profile?.name ?? "",
+                inputType: "text",
+                autocomplete: "username",
+                style: { display: "none" },
               } as A2UINode,
-            ],
-          },
-          {
-            type: "form-field",
-            label: t("profile.newPassword"),
-            required: true,
-            children: [
               {
-                type: "input",
-                value: newPassword,
-                placeholder: t("profile.newPasswordPlaceholder"),
-                inputType: "password",
-                onChange: { action: "setNewPassword" },
-              } as A2UINode,
-            ],
-          },
-          {
-            type: "form-field",
-            label: t("profile.confirmPassword"),
-            required: true,
-            children: [
-              {
-                type: "input",
-                value: confirmPassword,
-                placeholder: t("profile.confirmPasswordPlaceholder"),
-                inputType: "password",
-                onChange: { action: "setConfirmPassword" },
-              } as A2UINode,
-            ],
-          },
-          {
-            type: "row",
-            justify: "end",
-            children: [
-              {
-                type: "button",
-                text: t("profile.updatePassword"),
-                variant: "primary",
-                onClick: { action: "savePassword" },
-                disabled: updatePassword.isPending,
+                type: "form-field",
+                label: t("profile.currentPassword"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "current-password",
+                    name: "current-password",
+                    value: currentPassword,
+                    placeholder: t("profile.currentPasswordPlaceholder"),
+                    inputType: "password",
+                    autocomplete: "current-password",
+                    onChange: { action: "setCurrentPassword" },
+                  } as A2UINode,
+                ],
               },
+              {
+                type: "form-field",
+                label: t("profile.newPassword"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "new-password",
+                    name: "new-password",
+                    value: newPassword,
+                    placeholder: t("profile.newPasswordPlaceholder"),
+                    inputType: "password",
+                    autocomplete: "new-password",
+                    onChange: { action: "setNewPassword" },
+                  } as A2UINode,
+                ],
+              },
+              {
+                type: "form-field",
+                label: t("profile.confirmPassword"),
+                required: true,
+                children: [
+                  {
+                    type: "input",
+                    id: "confirm-password",
+                    name: "confirm-password",
+                    value: confirmPassword,
+                    placeholder: t("profile.confirmPasswordPlaceholder"),
+                    inputType: "password",
+                    autocomplete: "new-password",
+                    onChange: { action: "setConfirmPassword" },
+                  } as A2UINode,
+                ],
+              },
+              {
+                type: "row",
+                justify: "end",
+                children: [
+                  {
+                    type: "button",
+                    text: t("profile.updatePassword"),
+                    variant: "primary",
+                    buttonType: "submit",
+                    disabled: updatePassword.isPending,
+                  },
+                ],
+              } as A2UIRowNode,
             ],
-          } as A2UIRowNode,
+          },
         ],
       },
     ],

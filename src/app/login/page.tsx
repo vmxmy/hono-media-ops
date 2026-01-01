@@ -7,16 +7,76 @@ import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode, A2UIColumnNode } from "@/lib/a2ui"
 
+/**
+ * Sanitizes callback URL to prevent open redirect attacks
+ * Allows same-origin relative paths and same-origin absolute URLs
+ *
+ * Note: This is stricter than the backend (security.ts) which supports
+ * ALLOWED_CALLBACK_HOSTS whitelist. If the whitelist is enabled on the
+ * backend, this function should be updated to match.
+ */
+function sanitizeCallbackUrl(url: string | null): string {
+  const defaultPath = "/tasks"
+
+  if (!url) return defaultPath
+
+  // Prevent protocol-relative URLs like //evil.com
+  if (url.startsWith("//")) return defaultPath
+
+  // Handle relative paths
+  if (url.startsWith("/")) {
+    // Basic path validation - no encoded characters that could bypass checks
+    try {
+      const decoded = decodeURIComponent(url)
+      if (decoded.includes("//") || decoded.includes("\\")) {
+        return defaultPath
+      }
+    } catch {
+      return defaultPath
+    }
+    return url
+  }
+
+  // Handle absolute URLs - only allow same-origin
+  try {
+    const urlObj = new URL(url)
+    const currentOrigin = typeof window !== "undefined" ? window.location.origin : ""
+
+    // Only allow same-origin absolute URLs
+    if (currentOrigin && urlObj.origin === currentOrigin) {
+      const pathname = urlObj.pathname + urlObj.search
+      // Prevent protocol-relative URLs in pathname (e.g., //evil.com from https://site.com//evil.com)
+      if (pathname.startsWith("//") || pathname.includes("\\")) {
+        return defaultPath
+      }
+      return pathname
+    }
+  } catch {
+    // Invalid URL
+  }
+
+  return defaultPath
+}
+
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/tasks"
+  const rawCallbackUrl = searchParams.get("callbackUrl")
+  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl)
+  const errorParam = searchParams.get("error")
   const { t } = useI18n()
   const { data: session, status } = useSession()
   const [username, setUsername] = useState("")
   const [accessCode, setAccessCode] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Show error from URL params (e.g., AccountDisabled)
+  useEffect(() => {
+    if (errorParam === "AccountDisabled") {
+      setError(t("auth.accountDisabled"))
+    }
+  }, [errorParam, t])
 
   // Redirect to tasks if already authenticated
   useEffect(() => {
@@ -26,12 +86,26 @@ function LoginPageContent() {
   }, [session, router, callbackUrl])
 
   const handleCredentialsLogin = async () => {
+    // Local input validation
+    const trimmedUsername = username.trim()
+    const trimmedAccessCode = accessCode.trim()
+
+    if (!trimmedUsername) {
+      setError(t("auth.usernameRequired"))
+      return
+    }
+
+    if (!trimmedAccessCode) {
+      setError(t("auth.accessCodeRequired"))
+      return
+    }
+
     setError("")
     setIsLoading(true)
 
     const result = await signIn("credentials", {
-      username,
-      accessCode,
+      username: trimmedUsername,
+      accessCode: trimmedAccessCode,
       redirect: false,
       callbackUrl,
     })
@@ -101,9 +175,11 @@ function LoginPageContent() {
                   {
                     type: "input",
                     id: "username",
+                    name: "username",
                     value: username,
                     placeholder: t("auth.usernamePlaceholder"),
                     inputType: "text",
+                    autocomplete: "username",
                     onChange: { action: "setUsername" },
                   } as A2UINode,
                 ],
@@ -117,9 +193,11 @@ function LoginPageContent() {
                   {
                     type: "input",
                     id: "accessCode",
+                    name: "password",
                     value: accessCode,
                     placeholder: t("auth.accessCodePlaceholder"),
                     inputType: "password",
+                    autocomplete: "current-password",
                     onChange: { action: "setAccessCode" },
                   } as A2UINode,
                 ],

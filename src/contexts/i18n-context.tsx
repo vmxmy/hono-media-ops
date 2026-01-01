@@ -47,6 +47,9 @@ export type I18nKey =
     | "auth.usernamePlaceholder"
     | "auth.accessCodePlaceholder"
     | "auth.orContinueWith"
+    | "auth.usernameRequired"
+    | "auth.accessCodeRequired"
+    | "auth.accountDisabled"
     | "profile.title"
     | "profile.profileTitle"
     | "profile.displayName"
@@ -454,6 +457,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.usernamePlaceholder": "Enter username",
         "auth.accessCodePlaceholder": "Enter access code",
         "auth.orContinueWith": "Or continue with",
+        "auth.usernameRequired": "Please enter username",
+        "auth.accessCodeRequired": "Please enter access code",
+        "auth.accountDisabled": "Your account has been disabled",
         "profile.title": "User Center",
         "profile.profileTitle": "Profile",
         "profile.displayName": "Display Name",
@@ -850,6 +856,9 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "auth.usernamePlaceholder": "请输入用户名",
         "auth.accessCodePlaceholder": "请输入访问码",
         "auth.orContinueWith": "或使用以下方式登录",
+        "auth.usernameRequired": "请输入用户名",
+        "auth.accessCodeRequired": "请输入访问码",
+        "auth.accountDisabled": "您的账号已被禁用",
         "profile.title": "用户中心",
         "profile.profileTitle": "个人资料",
         "profile.displayName": "昵称",

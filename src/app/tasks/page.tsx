@@ -495,9 +495,11 @@ export default function TasksPage() {
       {
         type: "input",
         id: "search-tasks",
+        name: "search-tasks",
         value: searchQuery,
         placeholder: t("tasks.searchPlaceholder"),
         inputType: "text",
+        autocomplete: "off",
         style: { maxWidth: "100%" },
         onChange: { action: "setSearch" },
       },

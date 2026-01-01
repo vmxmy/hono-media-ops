@@ -113,9 +113,11 @@ export default function ArticlesPage() {
           {
             type: "input",
             id: "search-articles",
+            name: "search-articles",
             value: searchQuery,
             placeholder: t("articles.searchPlaceholder"),
             inputType: "text",
+            autocomplete: "off",
             style: { maxWidth: "500px", width: "100%" },
             onChange: { action: "setSearch" },
           },

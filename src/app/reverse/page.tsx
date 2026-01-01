@@ -1492,9 +1492,11 @@ export default function ReversePage() {
       {
         type: "input",
         id: "search-materials",
+        name: "search-materials",
         value: searchQuery,
         placeholder: t("reverse.searchPlaceholder"),
         inputType: "text",
+        autocomplete: "off",
         style: { maxWidth: "100%" },
         onChange: { action: "setSearch" },
       },

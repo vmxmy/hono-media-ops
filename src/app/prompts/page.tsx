@@ -272,7 +272,7 @@ export default function ImagePromptsPage() {
       type: "form-field",
       label: t("imagePrompts.titleLabel"),
       required: true,
-      children: [{ type: "input", id: "title", value: formData.title, inputType: "text", placeholder: t("imagePrompts.titlePlaceholder"), onChange: { action: "setTitle" } }],
+      children: [{ type: "input", id: "title", name: "title", value: formData.title, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.titlePlaceholder"), onChange: { action: "setTitle" } }],
     },
     {
       type: "form-field",
@@ -325,7 +325,7 @@ export default function ImagePromptsPage() {
           type: "form-field",
           label: t("imagePrompts.tagsLabel"),
           style: { flex: 2 },
-          children: [{ type: "input", id: "tags", value: formData.tags, inputType: "text", placeholder: t("imagePrompts.tagsPlaceholder"), onChange: { action: "setTags" } }],
+          children: [{ type: "input", id: "tags", name: "tags", value: formData.tags, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.tagsPlaceholder"), onChange: { action: "setTags" } }],
         },
       ],
     },
@@ -341,7 +341,7 @@ export default function ImagePromptsPage() {
   ]
 
   const buttons: A2UINode[] = [
-    { type: "button", text: editingId ? t("common.update") : t("common.create"), variant: "primary", disabled: isSubmitting || !formData.title || !formData.prompt, onClick: { action: "submitForm" } },
+    { type: "button", text: editingId ? t("common.update") : t("common.create"), variant: "primary", buttonType: "submit", disabled: isSubmitting || !formData.title || !formData.prompt },
   ]
   if (editingId) {
     buttons.push({ type: "button", text: t("common.cancel"), variant: "secondary", onClick: { action: "resetForm" } })
@@ -353,11 +353,18 @@ export default function ImagePromptsPage() {
     hoverable: false,
     children: [
       {
-        type: "column",
-        gap: "1rem",
+        type: "form",
+        id: "prompt-form",
+        onSubmit: { action: "submitForm" },
         children: [
-          { type: "text", text: editingId ? t("imagePrompts.editTitle") : t("imagePrompts.createTitle"), variant: "h3" },
-          { type: "column", gap: "1rem", children: formChildren },
+          {
+            type: "column",
+            gap: "1rem",
+            children: [
+              { type: "text", text: editingId ? t("imagePrompts.editTitle") : t("imagePrompts.createTitle"), variant: "h3" },
+              { type: "column", gap: "1rem", children: formChildren },
+            ],
+          },
         ],
       },
     ],
@@ -370,7 +377,7 @@ export default function ImagePromptsPage() {
     responsive: true,
     align: "center",
     children: [
-      { type: "input", id: "search", value: searchQuery, inputType: "text", placeholder: t("imagePrompts.searchPlaceholder"), style: { flex: 1, minWidth: "200px" }, onChange: { action: "setSearchQuery" } },
+      { type: "input", id: "search", name: "search", value: searchQuery, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.searchPlaceholder"), style: { flex: 1, minWidth: "200px" }, onChange: { action: "setSearchQuery" } },
       { type: "select", id: "categoryFilter", value: categoryFilter, options: [{ value: "", label: t("imagePrompts.allCategories") }, ...CATEGORY_OPTIONS], onChange: { action: "setCategoryFilter" } },
     ],
   }

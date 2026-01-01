@@ -302,9 +302,12 @@ export function CreateTaskModal({
         children: [
           {
             type: "input",
+            id: "topic",
+            name: "topic",
             value: formData.topic,
             placeholder: t("taskForm.topicPlaceholder"),
             inputType: "text",
+            autocomplete: "off",
             onChange: { action: "setTopic" },
           },
         ],
@@ -328,8 +331,11 @@ export function CreateTaskModal({
         children: [
           {
             type: "input",
+            id: "totalWordCount",
+            name: "totalWordCount",
             value: String(formData.totalWordCount),
             inputType: "number",
+            autocomplete: "off",
             placeholder: "4000",
             onChange: { action: "setTotalWordCount" },
           },
@@ -576,9 +582,11 @@ export function CreateTaskModal({
         {
           type: "input",
           id: "material-search",
+          name: "material-search",
           value: materialSearchQuery,
           placeholder: t("reverse.searchPlaceholder"),
           inputType: "text",
+          autocomplete: "off",
           onChange: { action: "setMaterialSearch" },
         },
         { type: "column", gap: "0.75rem", children: body },
