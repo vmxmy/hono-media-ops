@@ -96,6 +96,12 @@ async function isUserActive(userId: string): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.AUTH_SECRET })
 
+  // Debug logging for authentication issues
+  if (process.env.DEBUG_AUTH === "true") {
+    const cookieNames = Array.from(req.cookies.getAll()).map(c => c.name)
+    console.log(`[Auth Debug] Path: ${req.nextUrl.pathname}, Token: ${token ? "found" : "null"}, Cookies: ${cookieNames.join(", ") || "none"}`)
+  }
+
   if (!token) {
     const loginUrl = new URL("/login", req.url)
     // Only include safe relative path in callback
