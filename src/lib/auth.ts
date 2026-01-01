@@ -15,6 +15,8 @@ import {
 } from "@/server/db/schema"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Required for Vercel/proxy deployments - trusts the X-Forwarded-* headers
+  trustHost: true,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
