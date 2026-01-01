@@ -9,15 +9,28 @@
 
 import { useState, useCallback } from "react"
 import { api } from "@/trpc/react"
+import {
+  compressImage,
+  type CompressOptions,
+  type CompressionResult,
+} from "@/lib/image/compress"
 
 // ==================== Types ====================
 
-export type UploadStatus = "idle" | "getting-url" | "uploading" | "completed" | "error"
+export type UploadStatus =
+  | "idle"
+  | "compressing"
+  | "getting-url"
+  | "uploading"
+  | "completed"
+  | "error"
 
 export interface UploadProgress {
   status: UploadStatus
   progress: number // 0-100
   error?: string
+  /** Compression result (if compression was applied) */
+  compression?: CompressionResult
 }
 
 export interface UploadResult {
@@ -28,6 +41,14 @@ export interface UploadResult {
 export interface UseImageUploadOptions {
   /** Storage folder for uploads (default: "uploads/images") */
   folder?: string
+  /**
+   * Enable image compression before upload
+   * - true: use default compression settings (2MB max, 1920px max dimension)
+   * - CompressOptions: use custom compression settings
+   * - false/undefined: no compression
+   * Default: true (compression enabled)
+   */
+  compress?: boolean | CompressOptions
   /** Callback when upload completes successfully */
   onUploadComplete?: (result: UploadResult) => void
   /** Callback when upload fails */
@@ -76,13 +97,32 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
         return null
       }
 
+      let fileToUpload = file
+      let compressionResult: CompressionResult | undefined
+
       try {
+        // Step 0: Compress image if enabled (default: true)
+        const shouldCompress = options.compress !== false
+        if (shouldCompress) {
+          setUploadProgress({ status: "compressing", progress: 5 })
+
+          const compressOptions =
+            typeof options.compress === "object" ? options.compress : undefined
+
+          compressionResult = await compressImage(file, compressOptions)
+          fileToUpload = compressionResult.file
+        }
+
         // Step 1: Get presigned URL from server
-        setUploadProgress({ status: "getting-url", progress: 10 })
+        setUploadProgress({
+          status: "getting-url",
+          progress: 10,
+          compression: compressionResult,
+        })
 
         const { uploadUrl, publicUrl, key } = await getPresignedUrlMutation.mutateAsync({
-          filename: file.name,
-          contentType: file.type,
+          filename: fileToUpload.name,
+          contentType: fileToUpload.type,
           folder: options.folder,
         })
 
@@ -91,10 +131,14 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
 
         if (isLocalUpload) {
           // Local storage: use FormData upload to our API route
-          setUploadProgress({ status: "uploading", progress: 30 })
+          setUploadProgress({
+            status: "uploading",
+            progress: 30,
+            compression: compressionResult,
+          })
 
           const formData = new FormData()
-          formData.append("file", file)
+          formData.append("file", fileToUpload)
 
           const response = await fetch(uploadUrl, {
             method: "POST",
@@ -105,14 +149,22 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
             throw new Error(`Local upload failed: ${response.statusText}`)
           }
 
-          setUploadProgress({ status: "completed", progress: 100 })
+          setUploadProgress({
+            status: "completed",
+            progress: 100,
+            compression: compressionResult,
+          })
           const result = { publicUrl, key }
           options.onUploadComplete?.(result)
           return result
         }
 
         // Step 3: Direct upload to cloud storage (R2/S3)
-        setUploadProgress({ status: "uploading", progress: 30 })
+        setUploadProgress({
+          status: "uploading",
+          progress: 30,
+          compression: compressionResult,
+        })
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest()
@@ -124,6 +176,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
               setUploadProgress({
                 status: "uploading",
                 progress: Math.round(percentComplete),
+                compression: compressionResult,
               })
             }
           })
@@ -145,12 +198,16 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
           })
 
           xhr.open("PUT", uploadUrl)
-          xhr.setRequestHeader("Content-Type", file.type)
-          xhr.send(file)
+          xhr.setRequestHeader("Content-Type", fileToUpload.type)
+          xhr.send(fileToUpload)
         })
 
         // Step 4: Complete
-        setUploadProgress({ status: "completed", progress: 100 })
+        setUploadProgress({
+          status: "completed",
+          progress: 100,
+          compression: compressionResult,
+        })
 
         const result = { publicUrl, key }
         options.onUploadComplete?.(result)
@@ -177,7 +234,11 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
     uploadImage,
     uploadProgress,
     reset,
-    isUploading: uploadProgress.status === "getting-url" || uploadProgress.status === "uploading",
+    isUploading:
+      uploadProgress.status === "compressing" ||
+      uploadProgress.status === "getting-url" ||
+      uploadProgress.status === "uploading",
+    isCompressing: uploadProgress.status === "compressing",
     isError: uploadProgress.status === "error",
     isCompleted: uploadProgress.status === "completed",
   }

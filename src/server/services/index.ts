@@ -35,6 +35,9 @@ export type {
   StorageProvider,
 } from "./user-storage-config.service";
 
+export { exportService } from "./export.service";
+export type { ExportService, WechatExportOptions, WechatExportResult, MarkdownExportResult } from "./export.service";
+
 // Backwards compatibility alias
 export { styleAnalysisService as reverseLogService } from "./style-analysis.service";
 
@@ -48,6 +51,7 @@ import { articleService } from "./article.service";
 import { embeddingService } from "./embedding.service";
 import { storageService } from "./storage.service";
 import { userStorageConfigService } from "./user-storage-config.service";
+import { exportService } from "./export.service";
 
 export const services = {
   task: taskService,
@@ -57,6 +61,7 @@ export const services = {
   embedding: embeddingService,
   storage: storageService,
   userStorageConfig: userStorageConfigService,
+  export: exportService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;

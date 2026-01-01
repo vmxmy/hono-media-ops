@@ -1,10 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode } from "@/lib/a2ui"
 import type { ExecutionResult } from "@/server/db/schema"
+import { useAutoSave, getSaveStatusText, getSaveStatusClass } from "@/hooks/use-auto-save"
+import { WechatExportModal } from "@/components/wechat-export-modal"
 
 interface ArticleViewerModalProps {
   isOpen: boolean
@@ -27,20 +29,32 @@ export function ArticleViewerModal({
   onUpdateResult,
   onUpdateMarkdown,
 }: ArticleViewerModalProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [copied, setCopied] = useState(false)
   const [mediaIdCopied, setMediaIdCopied] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [editCoverUrl, setEditCoverUrl] = useState(executionResult?.coverUrl ?? "")
   const [editMediaId, setEditMediaId] = useState(executionResult?.wechatMediaId ?? "")
-  const [editMarkdown, setEditMarkdown] = useState(markdown)
+  const [showExportModal, setShowExportModal] = useState(false)
 
-  // Sync editMarkdown when markdown prop changes
-  useEffect(() => {
-    setEditMarkdown(markdown)
-  }, [markdown])
+  // Auto-save hook for markdown content
+  const {
+    value: editMarkdown,
+    setValue: setEditMarkdown,
+    saveStatus,
+    hasUnsavedChanges,
+    forceSave,
+  } = useAutoSave({
+    initialValue: markdown,
+    debounceMs: 2000,
+    enabled: !!onUpdateMarkdown,
+    onSave: async (value) => {
+      if (onUpdateMarkdown) {
+        await Promise.resolve(onUpdateMarkdown(value))
+      }
+    },
+  })
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
@@ -94,16 +108,15 @@ export function ArticleViewerModal({
         case "updateMarkdown":
           setEditMarkdown(args?.[0] as string ?? "")
           break
-        case "saveMarkdown":
-          if (onUpdateMarkdown) {
-            onUpdateMarkdown(editMarkdown)
-            setIsSaved(true)
-            setTimeout(() => setIsSaved(false), 2000)
-          }
+        case "forceSave":
+          void forceSave()
+          break
+        case "exportWechat":
+          setShowExportModal(true)
           break
       }
     },
-    [onClose, executionResult, isEditing, editCoverUrl, editMediaId, onUpdateResult, editMarkdown, onUpdateMarkdown]
+    [onClose, executionResult, isEditing, editCoverUrl, editMediaId, onUpdateResult, setEditMarkdown, forceSave]
   )
 
   const tabs = useMemo(() => {
@@ -137,8 +150,12 @@ export function ArticleViewerModal({
     // 添加 markdown 内容 (使用编辑后的内容)
     previewChildren.push({ type: "markdown", content: editMarkdown } as A2UINode)
 
-    // 判断内容是否有修改
-    const hasChanges = editMarkdown !== markdown
+    // Tab label with save status indicator
+    const sourceTabLabel = hasUnsavedChanges
+      ? `</> ${t("article.source")} *`
+      : saveStatus === "saving"
+        ? `</> ${t("article.source")} ⟳`
+        : `</> ${t("article.source")}`
 
     return [
       {
@@ -150,7 +167,7 @@ export function ArticleViewerModal({
         } as A2UINode,
       },
       {
-        label: `</> ${t("article.source")}${hasChanges ? " *" : ""}`,
+        label: sourceTabLabel,
         content: {
           type: "column",
           gap: "0",
@@ -175,10 +192,11 @@ export function ArticleViewerModal({
         } as A2UINode,
       },
     ]
-  }, [editMarkdown, markdown, t, executionResult?.coverUrl, title, onUpdateMarkdown])
+  }, [editMarkdown, t, executionResult?.coverUrl, title, hasUnsavedChanges, saveStatus])
 
-  // 判断内容是否有修改
-  const hasMarkdownChanges = editMarkdown !== markdown
+  // Get save status text for display
+  const saveStatusText = getSaveStatusText(saveStatus, hasUnsavedChanges, locale === "zh-CN" ? "zh-CN" : "en")
+  const saveStatusClassName = getSaveStatusClass(saveStatus)
 
   // 第一段：标题栏
   const titleSection: A2UINode = {
@@ -199,16 +217,27 @@ export function ArticleViewerModal({
           {
             type: "row",
             gap: "0.5rem",
+            align: "center",
             children: [
-              // 保存按钮 - 仅在有修改或刚保存完成时显示
-              ...((hasMarkdownChanges || isSaved) && onUpdateMarkdown ? [{
-                type: "button" as const,
-                text: isSaved ? `✓ ${t("common.saved")}` : t("common.save"),
-                variant: isSaved ? "secondary" as const : "primary" as const,
-                size: "sm" as const,
-                disabled: isSaved,
-                onClick: { action: "saveMarkdown" },
+              // Auto-save status indicator
+              ...(saveStatusText && onUpdateMarkdown ? [{
+                type: "text" as const,
+                text: saveStatusText,
+                variant: "caption" as const,
+                style: {
+                  color: saveStatus === "saving" ? "var(--ds-warning)" :
+                         saveStatus === "saved" ? "var(--ds-success)" :
+                         saveStatus === "error" ? "var(--ds-destructive)" :
+                         "var(--ds-muted-foreground)",
+                },
               }] : []),
+              {
+                type: "button",
+                text: locale === "zh-CN" ? "导出微信" : "Export WeChat",
+                variant: "secondary",
+                size: "sm",
+                onClick: { action: "exportWechat" },
+              },
               {
                 type: "button",
                 text: copied ? t("article.copied") : t("article.copyMarkdown"),
@@ -441,8 +470,18 @@ export function ArticleViewerModal({
   if (!isOpen) return null
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}>
-      <A2UIRenderer node={panelNode} onAction={handleAction} />
-    </div>
+    <>
+      <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}>
+        <A2UIRenderer node={panelNode} onAction={handleAction} />
+      </div>
+
+      {/* WeChat Export Modal */}
+      <WechatExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        markdown={editMarkdown}
+        title={title}
+      />
+    </>
   )
 }

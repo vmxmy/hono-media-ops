@@ -1206,6 +1206,7 @@ export default function ReversePage() {
             type: "link",
             text: titleText,
             href: analysis.sourceUrl,
+            external: true,
             variant: "primary",
             style: { fontSize: "1rem", fontWeight: 600, wordBreak: "break-word" },
           }
@@ -1363,7 +1364,7 @@ export default function ReversePage() {
         gap: "0.25rem",
         children: [
           { type: "text", text: t("reverse.articleUrl"), variant: "caption", color: "muted" },
-          { type: "link", text: t("reverse.readOriginal"), href: selectedAnalysis.sourceUrl, variant: "primary" },
+          { type: "link", text: t("reverse.readOriginal"), href: selectedAnalysis.sourceUrl, external: true, variant: "primary" },
         ],
       })
     }

@@ -5,6 +5,7 @@ import { useI18n } from "@/contexts/i18n-context"
 import { api } from "@/trpc/react"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode, A2UIModalNode } from "@/lib/a2ui"
+import { buildMaterialCardNode, type MaterialCardMetric, type MaterialCardBadge } from "@/lib/a2ui"
 
 // v7.3 JSONB types for material card
 interface StyleIdentityData {
@@ -368,177 +369,119 @@ export function CreateTaskModal({
     const primaryType = material.primaryType
 
     const avgSentLen = metricsConstraints?.avg_sentence_length
-    const avgParaLen = metricsConstraints?.avg_paragraph_length
     const wordCount = material.wordCount
     const ttr = material.metricsTtr
-    const burstiness = material.metricsBurstiness
 
     const isSelected = formData.selectedMaterialId === material.id
     const isExpanded = expandedMaterialId === material.id
 
-    const tabNodes: Array<{ label: string; content: A2UINode }> = []
+    // Build badges
+    const badges: MaterialCardBadge[] = []
+    if (primaryType) {
+      badges.push({ text: primaryType.replace(/_/g, " ").toUpperCase(), color: "default" })
+    }
+    if (archetype) {
+      badges.push({ text: archetype, color: "primary" })
+    }
+    if (isSelected) {
+      badges.push({ text: t("common.selected"), color: "success" })
+    }
 
-    if (archetype || targetAudience || toneKeywords.length > 0) {
-      tabNodes.push({
-        label: t("reverse.tabStyle"),
-        content: {
-          type: "column",
-          gap: "0.5rem",
-          children: [
-            ...(archetype
-              ? [
-                  {
+    // Build metrics for display in card (not in tabs)
+    const metrics: MaterialCardMetric[] = []
+    if (wordCount != null) {
+      metrics.push({ value: wordCount, label: t("reverse.totalWords") })
+    }
+    if (avgSentLen != null) {
+      metrics.push({ value: avgSentLen, label: t("insights.avgSentLen") })
+    }
+    if (ttr != null) {
+      metrics.push({ value: ttr, label: "TTR", format: "percent" })
+    }
+
+    // Build expanded content (tabs)
+    const extraContent: A2UINode[] = []
+    if (isExpanded) {
+      const tabNodes: Array<{ label: string; content: A2UINode }> = []
+
+      // Style tab
+      if (archetype || targetAudience || toneKeywords.length > 0) {
+        tabNodes.push({
+          label: t("reverse.tabStyle"),
+          content: {
+            type: "column",
+            gap: "0.75rem",
+            children: [
+              ...(archetype
+                ? [{
                     type: "column" as const,
                     gap: "0.25rem",
                     children: [
                       { type: "text" as const, text: t("reverse.archetype"), variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: archetype },
                     ],
-                  },
-                ]
-              : []),
-            ...(targetAudience
-              ? [
-                  {
+                  }]
+                : []),
+              ...(targetAudience
+                ? [{
                     type: "column" as const,
                     gap: "0.25rem",
                     children: [
                       { type: "text" as const, text: t("reverse.targetAudience"), variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: targetAudience },
                     ],
-                  },
-                ]
-              : []),
-            ...(toneKeywords.length > 0
-              ? [
-                  {
+                  }]
+                : []),
+              ...(toneKeywords.length > 0
+                ? [{
                     type: "row" as const,
-                    gap: "0.25rem",
+                    gap: "0.375rem",
                     wrap: true,
                     children: toneKeywords.map((keyword, idx) => ({
                       type: "badge" as const,
                       text: keyword,
                       color: "default" as const,
-                      style: { fontWeight: 500 },
                       id: `${material.id}-tone-${idx}`,
                     })),
-                  },
-                ]
-              : []),
-          ],
-        },
-      })
-    }
-
-    if (wordCount != null || avgSentLen != null || avgParaLen != null || ttr != null || burstiness != null) {
-      const metricItems: A2UINode[] = []
-      if (wordCount != null) {
-        metricItems.push({ type: "text", text: `${t("reverse.totalWords")}: ${wordCount}` })
-      }
-      if (avgSentLen != null) {
-        metricItems.push({ type: "text", text: `${t("insights.avgSentLen")}: ${avgSentLen.toFixed(1)}` })
-      }
-      if (avgParaLen != null) {
-        metricItems.push({ type: "text", text: `${t("insights.avgParaLen")}: ${avgParaLen.toFixed(1)}` })
-      }
-      if (ttr != null) {
-        metricItems.push({ type: "text", text: `TTR: ${(ttr * 100).toFixed(1)}%` })
-      }
-      if (burstiness != null) {
-        metricItems.push({ type: "text", text: `Burstiness: ${(burstiness * 100).toFixed(1)}%` })
-      }
-      tabNodes.push({
-        label: t("insights.metrics"),
-        content: {
-          type: "row",
-          gap: "0.75rem",
-          wrap: true,
-          children: metricItems,
-        },
-      })
-    }
-
-    const badges: A2UINode[] = []
-    if (primaryType) {
-      badges.push({ type: "badge", text: primaryType, color: "default" })
-    }
-    if (archetype) {
-      badges.push({ type: "badge", text: archetype, color: "primary" })
-    }
-    if (isSelected) {
-      badges.push({ type: "badge", text: t("common.selected"), color: "success" })
-    }
-
-    const titleText = material.sourceTitle || styleName || t("reverse.untitled")
-    const titleNode: A2UINode = material.sourceUrl
-      ? {
-          type: "link",
-          text: titleText,
-          href: material.sourceUrl,
-          variant: "primary",
-          style: { fontWeight: 600 },
-        }
-      : { type: "text", text: titleText, weight: "medium" }
-
-    const children: A2UINode[] = [
-      {
-        type: "row",
-        justify: "between",
-        align: "start",
-        gap: "0.75rem",
-        children: [
-          {
-            type: "column",
-            gap: "0.25rem",
-            style: { flex: 1, minWidth: 0 },
-            children: [
-              titleNode,
-              ...(badges.length > 0
-                ? [
-                    {
-                      type: "row" as const,
-                      gap: "0.25rem",
-                      wrap: true,
-                      children: badges,
-                    },
-                  ]
-                : []),
-              ...(styleName && material.sourceTitle && styleName !== material.sourceTitle
-                ? [
-                    {
-                      type: "text" as const,
-                      text: `${t("reverse.styleName")}: ${styleName}`,
-                      variant: "caption" as const,
-                      color: "muted" as const,
-                    },
-                  ]
+                  }]
                 : []),
             ],
           },
-          {
-            type: "button",
-            text: isExpanded ? t("common.collapse") : t("common.expand"),
-            variant: "secondary",
-            size: "sm",
-            onClick: { action: "toggleExpand", args: [material.id], stopPropagation: true },
-          },
-        ],
+        })
+      }
+
+      if (tabNodes.length > 0) {
+        extraContent.push({
+          type: "container",
+          style: { marginTop: "0.75rem" },
+          children: [{ type: "tabs", tabs: tabNodes }],
+        })
+      }
+    }
+
+    // Build card title
+    const title = material.sourceTitle || styleName || t("reverse.untitled")
+    const subtitle = styleName && material.sourceTitle && styleName !== material.sourceTitle
+      ? `${t("reverse.styleName")}: ${styleName}`
+      : undefined
+
+    return buildMaterialCardNode({
+      id: `material-${material.id}`,
+      title,
+      titleHref: material.sourceUrl ?? undefined,
+      subtitle,
+      badges,
+      metrics: isExpanded ? undefined : metrics, // Show metrics inline when collapsed
+      extraContent,
+      headerAction: {
+        text: isExpanded ? t("common.collapse") : t("common.expand"),
+        variant: "secondary",
+        action: { action: "toggleExpand", args: [material.id] },
       },
-    ]
-
-    if (isExpanded && tabNodes.length > 0) {
-      children.push({ type: "tabs", tabs: tabNodes })
-    }
-
-    return {
-      type: "card",
-      hoverable: true,
       onClick: { action: "selectMaterial", args: [material.id] },
-      style: isSelected
-        ? { borderColor: "var(--ds-primary)", borderWidth: "2px", backgroundColor: "var(--ds-accent)" }
-        : undefined,
-      children,
-    }
+      selected: isSelected,
+      compact: true,
+    })
   }
 
   const buildStep2Content = (): A2UINode => {

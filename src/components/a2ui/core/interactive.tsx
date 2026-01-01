@@ -20,6 +20,7 @@ import type {
 } from "@/lib/a2ui"
 import { remarkPlugins, rehypePlugins } from "@/lib/markdown"
 import { useI18n } from "@/contexts/i18n-context"
+import { compressImage, getCompressionSummary } from "@/lib/image/compress"
 
 // Dynamic import for SSR compatibility
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false })
@@ -304,17 +305,30 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
       }
 
       setIsUploading(true)
-      setUploadProgress(10)
+      setUploadProgress(5)
 
       try {
+        // Step 0: Compress image before upload (2MB max for WeChat compatibility)
+        const compressionResult = await compressImage(file, {
+          maxSizeMB: 2,
+          maxWidthOrHeight: 1920,
+        })
+        const fileToUpload = compressionResult.file
+
+        if (compressionResult.wasCompressed) {
+          console.log("Image compression:", getCompressionSummary(compressionResult))
+        }
+
+        setUploadProgress(15)
+
         // Get presigned URL from server
         const response = await fetch("/api/trpc/uploads.getPresignedUrl", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             json: {
-              filename: file.name,
-              contentType: file.type,
+              filename: fileToUpload.name,
+              contentType: fileToUpload.type,
               folder: "uploads/markdown-images",
             },
           }),
@@ -332,7 +346,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
         // Check if local upload (URL starts with /)
         if (uploadUrl.startsWith("/")) {
           const formData = new FormData()
-          formData.append("file", file)
+          formData.append("file", fileToUpload)
 
           const uploadResponse = await fetch(uploadUrl, {
             method: "POST",
@@ -346,8 +360,8 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
           // Direct upload to cloud storage
           const uploadResponse = await fetch(uploadUrl, {
             method: "PUT",
-            headers: { "Content-Type": file.type },
-            body: file,
+            headers: { "Content-Type": fileToUpload.type },
+            body: fileToUpload,
           })
 
           if (!uploadResponse.ok) {

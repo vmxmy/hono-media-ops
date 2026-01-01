@@ -109,6 +109,20 @@ export {
 export * from "./task-transformer"
 
 // ============================================================================
+// Card Builders
+// ============================================================================
+export {
+  buildMaterialCardNode,
+  buildStyleAnalysisCard,
+  type MaterialCardConfig,
+  type MaterialCardMetric,
+  type MaterialCardBadge,
+  type MaterialCardAction,
+  type StyleAnalysisMaterial,
+  type BuildStyleAnalysisCardOptions,
+} from "./material-card"
+
+// ============================================================================
 // Toast System (Imperative API)
 // ============================================================================
 export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "./toast"
