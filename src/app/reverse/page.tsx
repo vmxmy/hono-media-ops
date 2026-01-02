@@ -7,6 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+import { buildMaterialCardNode, type MaterialCardBadge, type MaterialCardAction, type MaterialCardMetric } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
 
 // Mobile breakpoint (matches Tailwind md:)
@@ -1200,116 +1201,83 @@ export default function ReversePage() {
         tabs.push({ label: t("reverse.tabPrompt"), content: promptTabContent })
       }
 
-      const titleText = analysis.sourceTitle || styleName || t("reverse.untitled")
-      const titleNode: A2UINode = analysis.sourceUrl
-        ? {
-            type: "link",
-            text: titleText,
-            href: analysis.sourceUrl,
-            external: true,
-            variant: "primary",
-            style: { fontSize: "1rem", fontWeight: 600, wordBreak: "break-word" },
-          }
-        : {
-            type: "text",
-            text: titleText,
-            variant: "h4",
-            weight: "semibold",
-            style: { wordBreak: "break-word" },
-          }
+      // Build title
+      const title = analysis.sourceTitle || styleName || t("reverse.untitled")
+      const subtitle = styleName && analysis.sourceTitle && styleName !== analysis.sourceTitle
+        ? `${t("reverse.styleName")}: ${styleName}`
+        : undefined
 
-      return {
-        type: "card",
-        id: `log-${analysis.id}`,
-        hoverable: false,
-        children: [
-          {
-            type: "column",
-            gap: "0.75rem",
-            children: [
-              // Header row with source title, badges and actions
-              {
-                type: "row",
-                justify: "between",
-                align: "start",
-                wrap: true,
-                gap: "0.75rem",
-                children: [
-                  {
-                    type: "column",
-                    gap: "0.5rem",
-                    style: { flex: 1, minWidth: "200px" },
-                    children: [
-                      titleNode,
-                      ...(styleName && analysis.sourceTitle && styleName !== analysis.sourceTitle
-                        ? [
-                            {
-                              type: "text" as const,
-                              text: `${t("reverse.styleName")}: ${styleName}`,
-                              variant: "caption" as const,
-                              color: "muted" as const,
-                            },
-                          ]
-                        : []),
-                      {
-                        type: "row",
-                        gap: "0.375rem",
-                        wrap: true,
-                        children: [
-                          ...(primaryType ? [{ type: "badge" as const, text: primaryType, color: "primary" as const }] : []),
-                          ...(analysis.status ? [{ type: "badge" as const, text: analysis.status, color: analysis.status === "SUCCESS" ? "success" as const : analysis.status === "FAILED" ? "destructive" as const : "pending" as const }] : []),
-                          ...(analysisVersion ? [{ type: "badge" as const, text: `v${analysisVersion}`, color: "default" as const }] : []),
-                          ...(wordCount != null ? [{ type: "badge" as const, text: `${wordCount} ${t("reverse.totalWords")}`, color: "info" as const }] : []),
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    type: "row",
-                    gap: "0.5rem",
-                    align: "center",
-                    children: [
-                      // Clone to task button
-                      {
-                        type: "button" as const,
-                        text: t("reverse.cloneToTask"),
-                        variant: "primary" as const,
-                        size: "sm" as const,
-                        onClick: { action: "cloneToTask", args: [analysis.id], stopPropagation: true },
-                      },
-                      // Copy Prompt button (only show if has execution prompt)
-                      ...(analysis.executionPrompt
-                        ? [
-                            {
-                              type: "button" as const,
-                              text: "📋",
-                              variant: "ghost" as const,
-                              size: "sm" as const,
-                              style: { padding: "0.25rem 0.5rem", minWidth: "auto" },
-                              onClick: { action: "copyPrompt", args: [analysis.id], stopPropagation: true },
-                            },
-                          ]
-                        : []),
-                      {
-                        type: "button" as const,
-                        text: t("common.delete"),
-                        variant: "destructive" as const,
-                        size: "sm" as const,
-                        onClick: { action: "deleteLog", args: [analysis.id], stopPropagation: true },
-                      },
-                    ],
-                  } as A2UIRowNode,
-                ],
-              } as A2UIRowNode,
-              // Tabs for detailed info - dynamically generated based on content
-              {
-                type: "tabs",
-                tabs,
-              },
-            ],
-          },
-        ],
+      // Build status
+      type StatusColor = "success" | "warning" | "destructive" | "pending" | "info"
+      const statusColorMap: Record<string, StatusColor> = {
+        SUCCESS: "success",
+        FAILED: "destructive",
+        PENDING: "pending",
       }
+      const status = analysis.status
+        ? { text: analysis.status, color: statusColorMap[analysis.status] ?? ("info" as StatusColor) }
+        : undefined
+
+      // Build badges
+      const badges: MaterialCardBadge[] = []
+      if (primaryType) {
+        badges.push({ text: primaryType.replace(/_/g, " ").toUpperCase(), color: "primary" })
+      }
+
+      // Build metrics
+      const metrics: MaterialCardMetric[] = []
+      if (wordCount != null) {
+        metrics.push({ value: wordCount, label: t("reverse.totalWords") })
+      }
+      if (avgSentLen != null) {
+        metrics.push({ value: avgSentLen, label: t("insights.avgSentLen") })
+      }
+      if (ttr != null) {
+        metrics.push({ value: ttr, label: "TTR", format: "percent" })
+      }
+
+      // Build actions
+      const actions: MaterialCardAction[] = []
+      if (analysis.executionPrompt) {
+        actions.push({
+          icon: "copy",
+          variant: "ghost",
+          action: { action: "copyPrompt", args: [analysis.id] },
+        })
+      }
+      actions.push({
+        text: t("common.delete"),
+        variant: "destructive",
+        action: { action: "deleteLog", args: [analysis.id] },
+      })
+
+      // Build extra content (tabs)
+      const extraContent: A2UINode[] = [
+        {
+          type: "container",
+          style: { marginTop: "0.5rem" },
+          children: [{ type: "tabs", tabs }],
+        },
+      ]
+
+      return buildMaterialCardNode({
+        id: `log-${analysis.id}`,
+        title,
+        titleHref: analysis.sourceUrl ?? undefined,
+        subtitle,
+        status,
+        version: analysisVersion ?? undefined,
+        badges,
+        metrics: metrics.length > 0 ? metrics : undefined,
+        actions,
+        primaryAction: {
+          text: t("reverse.cloneToTask"),
+          variant: "primary",
+          action: { action: "cloneToTask", args: [analysis.id] },
+        },
+        extraContent,
+        hoverable: false,
+      })
     })
 
     return {
