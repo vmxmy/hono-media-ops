@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { useTaskPolling } from "@/hooks/use-task-polling"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
 import type {
   A2UIAppShellNode,
@@ -18,6 +19,8 @@ import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
+const CONFIRM_TOAST_DURATION = 5000
+const CONFIRM_TOAST_LABEL_KEY = "common.confirm"
 
 // Task type from API
 interface TaskWithMaterial {
@@ -72,28 +75,39 @@ export default function TasksPage() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  const { data, isLoading, error, refetch } = api.tasks.getAll.useQuery(
-    { page: 1, pageSize: 20, search: searchQuery || undefined },
-    { enabled: mounted }
-  )
+  // 使用智能轮询：有处理中任务时自动刷新，完成后停止
+  const {
+    data,
+    isLoading,
+    isPolling,
+    processingCount,
+    error,
+    invalidate
+  } = useTaskPolling({
+    page: 1,
+    pageSize: 20,
+    search: searchQuery || undefined,
+    enabled: mounted,
+    pollingInterval: 3000,
+  })
 
   const tasks = data?.tasks ?? []
 
   const cancelMutation = api.tasks.cancel.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => invalidate(),
   })
 
   const retryMutation = api.tasks.retry.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => invalidate(),
   })
 
   const deleteMutation = api.tasks.delete.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => invalidate(),
   })
 
   const updateMutation = api.tasks.update.useMutation({
     onSuccess: () => {
-      refetch()
+      invalidate()
       a2uiToast.success(t("common.update"))
     },
     onError: () => {
@@ -103,22 +117,26 @@ export default function TasksPage() {
 
   const handleNewTask = () => setIsModalOpen(true)
 
+  const showConfirmToast = (message: string, onConfirm: () => void) => {
+    a2uiToast.warning(message, {
+      duration: CONFIRM_TOAST_DURATION,
+      action: {
+        label: t(CONFIRM_TOAST_LABEL_KEY),
+        onClick: onConfirm,
+      },
+    })
+  }
+
   const handleStop = (id: string) => {
-    if (confirm(t("task.stopConfirm"))) {
-      cancelMutation.mutate({ id })
-    }
+    showConfirmToast(t("task.stopConfirm"), () => cancelMutation.mutate({ id }))
   }
 
   const handleRetry = (id: string) => {
-    if (confirm(t("task.retryConfirm"))) {
-      retryMutation.mutate({ id })
-    }
+    showConfirmToast(t("task.retryConfirm"), () => retryMutation.mutate({ id }))
   }
 
   const handleDelete = (id: string) => {
-    if (confirm(t("task.deleteConfirm"))) {
-      deleteMutation.mutate({ id })
-    }
+    showConfirmToast(t("task.deleteConfirm"), () => deleteMutation.mutate({ id }))
   }
 
   // Get trpc utils for imperative queries
@@ -140,7 +158,7 @@ export default function TasksPage() {
 
   const updateExecutionResultMutation = api.tasks.updateExecutionResult.useMutation({
     onSuccess: () => {
-      refetch()
+      invalidate()
     },
   })
 
@@ -160,7 +178,7 @@ export default function TasksPage() {
 
   const updateExecutionMarkdownMutation = api.tasks.updateExecutionMarkdown.useMutation({
     onSuccess: () => {
-      refetch()
+      invalidate()
       a2uiToast.success(t("common.saved"))
     },
     onError: () => {
@@ -494,7 +512,20 @@ export default function TasksPage() {
         wrap: true,
         gap: "0.75rem",
         children: [
-          { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
+          {
+            type: "row",
+            align: "center",
+            gap: "0.75rem",
+            children: [
+              { type: "text", text: t("tasks.title"), variant: "h2", weight: "bold" },
+              // 轮询状态指示器
+              ...(isPolling ? [{
+                type: "badge" as const,
+                text: t("tasks.polling", { count: processingCount }),
+                color: "processing" as const,
+              }] : []),
+            ],
+          },
           { type: "button", text: t("tasks.newTask"), variant: "primary", size: "md", onClick: { action: "newTask" } },
         ],
       },
@@ -520,8 +551,8 @@ export default function TasksPage() {
   }, [])
 
   const handleCreateTaskSuccess = useCallback(() => {
-    refetch()
-  }, [refetch])
+    invalidate()
+  }, [invalidate])
 
   const handleA2UIAction = useCallback(
     (action: string, args?: unknown[]) => {

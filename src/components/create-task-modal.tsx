@@ -94,9 +94,14 @@ export function CreateTaskModal({
 
   // Track previous isOpen to detect modal open event
   const prevIsOpenRef = useRef(false)
+  // Track whether we've already initialized the form for current open session
+  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
+    // Only initialize form when modal transitions from closed to open
+    // and we haven't initialized yet for this session
+    if (isOpen && !prevIsOpenRef.current && !hasInitializedRef.current) {
+      hasInitializedRef.current = true
       if (initialData) {
         setFormData({
           topic: initialData.topic ?? "",
@@ -115,6 +120,12 @@ export function CreateTaskModal({
       setCurrentStep(1)
       setMaterialSearchQuery("")
     }
+
+    // Reset initialization flag when modal closes
+    if (!isOpen && prevIsOpenRef.current) {
+      hasInitializedRef.current = false
+    }
+
     prevIsOpenRef.current = isOpen
   }, [isOpen, initialData])
 
@@ -504,8 +515,14 @@ export function CreateTaskModal({
         ],
       })
     } else {
+      // Sort materials with selected one first
+      const sortedMaterials = [...materialsData.logs].sort((a, b) => {
+        if (a.id === formData.selectedMaterialId) return -1
+        if (b.id === formData.selectedMaterialId) return 1
+        return 0
+      })
       body.push(
-        ...materialsData.logs.map((material) => buildMaterialCard(material))
+        ...sortedMaterials.map((material) => buildMaterialCard(material))
       )
     }
 
@@ -611,8 +628,14 @@ export function CreateTaskModal({
     } else if (!imagePromptsData?.items.length) {
       body.push({ type: "text", text: t("taskForm.noMaterials"), color: "muted" })
     } else {
+      // Sort prompts with selected one first
+      const sortedPrompts = [...imagePromptsData.items].sort((a, b) => {
+        if (a.id === formData.selectedCoverPromptId) return -1
+        if (b.id === formData.selectedCoverPromptId) return 1
+        return 0
+      })
       body.push(
-        ...imagePromptsData.items.map((prompt) => buildCoverPromptCard(prompt))
+        ...sortedPrompts.map((prompt) => buildCoverPromptCard(prompt))
       )
     }
 

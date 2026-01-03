@@ -16,6 +16,8 @@ interface UseTaskPollingOptions {
   page?: number
   /** 每页数量 */
   pageSize?: number
+  /** 搜索关键词 */
+  search?: string
   /** 是否启用 */
   enabled?: boolean
 }
@@ -31,6 +33,8 @@ interface TaskPollingResult {
   processingCount: number
   /** 是否有正在处理的任务 */
   hasProcessingTasks: boolean
+  /** 查询错误 */
+  error: { message: string } | null
   /** 手动刷新 */
   refetch: () => void
   /** tRPC utils */
@@ -57,6 +61,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
     pollingInterval = 3000,
     page = 1,
     pageSize = 20,
+    search,
     enabled = true,
   } = options
 
@@ -64,7 +69,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
 
   // 计算是否有正在处理的任务
   const { data, isLoading, refetch, error, isFetching } = api.tasks.getAll.useQuery(
-    { page, pageSize },
+    { page, pageSize, search: search || undefined },
     {
       enabled,
       // 动态设置 refetchInterval
@@ -111,6 +116,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
     isPolling,
     processingCount,
     hasProcessingTasks,
+    error: error ?? null,
     refetch,
     invalidate,
   }
