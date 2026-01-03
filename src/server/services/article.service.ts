@@ -114,8 +114,9 @@ export const articleService = {
   async getPublishedWithoutSearch(page: number, pageSize: number): Promise<{ items: ArticleListItem[]; total: number }> {
     const offset = (page - 1) * pageSize;
 
+    // Use DISTINCT ON to get only the latest execution per task
     const latestExecutions = db
-      .select({
+      .selectDistinctOn([taskExecutions.taskId], {
         taskId: taskExecutions.taskId,
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
@@ -129,6 +130,7 @@ export const articleService = {
           isNotNull(taskExecutions.articleMarkdown)
         )
       )
+      .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
       .as("latest_exec");
 
     const conditions = [
@@ -179,8 +181,9 @@ export const articleService = {
     const offset = (page - 1) * pageSize;
     const searchPattern = `%${search}%`;
 
+    // Use DISTINCT ON to get only the latest execution per task
     const latestExecutions = db
-      .select({
+      .selectDistinctOn([taskExecutions.taskId], {
         taskId: taskExecutions.taskId,
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
@@ -194,6 +197,7 @@ export const articleService = {
           isNotNull(taskExecutions.articleMarkdown)
         )
       )
+      .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
       .as("latest_exec");
 
     const conditions = [
@@ -255,9 +259,9 @@ export const articleService = {
       const paginatedResults = vectorResults.slice((page - 1) * pageSize, page * pageSize);
       const taskIds = paginatedResults.map(r => r.taskId);
 
-      // Fetch article details for the matching tasks
+      // Fetch article details for the matching tasks (use DISTINCT ON to avoid duplicates)
       const latestExecutions = db
-        .select({
+        .selectDistinctOn([taskExecutions.taskId], {
           taskId: taskExecutions.taskId,
           executionId: taskExecutions.id,
           articleMarkdown: taskExecutions.articleMarkdown,
@@ -270,6 +274,7 @@ export const articleService = {
             isNotNull(taskExecutions.articleMarkdown)
           )
         )
+        .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
         .as("latest_exec");
 
       const articles = await db
@@ -361,9 +366,9 @@ export const articleService = {
         return { items: [], total: 0, searchMode: "hybrid" };
       }
 
-      // Fetch article details
+      // Fetch article details (use DISTINCT ON to avoid duplicates)
       const latestExecutions = db
-        .select({
+        .selectDistinctOn([taskExecutions.taskId], {
           taskId: taskExecutions.taskId,
           executionId: taskExecutions.id,
           articleMarkdown: taskExecutions.articleMarkdown,
@@ -376,6 +381,7 @@ export const articleService = {
             isNotNull(taskExecutions.articleMarkdown)
           )
         )
+        .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
         .as("latest_exec");
 
       const articles = await db

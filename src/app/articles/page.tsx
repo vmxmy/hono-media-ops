@@ -39,7 +39,13 @@ export default function ArticlesPage() {
     page,
     pageSize,
     search: debouncedSearch || undefined,
-  }, { enabled: mounted })
+  }, {
+    enabled: mounted,
+    // 30 秒定时刷新，确保新发布文章能及时显示
+    refetchInterval: 30000,
+    // 窗口聚焦时刷新
+    refetchOnWindowFocus: true,
+  })
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
