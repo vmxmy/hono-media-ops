@@ -69,7 +69,7 @@ function estimateReadingTime(markdown: string | null): number {
   return Math.ceil(charCount / 400);
 }
 
-function countArticleWords(markdown: string | null): number {
+export function countArticleWords(markdown: string | null): number {
   if (!markdown) return 0;
   return markdown.replace(/\s/g, "").length;
 }

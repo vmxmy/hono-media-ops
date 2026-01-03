@@ -9,6 +9,7 @@ import {
   type ExecutionResult,
 } from "@/server/db/schema";
 import { env } from "@/env";
+import { countArticleWords } from "./article.service";
 
 // ==================== Types ====================
 
@@ -69,6 +70,7 @@ export interface TaskWithExecutions extends Task {
 
 export interface TaskWithMaterial extends Task {
   coverUrl?: string | null;
+  articleWordCount?: number | null;
   refMaterial?: {
     styleName: string | null;
     sourceTitle: string | null;
@@ -144,6 +146,17 @@ export const taskService = {
               limit 1
             )
           `.as("cover_url"),
+          articleMarkdown: sql<string>`
+            (
+              select ${taskExecutions.articleMarkdown}
+              from ${taskExecutions}
+              where ${taskExecutions.taskId} = ${tasks.id}
+                and ${taskExecutions.status} = 'completed'
+                and ${taskExecutions.articleMarkdown} is not null
+              order by ${taskExecutions.startedAt} desc
+              limit 1
+            )
+          `.as("article_markdown"),
         })
         .from(tasks)
         .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
@@ -160,6 +173,7 @@ export const taskService = {
     const tasksWithMaterial: TaskWithMaterial[] = data.map((row) => ({
       ...row.task,
       coverUrl: row.coverUrl ?? null,
+      articleWordCount: countArticleWords(row.articleMarkdown),
       refMaterial: row.refMaterial?.styleName || row.refMaterial?.sourceTitle || row.refMaterial?.sourceUrl
         ? row.refMaterial
         : null,

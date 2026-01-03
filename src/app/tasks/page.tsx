@@ -27,6 +27,7 @@ interface TaskWithMaterial {
   status: "pending" | "processing" | "completed" | "failed" | "cancelled"
   createdAt: Date
   totalWordCount: number
+  articleWordCount?: number | null
   coverPromptId: string | null
   coverUrl?: string | null
   refMaterialId: string | null
@@ -195,9 +196,15 @@ export default function TasksPage() {
     updateMutation.mutate({ id, ...data })
   }, [updateMutation])
 
-  const formatWordCount = (count?: number) => {
-    if (!count || count <= 0) return "字数未知"
-    return `约 ${count.toLocaleString("zh-CN")} 字`
+  const formatWordCount = (articleWordCount?: number | null, totalWordCount?: number) => {
+    // Prefer actual article word count, fallback to target word count
+    if (articleWordCount && articleWordCount > 0) {
+      return `${articleWordCount.toLocaleString("zh-CN")} 字`
+    }
+    if (totalWordCount && totalWordCount > 0) {
+      return `目标 ${totalWordCount.toLocaleString("zh-CN")} 字`
+    }
+    return "字数未知"
   }
 
   // Build A2UI task card
@@ -283,7 +290,7 @@ export default function TasksPage() {
         children: [
           { type: "text", text: t(`status.${task.status}`), variant: "caption", color: "muted" },
           { type: "text", text: "·", variant: "caption", color: "muted" },
-          { type: "text", text: formatWordCount(task.totalWordCount), variant: "caption", color: "muted" },
+          { type: "text", text: formatWordCount(task.articleWordCount, task.totalWordCount), variant: "caption", color: "muted" },
         ],
       } as A2UIRowNode,
     ]
