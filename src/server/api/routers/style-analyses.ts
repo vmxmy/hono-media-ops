@@ -1,10 +1,53 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
-// ==================== JSONB Schemas for v7.3 ====================
+// ==================== n8n 输入转换 (snake_case -> camelCase) ====================
+
+/** 将 n8n 的 snake_case 输入转换为 camelCase */
+function transformN8nInput(input: Record<string, unknown>): Record<string, unknown> {
+  const fieldMap: Record<string, string> = {
+    user_id: "userId",
+    source_url: "sourceUrl",
+    source_title: "sourceTitle",
+    style_name: "styleName",
+    primary_type: "primaryType",
+    analysis_version: "analysisVersion",
+    execution_prompt: "executionPrompt",
+    word_count: "wordCount",
+    para_count: "paraCount",
+    metrics_burstiness: "metricsBurstiness",
+    metrics_ttr: "metricsTtr",
+    metrics_avg_sent_len: "metricsAvgSentLen",
+    style_identity: "styleIdentity",
+    metrics_constraints: "metricsConstraints",
+    lexical_logic: "lexicalLogic",
+    rhetoric_logic: "rhetoricLogic",
+    golden_sample: "goldenSample",
+    transfer_demo: "transferDemo",
+    core_rules: "coreRules",
+    blueprint: "blueprint",
+    anti_patterns: "antiPatterns",
+    raw_json_full: "rawJsonFull",
+    // metadata 字段名相同，无需转换
+  };
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    const camelKey = fieldMap[key] ?? key;
+    result[camelKey] = value;
+  }
+  return result;
+}
+
+// ==================== JSONB Schemas for v8.0 ====================
 
 // StyleIdentityData JSONB schema
 const styleIdentityDataSchema = z.object({
+  // v8.0 核心字段
+  archetype: z.string().optional(),
+  tone_keywords: z.string().optional(),
+  voice_distance: z.string().optional(),
+  // 兼容旧版字段
   persona_description: z.string().optional(),
   voice_traits: z.object({
     formality: z.string().optional(),
@@ -13,12 +56,15 @@ const styleIdentityDataSchema = z.object({
     confidence: z.string().optional(),
   }).optional(),
   style_name: z.string().optional(),
-  archetype: z.string().optional(),
   implied_reader: z.string().optional(),
 }).passthrough().optional();
 
 // MetricsConstraintsData JSONB schema
 const metricsConstraintsDataSchema = z.object({
+  // v8.0 核心字段
+  rhythm_pattern: z.string().optional(),
+  punctuation_logic: z.string().optional(),
+  // 兼容旧版字段
   avg_sentence_length: z.number().optional(),
   sentence_length_std: z.number().optional(),
   sentence_length_target: z.number().optional(),
@@ -29,6 +75,11 @@ const metricsConstraintsDataSchema = z.object({
 
 // LexicalLogicData JSONB schema
 const lexicalLogicDataSchema = z.object({
+  // v8.0 核心字段
+  must_use: z.array(z.string()).optional(),
+  verb_style: z.string().optional(),
+  adj_style: z.string().optional(),
+  // 兼容旧版字段
   vocabulary_tier: z.string().optional(),
   preferred_terms: z.array(z.string()).optional(),
   banned_terms: z.array(z.string()).optional(),
@@ -44,6 +95,10 @@ const rhetoricLogicDataSchema = z.object({
 
 // GoldenSampleData JSONB schema
 const goldenSampleDataSchema = z.object({
+  // v8.0 核心字段（单对象格式）
+  paragraph: z.string().optional(),
+  reason: z.string().optional(),
+  // 兼容旧版字段（数组格式）
   samples: z.array(z.object({
     text: z.string().optional(),
     why: z.string().optional(),
@@ -61,27 +116,38 @@ const transferDemoDataSchema = z.object({
 
 // CoreRuleItem schema
 const coreRuleItemSchema = z.object({
+  // v8.0 核心字段
+  priority: z.number().optional(),
+  rule: z.string().optional(),
+  evidence: z.string().optional(),
+  example: z.string().optional(),
+  // 兼容旧版字段
   rule_id: z.string().optional(),
   rule_text: z.string().optional(),
   importance: z.string().optional(),
   examples: z.array(z.string()).optional(),
-  priority: z.number().optional(),
   feature: z.string().optional(),
-  evidence: z.string().optional(),
   frequency: z.string().optional(),
   replication_instruction: z.string().optional(),
 }).passthrough();
 
 // BlueprintItem schema
 const blueprintItemSchema = z.object({
+  // v8.0 核心字段
+  p_id: z.string().optional(),
+  strategy: z.string().optional(),
+  action: z.string().optional(),
+  word_count_target: z.union([z.string(), z.number()]).optional(),
+  techniques: z.array(z.string()).optional(),
+  pattern_template: z.string().optional(),
+  pattern_sample: z.string().optional(),
+  // 兼容旧版字段
   section: z.string().optional(),
   section_position: z.string().optional(),
   position: z.string().optional(),
-  word_count_target: z.number().optional(),
   word_percentage: z.string().optional(),
   function: z.string().optional(),
   internal_logic: z.record(z.unknown()).optional(),
-  techniques: z.array(z.record(z.unknown())).optional(),
   sentence_patterns: z.record(z.unknown()).optional(),
   do_list: z.array(z.string()).optional(),
   dont_list: z.array(z.string()).optional(),
@@ -89,10 +155,13 @@ const blueprintItemSchema = z.object({
 
 // AntiPatternItem schema
 const antiPatternItemSchema = z.object({
+  // v8.0 核心字段
+  forbidden: z.string().optional(),
+  fix_suggestion: z.string().optional(),
+  // 兼容旧版字段
   pattern: z.string().optional(),
   severity: z.string().optional(),
   example: z.string().optional(),
-  fix_suggestion: z.string().optional(),
 }).passthrough();
 
 // Status enum
@@ -122,19 +191,22 @@ const createInputSchema = z.object({
   // 数值指标
   metricsBurstiness: z.number().optional(),
   metricsTtr: z.number().optional(),
+  metricsAvgSentLen: z.number().optional(),
   // 策略层 JSONB
-  styleIdentityData: styleIdentityDataSchema,
-  metricsConstraintsData: metricsConstraintsDataSchema,
-  lexicalLogicData: lexicalLogicDataSchema,
-  rhetoricLogicData: rhetoricLogicDataSchema,
-  goldenSampleData: goldenSampleDataSchema,
-  transferDemoData: transferDemoDataSchema,
+  styleIdentity: styleIdentityDataSchema,
+  metricsConstraints: metricsConstraintsDataSchema,
+  lexicalLogic: lexicalLogicDataSchema,
+  rhetoricLogic: rhetoricLogicDataSchema,
+  goldenSample: goldenSampleDataSchema,
+  transferDemo: transferDemoDataSchema,
   // 数组层 JSONB
-  coreRulesData: z.array(coreRuleItemSchema).optional(),
-  blueprintData: z.array(blueprintItemSchema).optional(),
-  antiPatternsData: z.array(antiPatternItemSchema).optional(),
+  coreRules: z.array(coreRuleItemSchema).optional(),
+  blueprint: z.array(blueprintItemSchema).optional(),
+  antiPatterns: z.array(antiPatternItemSchema).optional(),
   // 备份
   rawJsonFull: z.record(z.unknown()).optional(),
+  // 解析元数据
+  metadata: z.record(z.unknown()).optional(),
   status: statusSchema.optional(),
 });
 
@@ -145,15 +217,15 @@ const updateInputSchema = z.object({
   primaryType: z.string().optional(),
   analysisVersion: z.string().optional(),
   executionPrompt: z.string().optional(),
-  styleIdentityData: styleIdentityDataSchema,
-  metricsConstraintsData: metricsConstraintsDataSchema,
-  lexicalLogicData: lexicalLogicDataSchema,
-  rhetoricLogicData: rhetoricLogicDataSchema,
-  goldenSampleData: goldenSampleDataSchema,
-  transferDemoData: transferDemoDataSchema,
-  coreRulesData: z.array(coreRuleItemSchema).optional(),
-  blueprintData: z.array(blueprintItemSchema).optional(),
-  antiPatternsData: z.array(antiPatternItemSchema).optional(),
+  styleIdentity: styleIdentityDataSchema,
+  metricsConstraints: metricsConstraintsDataSchema,
+  lexicalLogic: lexicalLogicDataSchema,
+  rhetoricLogic: rhetoricLogicDataSchema,
+  goldenSample: goldenSampleDataSchema,
+  transferDemo: transferDemoDataSchema,
+  coreRules: z.array(coreRuleItemSchema).optional(),
+  blueprint: z.array(blueprintItemSchema).optional(),
+  antiPatterns: z.array(antiPatternItemSchema).optional(),
   status: statusSchema.optional(),
 });
 
@@ -204,14 +276,20 @@ export const styleAnalysesRouter = createTRPCRouter({
     .input(z.object({ sourceUrl: z.string() }))
     .query(({ ctx, input }) => ctx.services.styleAnalysis.getBySourceUrl(input.sourceUrl)),
 
-  // Public endpoint for n8n webhook callbacks
+  // Public endpoint for n8n webhook callbacks (支持 snake_case 输入)
   create: publicProcedure
-    .input(createInputSchema)
+    .input(z.preprocess(
+      (val) => transformN8nInput(val as Record<string, unknown>),
+      createInputSchema
+    ))
     .mutation(({ ctx, input }) => ctx.services.styleAnalysis.create(input)),
 
-  // Public endpoint for n8n webhook callbacks (upsert by sourceUrl)
+  // Public endpoint for n8n webhook callbacks (upsert by sourceUrl, 支持 snake_case 输入)
   upsert: publicProcedure
-    .input(createInputSchema)
+    .input(z.preprocess(
+      (val) => transformN8nInput(val as Record<string, unknown>),
+      createInputSchema
+    ))
     .mutation(({ ctx, input }) => ctx.services.styleAnalysis.upsert(input)),
 
   update: protectedProcedure

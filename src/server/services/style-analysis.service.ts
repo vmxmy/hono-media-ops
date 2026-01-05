@@ -53,19 +53,22 @@ export interface CreateStyleAnalysisInput {
   // 数值指标
   metricsBurstiness?: number;
   metricsTtr?: number;
+  metricsAvgSentLen?: number;
   // 策略层 JSONB
-  styleIdentityData?: StyleIdentityData;
-  metricsConstraintsData?: MetricsConstraintsData;
-  lexicalLogicData?: LexicalLogicData;
-  rhetoricLogicData?: RhetoricLogicData;
-  goldenSampleData?: GoldenSampleData;
-  transferDemoData?: TransferDemoData;
+  styleIdentity?: StyleIdentityData;
+  metricsConstraints?: MetricsConstraintsData;
+  lexicalLogic?: LexicalLogicData;
+  rhetoricLogic?: RhetoricLogicData;
+  goldenSample?: GoldenSampleData;
+  transferDemo?: TransferDemoData;
   // 数组层 JSONB
-  coreRulesData?: CoreRuleItem[];
-  blueprintData?: BlueprintItem[];
-  antiPatternsData?: AntiPatternItem[];
+  coreRules?: CoreRuleItem[];
+  blueprint?: BlueprintItem[];
+  antiPatterns?: AntiPatternItem[];
   // 备份
   rawJsonFull?: Record<string, unknown>;
+  // 解析元数据
+  metadata?: Record<string, unknown>;
   status?: "PENDING" | "SUCCESS" | "FAILED";
 }
 
@@ -76,15 +79,15 @@ export interface UpdateStyleAnalysisInput {
   primaryType?: string;
   analysisVersion?: string;
   executionPrompt?: string;
-  styleIdentityData?: StyleIdentityData;
-  metricsConstraintsData?: MetricsConstraintsData;
-  lexicalLogicData?: LexicalLogicData;
-  rhetoricLogicData?: RhetoricLogicData;
-  goldenSampleData?: GoldenSampleData;
-  transferDemoData?: TransferDemoData;
-  coreRulesData?: CoreRuleItem[];
-  blueprintData?: BlueprintItem[];
-  antiPatternsData?: AntiPatternItem[];
+  styleIdentity?: StyleIdentityData;
+  metricsConstraints?: MetricsConstraintsData;
+  lexicalLogic?: LexicalLogicData;
+  rhetoricLogic?: RhetoricLogicData;
+  goldenSample?: GoldenSampleData;
+  transferDemo?: TransferDemoData;
+  coreRules?: CoreRuleItem[];
+  blueprint?: BlueprintItem[];
+  antiPatterns?: AntiPatternItem[];
   status?: "PENDING" | "SUCCESS" | "FAILED";
 }
 
@@ -130,13 +133,14 @@ export const styleAnalysisService = {
 
     const conditions = [];
 
-    // 多字段模糊搜索: sourceTitle, styleName, primaryType, executionPrompt
+    // 多字段模糊搜索: sourceTitle, styleName, primaryType
+    // 注意：不搜索 executionPrompt，因为它是大文本字段，LIKE 查询极慢
+    // 如需搜索提示词内容，使用向量搜索 (hybridSearch)
     if (search) {
       const searchCondition = or(
         like(styleAnalyses.sourceTitle, `%${search}%`),
         like(styleAnalyses.styleName, `%${search}%`),
-        like(styleAnalyses.primaryType, `%${search}%`),
-        like(styleAnalyses.executionPrompt, `%${search}%`)
+        like(styleAnalyses.primaryType, `%${search}%`)
       );
       if (searchCondition) conditions.push(searchCondition);
     }
@@ -172,15 +176,15 @@ export const styleAnalysisService = {
           metricsTtr: styleAnalyses.metricsTtr,
           status: styleAnalyses.status,
           // JSONB fields for tabs
-          styleIdentityData: styleAnalyses.styleIdentityData,
-          lexicalLogicData: styleAnalyses.lexicalLogicData,
-          metricsConstraintsData: styleAnalyses.metricsConstraintsData,
-          rhetoricLogicData: styleAnalyses.rhetoricLogicData,
-          coreRulesData: styleAnalyses.coreRulesData,
-          blueprintData: styleAnalyses.blueprintData,
-          antiPatternsData: styleAnalyses.antiPatternsData,
-          goldenSampleData: styleAnalyses.goldenSampleData,
-          transferDemoData: styleAnalyses.transferDemoData,
+          styleIdentity: styleAnalyses.styleIdentity,
+          lexicalLogic: styleAnalyses.lexicalLogic,
+          metricsConstraints: styleAnalyses.metricsConstraints,
+          rhetoricLogic: styleAnalyses.rhetoricLogic,
+          coreRules: styleAnalyses.coreRules,
+          blueprint: styleAnalyses.blueprint,
+          antiPatterns: styleAnalyses.antiPatterns,
+          goldenSample: styleAnalyses.goldenSample,
+          transferDemo: styleAnalyses.transferDemo,
           executionPrompt: styleAnalyses.executionPrompt,
           // Excluded: rawJsonFull (too large, rarely needed)
         })
@@ -263,7 +267,7 @@ export const styleAnalysisService = {
     // Extract fallback values from rawJsonFull.meta_info if available
     const rawJson = input.rawJsonFull as Record<string, unknown> | undefined;
     const metaInfo = rawJson?.meta_info as Record<string, unknown> | undefined;
-    const styleIdentity = input.styleIdentityData as Record<string, unknown> | undefined;
+    const styleIdentity = input.styleIdentity as Record<string, unknown> | undefined;
 
     // Default status to SUCCESS unless explicitly specified
     const derivedStatus = input.status ?? "SUCCESS";
@@ -280,16 +284,18 @@ export const styleAnalysisService = {
       paraCount: input.paraCount ?? (metaInfo?.para_count as number),
       metricsBurstiness: input.metricsBurstiness ?? (metaInfo?.burstiness as number),
       metricsTtr: input.metricsTtr ?? (metaInfo?.ttr as number),
-      styleIdentityData: input.styleIdentityData,
-      metricsConstraintsData: input.metricsConstraintsData,
-      lexicalLogicData: input.lexicalLogicData,
-      rhetoricLogicData: input.rhetoricLogicData,
-      goldenSampleData: input.goldenSampleData,
-      transferDemoData: input.transferDemoData,
-      coreRulesData: input.coreRulesData,
-      blueprintData: input.blueprintData,
-      antiPatternsData: input.antiPatternsData,
+      metricsAvgSentLen: input.metricsAvgSentLen ?? (metaInfo?.avg_sent_len as number),
+      styleIdentity: input.styleIdentity,
+      metricsConstraints: input.metricsConstraints,
+      lexicalLogic: input.lexicalLogic,
+      rhetoricLogic: input.rhetoricLogic,
+      goldenSample: input.goldenSample,
+      transferDemo: input.transferDemo,
+      coreRules: input.coreRules,
+      blueprint: input.blueprint,
+      antiPatterns: input.antiPatterns,
       rawJsonFull: input.rawJsonFull,
+      metadata: input.metadata,
       status: derivedStatus,
     }).returning();
 
@@ -312,7 +318,7 @@ export const styleAnalysisService = {
       const inputRawJson = input.rawJsonFull as Record<string, unknown> | undefined;
       const existingRawJson = existing.rawJsonFull as Record<string, unknown> | undefined;
       const metaInfo = (inputRawJson?.meta_info ?? existingRawJson?.meta_info) as Record<string, unknown> | undefined;
-      const styleIdentity = (input.styleIdentityData ?? existing.styleIdentityData) as Record<string, unknown> | undefined;
+      const styleIdentity = (input.styleIdentity ?? existing.styleIdentity) as Record<string, unknown> | undefined;
 
       // Default status to SUCCESS unless explicitly specified
       const derivedStatus = input.status ?? "SUCCESS";
@@ -330,16 +336,18 @@ export const styleAnalysisService = {
           paraCount: input.paraCount ?? (metaInfo?.para_count as number) ?? existing.paraCount,
           metricsBurstiness: input.metricsBurstiness ?? (metaInfo?.burstiness as number) ?? existing.metricsBurstiness,
           metricsTtr: input.metricsTtr ?? (metaInfo?.ttr as number) ?? existing.metricsTtr,
-          styleIdentityData: input.styleIdentityData ?? existing.styleIdentityData,
-          metricsConstraintsData: input.metricsConstraintsData ?? existing.metricsConstraintsData,
-          lexicalLogicData: input.lexicalLogicData ?? existing.lexicalLogicData,
-          rhetoricLogicData: input.rhetoricLogicData ?? existing.rhetoricLogicData,
-          goldenSampleData: input.goldenSampleData ?? existing.goldenSampleData,
-          transferDemoData: input.transferDemoData ?? existing.transferDemoData,
-          coreRulesData: input.coreRulesData ?? existing.coreRulesData,
-          blueprintData: input.blueprintData ?? existing.blueprintData,
-          antiPatternsData: input.antiPatternsData ?? existing.antiPatternsData,
+          metricsAvgSentLen: input.metricsAvgSentLen ?? (metaInfo?.avg_sent_len as number) ?? existing.metricsAvgSentLen,
+          styleIdentity: input.styleIdentity ?? existing.styleIdentity,
+          metricsConstraints: input.metricsConstraints ?? existing.metricsConstraints,
+          lexicalLogic: input.lexicalLogic ?? existing.lexicalLogic,
+          rhetoricLogic: input.rhetoricLogic ?? existing.rhetoricLogic,
+          goldenSample: input.goldenSample ?? existing.goldenSample,
+          transferDemo: input.transferDemo ?? existing.transferDemo,
+          coreRules: input.coreRules ?? existing.coreRules,
+          blueprint: input.blueprint ?? existing.blueprint,
+          antiPatterns: input.antiPatterns ?? existing.antiPatterns,
           rawJsonFull: input.rawJsonFull ?? existing.rawJsonFull,
+          metadata: input.metadata ?? existing.metadata,
           status: derivedStatus,
           updatedAt: new Date(),
           deletedAt: null, // Auto-restore soft-deleted records
@@ -364,15 +372,15 @@ export const styleAnalysisService = {
     if (input.primaryType !== undefined) updateData.primaryType = input.primaryType;
     if (input.analysisVersion !== undefined) updateData.analysisVersion = input.analysisVersion;
     if (input.executionPrompt !== undefined) updateData.executionPrompt = input.executionPrompt;
-    if (input.styleIdentityData !== undefined) updateData.styleIdentityData = input.styleIdentityData;
-    if (input.metricsConstraintsData !== undefined) updateData.metricsConstraintsData = input.metricsConstraintsData;
-    if (input.lexicalLogicData !== undefined) updateData.lexicalLogicData = input.lexicalLogicData;
-    if (input.rhetoricLogicData !== undefined) updateData.rhetoricLogicData = input.rhetoricLogicData;
-    if (input.goldenSampleData !== undefined) updateData.goldenSampleData = input.goldenSampleData;
-    if (input.transferDemoData !== undefined) updateData.transferDemoData = input.transferDemoData;
-    if (input.coreRulesData !== undefined) updateData.coreRulesData = input.coreRulesData;
-    if (input.blueprintData !== undefined) updateData.blueprintData = input.blueprintData;
-    if (input.antiPatternsData !== undefined) updateData.antiPatternsData = input.antiPatternsData;
+    if (input.styleIdentity !== undefined) updateData.styleIdentity = input.styleIdentity;
+    if (input.metricsConstraints !== undefined) updateData.metricsConstraints = input.metricsConstraints;
+    if (input.lexicalLogic !== undefined) updateData.lexicalLogic = input.lexicalLogic;
+    if (input.rhetoricLogic !== undefined) updateData.rhetoricLogic = input.rhetoricLogic;
+    if (input.goldenSample !== undefined) updateData.goldenSample = input.goldenSample;
+    if (input.transferDemo !== undefined) updateData.transferDemo = input.transferDemo;
+    if (input.coreRules !== undefined) updateData.coreRules = input.coreRules;
+    if (input.blueprint !== undefined) updateData.blueprint = input.blueprint;
+    if (input.antiPatterns !== undefined) updateData.antiPatterns = input.antiPatterns;
     if (input.status !== undefined) updateData.status = input.status;
 
     await db
@@ -529,10 +537,10 @@ export const styleAnalysisService = {
       .orderBy(sql`count(*) desc`)
       .limit(5);
 
-    // 聚合语气关键词 (从 lexicalLogicData)
+    // 聚合语气关键词 (从 lexicalLogic)
     const keywordsResult = await db
       .select({
-        lexicalLogicData: styleAnalyses.lexicalLogicData,
+        lexicalLogic: styleAnalyses.lexicalLogic,
       })
       .from(styleAnalyses)
       .where(baseConditions)
@@ -541,7 +549,7 @@ export const styleAnalysisService = {
     // 统计词频
     const wordFrequency: Record<string, number> = {};
     for (const row of keywordsResult) {
-      const data = row.lexicalLogicData as LexicalLogicData | null;
+      const data = row.lexicalLogic as LexicalLogicData | null;
       const keywords = data?.tone_keywords;
       if (Array.isArray(keywords)) {
         for (const word of keywords) {
@@ -670,14 +678,14 @@ export const styleAnalysisService = {
     return generateExecutionPrompt({
       styleName: analysis.styleName,
       paraCount: analysis.paraCount,
-      styleIdentityData: analysis.styleIdentityData,
-      metricsConstraintsData: analysis.metricsConstraintsData,
-      lexicalLogicData: analysis.lexicalLogicData,
-      rhetoricLogicData: analysis.rhetoricLogicData,
-      goldenSampleData: analysis.goldenSampleData,
-      coreRulesData: analysis.coreRulesData,
-      blueprintData: analysis.blueprintData,
-      antiPatternsData: analysis.antiPatternsData,
+      styleIdentity: analysis.styleIdentity,
+      metricsConstraints: analysis.metricsConstraints,
+      lexicalLogic: analysis.lexicalLogic,
+      rhetoricLogic: analysis.rhetoricLogic,
+      goldenSample: analysis.goldenSample,
+      coreRules: analysis.coreRules,
+      blueprint: analysis.blueprint,
+      antiPatterns: analysis.antiPatterns,
     });
   },
 
@@ -688,8 +696,8 @@ export const styleAnalysisService = {
     return generateExecutionPromptPreview({
       styleName: analysis.styleName,
       paraCount: analysis.paraCount,
-      styleIdentityData: analysis.styleIdentityData,
-      blueprintData: analysis.blueprintData,
+      styleIdentity: analysis.styleIdentity,
+      blueprint: analysis.blueprint,
     });
   },
 
@@ -756,7 +764,7 @@ export const styleAnalysisService = {
     }
 
     // 风格身份描述
-    const styleIdentity = analysis.styleIdentityData;
+    const styleIdentity = analysis.styleIdentity;
     if (styleIdentity?.persona_description) {
       parts.push(`人设: ${styleIdentity.persona_description}`);
     }

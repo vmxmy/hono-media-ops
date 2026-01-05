@@ -17,14 +17,14 @@ import type {
 export interface GenerateExecutionPromptInput {
   styleName?: string | null;
   paraCount?: number | null;
-  styleIdentityData?: StyleIdentityData | null;
-  metricsConstraintsData?: MetricsConstraintsData | null;
-  lexicalLogicData?: LexicalLogicData | null;
-  rhetoricLogicData?: RhetoricLogicData | null;
-  goldenSampleData?: GoldenSampleData | null;
-  coreRulesData?: CoreRuleItem[] | null;
-  blueprintData?: BlueprintItem[] | null;
-  antiPatternsData?: AntiPatternItem[] | null;
+  styleIdentity?: StyleIdentityData | null;
+  metricsConstraints?: MetricsConstraintsData | null;
+  lexicalLogic?: LexicalLogicData | null;
+  rhetoricLogic?: RhetoricLogicData | null;
+  goldenSample?: GoldenSampleData | null;
+  coreRules?: CoreRuleItem[] | null;
+  blueprint?: BlueprintItem[] | null;
+  antiPatterns?: AntiPatternItem[] | null;
 }
 
 /**
@@ -34,7 +34,7 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   const lines: string[] = [];
 
   // === 角色定义 ===
-  const identity = input.styleIdentityData;
+  const identity = input.styleIdentity;
   const archetype = identity?.archetype ?? "风格写作者";
   const toneKeywords = identity?.tone_keywords ?? "";
 
@@ -43,7 +43,7 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   lines.push("");
 
   // === 核心风格规则 ===
-  const rules = input.coreRulesData ?? [];
+  const rules = input.coreRules ?? [];
   if (rules.length > 0) {
     lines.push("核心风格规则");
     for (const rule of rules) {
@@ -59,9 +59,9 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   }
 
   // === 写作约束 ===
-  const metrics = input.metricsConstraintsData;
-  const lexical = input.lexicalLogicData;
-  const rhetoric = input.rhetoricLogicData;
+  const metrics = input.metricsConstraints;
+  const lexical = input.lexicalLogic;
+  const rhetoric = input.rhetoricLogic;
 
   lines.push("写作约束 (Metrics)");
   if (metrics) {
@@ -88,7 +88,7 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   lines.push("");
 
   // === 结构蓝图 ===
-  const blueprint = input.blueprintData ?? [];
+  const blueprint = input.blueprint ?? [];
   const paraCount = input.paraCount ?? blueprint.length;
 
   if (blueprint.length > 0) {
@@ -118,7 +118,7 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   }
 
   // === 风格锚点 ===
-  const goldenSample = input.goldenSampleData;
+  const goldenSample = input.goldenSample;
   if (goldenSample?.paragraph) {
     lines.push("风格锚点");
     lines.push(`"${goldenSample.paragraph}"`);
@@ -126,7 +126,7 @@ export function generateExecutionPrompt(input: GenerateExecutionPromptInput): st
   }
 
   // === 严禁事项 ===
-  const antiPatterns = input.antiPatternsData ?? [];
+  const antiPatterns = input.antiPatterns ?? [];
   if (antiPatterns.length > 0) {
     lines.push("严禁事项");
     for (const item of antiPatterns) {
@@ -167,10 +167,10 @@ function getKeyBlueprintIndices(total: number): number[] {
  * 生成简洁版 execution_prompt（用于预览）
  */
 export function generateExecutionPromptPreview(input: GenerateExecutionPromptInput): string {
-  const identity = input.styleIdentityData;
+  const identity = input.styleIdentity;
   const archetype = identity?.archetype ?? "风格写作者";
   const toneKeywords = identity?.tone_keywords ?? "";
-  const paraCount = input.paraCount ?? input.blueprintData?.length ?? 0;
+  const paraCount = input.paraCount ?? input.blueprint?.length ?? 0;
 
   return `角色：${archetype}\n风格：${toneKeywords}\n段落数：${paraCount}`;
 }

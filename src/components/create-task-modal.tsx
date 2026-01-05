@@ -166,7 +166,7 @@ export function CreateTaskModal({
   const handleSelectMaterial = useCallback((materialId: string) => {
     const material = materialsData?.logs.find((m) => m.id === materialId)
     if (material) {
-      const styleIdentity = material.styleIdentityData as StyleIdentityData | null
+      const styleIdentity = material.styleIdentity as StyleIdentityData | null
       setFormData((prev) => ({
         ...prev,
         selectedMaterialId: materialId,
@@ -365,13 +365,13 @@ export function CreateTaskModal({
     paraCount: number | null
     metricsBurstiness: number | null
     metricsTtr: number | null
-    styleIdentityData: StyleIdentityData | null
-    lexicalLogicData: LexicalLogicData | null
-    metricsConstraintsData: MetricsConstraintsData | null
+    styleIdentity: StyleIdentityData | null
+    lexicalLogic: LexicalLogicData | null
+    metricsConstraints: MetricsConstraintsData | null
   }): A2UINode => {
-    const styleIdentity = material.styleIdentityData
-    const lexicalLogic = material.lexicalLogicData
-    const metricsConstraints = material.metricsConstraintsData
+    const styleIdentity = material.styleIdentity
+    const lexicalLogic = material.lexicalLogic
+    const metricsConstraints = material.metricsConstraints
 
     const styleName = styleIdentity?.style_name || material.sourceTitle || ""
     const archetype = styleIdentity?.archetype

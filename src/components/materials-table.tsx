@@ -20,7 +20,7 @@ export interface StyleAnalysis {
   wordCount: number | null
   metricsTtr: number | null
   metricsBurstiness: number | null
-  styleIdentityData: StyleIdentityData | null
+  styleIdentity: StyleIdentityData | null
   status: "PENDING" | "SUCCESS" | "FAILED"
   updatedAt: Date | null
 }
@@ -57,7 +57,7 @@ function getSortValue(row: StyleAnalysis, key: SortKey): string | number {
     case "primaryType":
       return (row.primaryType || "").toLowerCase()
     case "archetype":
-      return (row.styleIdentityData?.archetype || "").toLowerCase()
+      return (row.styleIdentity?.archetype || "").toLowerCase()
     case "wordCount":
       return row.wordCount ?? -1
     case "metricsTtr":
@@ -161,7 +161,7 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
 
   const rows: A2UINode[] = sortedData.map((row) => {
     const title = row.styleName || row.sourceTitle || t("reverse.untitled")
-    const archetype = row.styleIdentityData?.archetype
+    const archetype = row.styleIdentity?.archetype
     const metricsTtr = row.metricsTtr
     return {
       type: "container",
