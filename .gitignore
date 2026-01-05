@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+
+# Next.js
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+*.tsbuildinfo
+
+# Drizzle
+drizzle/
+
+# Archive
+.archived/
+
+# Claude
+.claude/
+
+# Development files
+e2e_test.py
+n8n/
+scripts/
