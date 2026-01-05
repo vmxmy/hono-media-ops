@@ -7,7 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
-import { a2uiToast } from "@/lib/a2ui"
+import { showConfirmToast } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
 
 interface ImagePromptFormData {
@@ -219,12 +219,8 @@ export default function ImagePromptsPage() {
         }
         case "delete": {
           const id = args?.[0] as string
-          a2uiToast.warning(t("imagePrompts.deleteConfirm"), {
-            duration: 5000,
-            action: {
-              label: t("common.confirm"),
-              onClick: () => deleteMutation.mutate({ id }),
-            },
+          showConfirmToast(t("imagePrompts.deleteConfirm"), () => deleteMutation.mutate({ id }), {
+            label: t("common.confirm"),
           })
           break
         }

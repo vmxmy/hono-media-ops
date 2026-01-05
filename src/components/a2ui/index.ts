@@ -86,4 +86,12 @@ export type {
 export { A2UIToaster } from "./toaster"
 
 // Toast API (re-export from lib)
-export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "@/lib/a2ui"
+export {
+  a2uiToast,
+  showConfirmToast,
+  DEFAULT_CONFIRM_TOAST_DURATION,
+  DEFAULT_CONFIRM_TOAST_LABEL,
+  type A2UIToast,
+  type A2UIToastOptions,
+  type A2UIConfirmToastOptions,
+} from "@/lib/a2ui"

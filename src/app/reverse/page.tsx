@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
-import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
+import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { buildMaterialCardNode, type MaterialCardBadge, type MaterialCardAction, type MaterialCardMetric } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
@@ -147,15 +147,15 @@ interface StyleAnalysis {
   paraCount: number | null
   metricsBurstiness: number | null
   metricsTtr: number | null
-  styleIdentityData: StyleIdentityData | null
-  metricsConstraintsData: MetricsConstraintsData | null
-  lexicalLogicData: LexicalLogicData | null
-  rhetoricLogicData: RhetoricLogicData | null
-  goldenSampleData: GoldenSampleData | null
-  transferDemoData: TransferDemoData | null
-  coreRulesData: CoreRuleItem[] | null
-  blueprintData: BlueprintItem[] | null
-  antiPatternsData: AntiPatternItem[] | null
+  styleIdentity: StyleIdentityData | null
+  metricsConstraints: MetricsConstraintsData | null
+  lexicalLogic: LexicalLogicData | null
+  rhetoricLogic: RhetoricLogicData | null
+  goldenSample: GoldenSampleData | null
+  transferDemo: TransferDemoData | null
+  coreRules: CoreRuleItem[] | null
+  blueprint: BlueprintItem[] | null
+  antiPatterns: AntiPatternItem[] | null
   rawJsonFull: unknown
   status: "PENDING" | "SUCCESS" | "FAILED"
   createdAt: Date | null
@@ -247,10 +247,10 @@ export default function ReversePage() {
       const analysis = log as StyleAnalysis
 
       // Extract from JSONB fields
-      const styleIdentity = analysis.styleIdentityData
-      const metricsConstraints = analysis.metricsConstraintsData
-      const lexicalLogic = analysis.lexicalLogicData
-      const rhetoricLogic = analysis.rhetoricLogicData
+      const styleIdentity = analysis.styleIdentity
+      const metricsConstraints = analysis.metricsConstraints
+      const lexicalLogic = analysis.lexicalLogic
+      const rhetoricLogic = analysis.rhetoricLogic
 
       // Style identity data - 兼容 v7.0 和 v7.3 字段名
       const styleName = analysis.styleName || styleIdentity?.style_name || analysis.sourceTitle || ""
@@ -287,18 +287,18 @@ export default function ReversePage() {
       const sentenceTemplates = rhetoricLogic?.sentence_templates
 
       // Array data
-      const blueprintSections = analysis.blueprintData
-      const coreRules = analysis.coreRulesData
-      const antiPatterns = analysis.antiPatternsData
+      const blueprintSections = analysis.blueprint
+      const coreRules = analysis.coreRules
+      const antiPatterns = analysis.antiPatterns
 
       // Golden samples and transfer demo - 兼容 v7.0 和 v7.3 格式
-      const goldenSampleData = analysis.goldenSampleData
+      const goldenSampleData = analysis.goldenSample
       const goldenSamples = goldenSampleData?.samples ?? (
         goldenSampleData?.paragraph
           ? [{ text: goldenSampleData.paragraph, why: goldenSampleData.reason, tech_list: goldenSampleData.tech_list }]
           : []
       )
-      const transferDemoData = analysis.transferDemoData
+      const transferDemoData = analysis.transferDemo
       const transferPairs = transferDemoData?.before_after_pairs ?? (
         transferDemoData?.new_text
           ? [{ before: undefined, after: transferDemoData.new_text, explanation: transferDemoData.preserved_elements, topic: transferDemoData.new_topic }]
@@ -1309,8 +1309,8 @@ export default function ReversePage() {
   const buildDetailModalNode = (): A2UINode | null => {
     if (!selectedAnalysis) return null
 
-    const styleIdentity = selectedAnalysis.styleIdentityData
-    const lexicalLogic = selectedAnalysis.lexicalLogicData
+    const styleIdentity = selectedAnalysis.styleIdentity
+    const lexicalLogic = selectedAnalysis.lexicalLogic
     const toneKeywords = lexicalLogic?.tone_keywords ?? []
 
     const detailItems: A2UINode[] = [
@@ -1338,7 +1338,7 @@ export default function ReversePage() {
     }
 
     // Metrics
-    const metricsConstraints = selectedAnalysis.metricsConstraintsData
+    const metricsConstraints = selectedAnalysis.metricsConstraints
     const hasMetrics = selectedAnalysis.wordCount != null || selectedAnalysis.paraCount != null
     if (hasMetrics) {
       detailItems.push({
@@ -1549,26 +1549,26 @@ export default function ReversePage() {
           const log = logs.find((l) => l.id === deleteId) as StyleAnalysis | undefined
           const title = log?.styleName || log?.sourceTitle || t("reverse.untitled")
 
-          a2uiToast.warning(t("reverse.deleteConfirm"), {
-            description: title,
-            duration: 5000,
-            action: {
-              label: t("common.delete"),
-              onClick: () => {
-                deleteMutation.mutate(
-                  { id: deleteId },
-                  {
-                    onSuccess: () => {
-                      a2uiToast.success(t("reverse.deleteSuccess"))
-                    },
-                    onError: () => {
-                      a2uiToast.error(t("reverse.deleteFailed"))
-                    },
-                  }
-                )
-              },
+          showConfirmToast(
+            t("reverse.deleteConfirm"),
+            () => {
+              deleteMutation.mutate(
+                { id: deleteId },
+                {
+                  onSuccess: () => {
+                    a2uiToast.success(t("reverse.deleteSuccess"))
+                  },
+                  onError: () => {
+                    a2uiToast.error(t("reverse.deleteFailed"))
+                  },
+                }
+              )
             },
-          })
+            {
+              label: t("common.delete"),
+              description: title,
+            }
+          )
           break
         }
         case "copyPrompt": {

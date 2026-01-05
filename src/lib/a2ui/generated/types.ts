@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-01T16:17:53.067Z
+// Generated at: 2026-01-04T08:53:18.108Z
 
 import type { CSSProperties } from "react"
 
@@ -143,7 +143,8 @@ export interface A2UIButtonNode extends A2UIBaseNode {
   variant?: "primary" | "secondary" | "destructive" | "ghost" | "text" | "outline" // Button style variant
   size?: "sm" | "md" | "lg" // Button size
   disabled?: boolean // Disable the button
-  icon?: "google" | "github" // Icon to display before text
+  icon?: "google" | "github" | "plus" // Icon to display before text
+  hideLabelOn?: "sm" // Hide label at or below breakpoint
   fullWidth?: boolean // Make button full width
   buttonType?: "button" | "submit" | "reset" // HTML button type attribute
   onClick?: A2UIAction // Click action handler
@@ -184,7 +185,7 @@ export interface A2UITextareaNode extends A2UIBaseNode {
 export interface A2UIMarkdownEditorNode extends A2UIBaseNode {
   type: "markdown-editor"
   value?: string // Markdown content
-  height?: number | "100%" // Editor height in pixels, or '100%' for full height
+  height?: unknown // Editor height in pixels, or '100%' for full height
   preview?: "edit" | "live" | "preview" // Preview mode: edit (no preview), live (side by side), preview (read only)
   hideToolbar?: boolean // Hide the toolbar
   onChange?: A2UIAction // Content change handler

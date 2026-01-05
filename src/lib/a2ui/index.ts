@@ -126,6 +126,12 @@ export {
 // Toast System (Imperative API)
 // ============================================================================
 export { a2uiToast, type A2UIToast, type A2UIToastOptions } from "./toast"
+export {
+  showConfirmToast,
+  DEFAULT_CONFIRM_TOAST_DURATION,
+  DEFAULT_CONFIRM_TOAST_LABEL,
+  type A2UIConfirmToastOptions,
+} from "./confirm-toast"
 
 // ============================================================================
 // Legacy Compatibility

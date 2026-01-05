@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-01T16:17:53.069Z
+// Generated at: 2026-01-04T08:53:18.110Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -211,7 +211,12 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
       icon: {
         type: "string",
         description: "Icon to display before text",
-        enum: ["google","github"],
+        enum: ["google","github","plus"],
+      },
+      hideLabelOn: {
+        type: "string",
+        description: "Hide label at or below breakpoint",
+        enum: ["sm"],
       },
       fullWidth: {
         type: "boolean",

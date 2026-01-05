@@ -1,16 +1,23 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Pencil, BookOpen, Newspaper, BarChart3, Image, User } from "lucide-react"
 import type {
   A2UIAppShellNode,
   A2UINode,
+  A2UIButtonNode,
   A2UIThemeSwitcherNode,
 } from "@/lib/a2ui"
 import type { A2UIComponentProps } from "@/lib/a2ui/registry"
 import { dispatchA2UIAction } from "@/lib/a2ui/registry"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { A2UIRenderer } from "@/components/a2ui/renderer"
 import { A2UIToaster } from "../toaster"
+import { CreateHubModal } from "@/components/create-hub-modal"
+import { CreateTaskModal } from "@/components/create-task-modal"
+import { useI18n } from "@/contexts/i18n-context"
 
 export function A2UIThemeSwitcher({
   node,
@@ -35,11 +42,20 @@ export function A2UIAppShell({
   onAction,
   renderChildren,
 }: A2UIComponentProps<A2UIAppShellNode>) {
+  const router = useRouter()
+  const { status } = useSession()
+  const { t } = useI18n()
+  const isAuthenticated = status === "authenticated"
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const activeItem = node.navItems.find((item) => item.path === node.activePath)
   const homePath = node.navItems[0]?.path ?? "/"
+
+  // Create Hub modal state
+  const [isCreateHubOpen, setIsCreateHubOpen] = useState(false)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [taskInitialData, setTaskInitialData] = useState<{ refMaterialId?: string } | undefined>()
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -87,7 +103,47 @@ export function A2UIAppShell({
     setIsUserMenuOpen(false)
   }, [node.onLogout, onAction])
 
+  // Handle starting writing from Create Hub
+  const handleStartWriting = useCallback((materialId?: string) => {
+    setIsCreateHubOpen(false)
+    setTaskInitialData(materialId ? { refMaterialId: materialId } : undefined)
+    setIsCreateTaskOpen(true)
+  }, [])
+
+  // Handle task creation success
+  const handleTaskSuccess = useCallback(() => {
+    setIsCreateTaskOpen(false)
+    setTaskInitialData(undefined)
+    // Navigate to tasks page if not already there
+    if (node.activePath !== "/tasks") {
+      router.push("/tasks")
+    }
+  }, [node.activePath, router])
+
+  const handleHeaderAction = useCallback(
+    (action: string, args?: unknown[]) => {
+      if (action === "openCreateHub") {
+        setIsCreateHubOpen(true)
+        return
+      }
+      onAction?.(action, args)
+    },
+    [onAction]
+  )
+
   const headerActions = node.headerActions as A2UINode[] | undefined
+  const createButtonNode: A2UIButtonNode = {
+    type: "button",
+    text: t("createHub.title"),
+    variant: "primary",
+    size: "md",
+    icon: "plus",
+    hideLabelOn: "sm",
+    onClick: { action: "openCreateHub" },
+  }
+  const headerActionNodes = isAuthenticated
+    ? [createButtonNode, ...(headerActions ?? [])]
+    : headerActions
 
   return (
     <div className="flex h-screen overflow-hidden bg-background" style={node.style}>
@@ -213,7 +269,9 @@ export function A2UIAppShell({
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
-              {headerActions && renderChildren?.(headerActions)}
+              {headerActionNodes && (
+                <A2UIRenderer node={headerActionNodes} onAction={handleHeaderAction} />
+              )}
               {node.onLogout && (
                 <div className="relative">
                   <button
@@ -251,6 +309,24 @@ export function A2UIAppShell({
       </div>
 
       <A2UIToaster />
+
+      {/* Create Hub Modal */}
+      <CreateHubModal
+        isOpen={isCreateHubOpen}
+        onClose={() => setIsCreateHubOpen(false)}
+        onStartWriting={handleStartWriting}
+      />
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isCreateTaskOpen}
+        onClose={() => {
+          setIsCreateTaskOpen(false)
+          setTaskInitialData(undefined)
+        }}
+        onSuccess={handleTaskSuccess}
+        initialData={taskInitialData}
+      />
     </div>
   )
 }

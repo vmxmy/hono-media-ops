@@ -4,7 +4,9 @@ import { useCallback, useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, A2UIToaster } from "@/components/a2ui"
-import type { A2UINode } from "@/lib/a2ui"
+import type { A2UINode, A2UIButtonNode } from "@/lib/a2ui"
+import { CreateHubModal } from "@/components/create-hub-modal"
+import { CreateTaskModal } from "@/components/create-task-modal"
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -42,6 +44,11 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
 
+  // Create Hub modal state
+  const [isCreateHubOpen, setIsCreateHubOpen] = useState(false)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [taskInitialData, setTaskInitialData] = useState<{ refMaterialId?: string } | undefined>()
+
   // Load collapsed state from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -65,6 +72,15 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
   ]
 
   const themeNode: A2UINode = { type: "theme-switcher" }
+  const createButtonNode: A2UIButtonNode = {
+    type: "button",
+    text: t("createHub.title"),
+    variant: "primary",
+    size: "md",
+    icon: "plus",
+    hideLabelOn: "sm",
+    onClick: { action: "openCreateHub" },
+  }
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -88,6 +104,32 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
       setIsMobileMenuOpen(false)
     },
     [router]
+  )
+
+  // Handle starting writing from Create Hub
+  const handleStartWriting = useCallback((materialId?: string) => {
+    setIsCreateHubOpen(false)
+    setTaskInitialData(materialId ? { refMaterialId: materialId } : undefined)
+    setIsCreateTaskOpen(true)
+  }, [])
+
+  // Handle task creation success
+  const handleTaskSuccess = useCallback(() => {
+    setIsCreateTaskOpen(false)
+    setTaskInitialData(undefined)
+    // Navigate to tasks page if not already there
+    if (pathname !== "/tasks") {
+      router.push("/tasks")
+    }
+  }, [pathname, router])
+
+  const handleHeaderAction = useCallback(
+    (action: string) => {
+      if (action === "openCreateHub") {
+        setIsCreateHubOpen(true)
+      }
+    },
+    []
   )
 
   return (
@@ -187,7 +229,9 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
             </svg>
           </button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Create Button */}
+            <A2UIRenderer node={createButtonNode} onAction={handleHeaderAction} />
             <A2UIRenderer node={themeNode} />
             <button
               onClick={onLogout}
@@ -204,6 +248,24 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
 
       {/* A2UI Toast Provider */}
       <A2UIToaster />
+
+      {/* Create Hub Modal */}
+      <CreateHubModal
+        isOpen={isCreateHubOpen}
+        onClose={() => setIsCreateHubOpen(false)}
+        onStartWriting={handleStartWriting}
+      />
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isCreateTaskOpen}
+        onClose={() => {
+          setIsCreateTaskOpen(false)
+          setTaskInitialData(undefined)
+        }}
+        onSuccess={handleTaskSuccess}
+        initialData={taskInitialData}
+      />
     </div>
   )
 }

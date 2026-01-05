@@ -5,6 +5,7 @@ import type { ChangeEvent, FormEvent, KeyboardEvent, MouseEvent } from "react"
 import dynamic from "next/dynamic"
 import { getCommands as getCommandsEn, getExtraCommands as getExtraCommandsEn } from "@uiw/react-md-editor/commands"
 import { getCommands as getCommandsZh, getExtraCommands as getExtraCommandsZh } from "@uiw/react-md-editor/commands-cn"
+import { Plus } from "lucide-react"
 import type {
   A2UIButtonNode,
   A2UIInputNode,
@@ -96,6 +97,8 @@ export function A2UIButton({ node, onAction }: A2UIComponentProps<A2UIButtonNode
         return <GoogleIcon />
       case "github":
         return <GitHubIcon />
+      case "plus":
+        return <Plus className="h-4 w-4" />
       default:
         return null
     }
@@ -106,11 +109,16 @@ export function A2UIButton({ node, onAction }: A2UIComponentProps<A2UIButtonNode
       type={node.buttonType ?? "button"}
       onClick={handleClick}
       disabled={node.disabled}
+      aria-label={node.hideLabelOn ? node.text : undefined}
       className={`flex items-center justify-center gap-3 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${node.fullWidth ? "w-full" : ""}`}
       style={node.style}
     >
       {renderIcon()}
-      {node.text}
+      {node.hideLabelOn === "sm" ? (
+        <span className="hidden sm:inline">{node.text}</span>
+      ) : (
+        node.text
+      )}
     </button>
   )
 }

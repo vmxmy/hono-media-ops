@@ -193,8 +193,13 @@
         },
         "icon": {
           "type": "string",
-          "enum": ["google", "github"],
+          "enum": ["google", "github", "plus"],
           "description": "Icon to display before text"
+        },
+        "hideLabelOn": {
+          "type": "string",
+          "enum": ["sm"],
+          "description": "Hide label at or below breakpoint"
         },
         "fullWidth": {
           "type": "boolean",
