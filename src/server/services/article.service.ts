@@ -23,6 +23,9 @@ export interface ArticleListItem {
   keywords: string | null;
   coverUrl: string | null;
   createdAt: Date;
+  // Article title/subtitle from execution
+  articleTitle: string | null;
+  articleSubtitle: string | null;
   // Preview excerpt
   excerpt: string | null;
   authorName: string;
@@ -120,7 +123,9 @@ export const articleService = {
         taskId: taskExecutions.taskId,
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
-        coverUrl: sql<string>`(${taskExecutions.result}->>'coverUrl')`.as("cover_url"),
+        articleTitle: taskExecutions.articleTitle,
+        articleSubtitle: taskExecutions.articleSubtitle,
+        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
         startedAt: taskExecutions.startedAt,
       })
       .from(taskExecutions)
@@ -146,6 +151,8 @@ export const articleService = {
         createdAt: tasks.createdAt,
         coverUrl: latestExecutions.coverUrl,
         articleMarkdown: latestExecutions.articleMarkdown,
+        articleTitle: latestExecutions.articleTitle,
+        articleSubtitle: latestExecutions.articleSubtitle,
         authorName: users.name,
         authorUsername: users.username,
         styleName: styleAnalyses.styleName,
@@ -187,7 +194,9 @@ export const articleService = {
         taskId: taskExecutions.taskId,
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
-        coverUrl: sql<string>`(${taskExecutions.result}->>'coverUrl')`.as("cover_url"),
+        articleTitle: taskExecutions.articleTitle,
+        articleSubtitle: taskExecutions.articleSubtitle,
+        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
         startedAt: taskExecutions.startedAt,
       })
       .from(taskExecutions)
@@ -214,6 +223,8 @@ export const articleService = {
         createdAt: tasks.createdAt,
         coverUrl: latestExecutions.coverUrl,
         articleMarkdown: latestExecutions.articleMarkdown,
+        articleTitle: latestExecutions.articleTitle,
+        articleSubtitle: latestExecutions.articleSubtitle,
         authorName: users.name,
         authorUsername: users.username,
         styleName: styleAnalyses.styleName,
@@ -265,7 +276,9 @@ export const articleService = {
           taskId: taskExecutions.taskId,
           executionId: taskExecutions.id,
           articleMarkdown: taskExecutions.articleMarkdown,
-          coverUrl: sql<string>`(${taskExecutions.result}->>'coverUrl')`.as("cover_url"),
+          articleTitle: taskExecutions.articleTitle,
+          articleSubtitle: taskExecutions.articleSubtitle,
+          coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
         })
         .from(taskExecutions)
         .where(
@@ -285,6 +298,8 @@ export const articleService = {
           createdAt: tasks.createdAt,
           coverUrl: latestExecutions.coverUrl,
           articleMarkdown: latestExecutions.articleMarkdown,
+          articleTitle: latestExecutions.articleTitle,
+          articleSubtitle: latestExecutions.articleSubtitle,
           authorName: users.name,
           authorUsername: users.username,
           styleName: styleAnalyses.styleName,
@@ -372,7 +387,9 @@ export const articleService = {
           taskId: taskExecutions.taskId,
           executionId: taskExecutions.id,
           articleMarkdown: taskExecutions.articleMarkdown,
-          coverUrl: sql<string>`(${taskExecutions.result}->>'coverUrl')`.as("cover_url"),
+          articleTitle: taskExecutions.articleTitle,
+          articleSubtitle: taskExecutions.articleSubtitle,
+          coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
         })
         .from(taskExecutions)
         .where(
@@ -392,6 +409,8 @@ export const articleService = {
           createdAt: tasks.createdAt,
           coverUrl: latestExecutions.coverUrl,
           articleMarkdown: latestExecutions.articleMarkdown,
+          articleTitle: latestExecutions.articleTitle,
+          articleSubtitle: latestExecutions.articleSubtitle,
           authorName: users.name,
           authorUsername: users.username,
           styleName: styleAnalyses.styleName,
@@ -429,6 +448,8 @@ export const articleService = {
     createdAt: Date;
     coverUrl: string | null;
     articleMarkdown: string | null;
+    articleTitle: string | null;
+    articleSubtitle: string | null;
     authorName: string | null;
     authorUsername: string | null;
     styleName: string | null;
@@ -440,6 +461,8 @@ export const articleService = {
       keywords: article.keywords,
       coverUrl: article.coverUrl,
       createdAt: article.createdAt,
+      articleTitle: article.articleTitle ?? null,
+      articleSubtitle: article.articleSubtitle ?? null,
       excerpt: extractExcerpt(article.articleMarkdown),
       authorName: article.authorName ?? article.authorUsername ?? "系统",
       readingTimeMinutes: estimateReadingTime(article.articleMarkdown),
@@ -463,7 +486,7 @@ export const articleService = {
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
         articleHtml: taskExecutions.articleHtml,
-        coverUrl: sql<string>`(${taskExecutions.result}->>'coverUrl')`,
+        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`,
       })
       .from(tasks)
       .innerJoin(taskExecutions, eq(tasks.id, taskExecutions.taskId))

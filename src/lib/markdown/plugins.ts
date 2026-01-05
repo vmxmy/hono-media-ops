@@ -9,6 +9,7 @@ import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
 import rehypeRaw from "rehype-raw"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
+import { rehypeReviewHighlight } from "./rehype-review-highlight"
 import type { PluggableList } from "unified"
 
 /**
@@ -43,6 +44,8 @@ const sanitizeSchema = {
     // KaTeX wrapper elements
     "span",
     "div",
+    // Review highlight element
+    "mark",
   ],
   attributes: {
     ...defaultSchema.attributes,
@@ -52,6 +55,7 @@ const sanitizeSchema = {
     annotation: ["encoding"],
     code: [...(defaultSchema.attributes?.["code"] ?? []), "className", "class"],
     pre: [...(defaultSchema.attributes?.["pre"] ?? []), "className", "class"],
+    mark: ["data-review", "className", "class"],
   },
 }
 
@@ -66,6 +70,7 @@ export const remarkPlugins: PluggableList = [remarkGfm, remarkMath]
  */
 export const rehypePlugins: PluggableList = [
   rehypeRaw,
+  rehypeReviewHighlight,
   [rehypeSanitize, sanitizeSchema],
   rehypeHighlight,
   rehypeKatex,

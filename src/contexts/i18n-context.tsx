@@ -110,6 +110,8 @@ export type I18nKey =
     | "tasks.noSearchResults"
     | "tasks.tryDifferentKeywords"
     | "tasks.clearSearch"
+    | "tasks.writingProgress"
+    | "tasks.polishing"
     // Task Status
     | "status.pending"
     | "status.processing"
@@ -434,6 +436,18 @@ export type I18nKey =
     | "articles.aboutMinutes"
     | "articles.wordCount"
     | "articles.unknownWordCount"
+    // Create Hub
+    | "createHub.title"
+    | "createHub.whatToDo"
+    | "createHub.importMaterial"
+    | "createHub.importMaterialDesc"
+    | "createHub.startWriting"
+    | "createHub.startWritingDesc"
+    | "createHub.recentMaterials"
+    | "createHub.noRecentMaterials"
+    | "createHub.importSuccess"
+    | "createHub.useThisMaterial"
+    | "createHub.continueImport"
 
 interface I18nContextValue {
     locale: Locale
@@ -545,6 +559,8 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.noSearchResults": "No matching tasks",
         "tasks.tryDifferentKeywords": "Try different search keywords",
         "tasks.clearSearch": "Clear Search",
+        "tasks.writingProgress": "Writing: {current}/{total} chapters",
+        "tasks.polishing": "Reviewing & polishing",
         // Task Status
         "status.pending": "Pending",
         "status.processing": "Processing",
@@ -869,6 +885,18 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "articles.aboutMinutes": "About {minutes} min read",
         "articles.wordCount": "About {count} words",
         "articles.unknownWordCount": "Unknown word count",
+        // Create Hub
+        "createHub.title": "Create",
+        "createHub.whatToDo": "What would you like to do?",
+        "createHub.importMaterial": "Import Material",
+        "createHub.importMaterialDesc": "Extract writing style from web or text",
+        "createHub.startWriting": "Start Writing",
+        "createHub.startWritingDesc": "Generate article based on style",
+        "createHub.recentMaterials": "Recent Materials",
+        "createHub.noRecentMaterials": "No materials yet",
+        "createHub.importSuccess": "Material imported successfully!",
+        "createHub.useThisMaterial": "Write with this style",
+        "createHub.continueImport": "Import more",
     },
     "zh-CN": {
         // Common
@@ -969,6 +997,8 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "tasks.noSearchResults": "没有匹配的任务",
         "tasks.tryDifferentKeywords": "试试其他搜索关键词",
         "tasks.clearSearch": "清除搜索",
+        "tasks.writingProgress": "写作中: {current}/{total} 章节",
+        "tasks.polishing": "正在审核润色",
         // Task Status
         "status.pending": "等待中",
         "status.processing": "处理中",
@@ -1293,6 +1323,18 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "articles.aboutMinutes": "约 {minutes} 分钟阅读",
         "articles.wordCount": "约 {count} 字",
         "articles.unknownWordCount": "字数未知",
+        // Create Hub
+        "createHub.title": "创作",
+        "createHub.whatToDo": "你想做什么？",
+        "createHub.importMaterial": "导入素材",
+        "createHub.importMaterialDesc": "从网页或文本中提取写作风格",
+        "createHub.startWriting": "开始写作",
+        "createHub.startWritingDesc": "基于已有风格素材生成文章",
+        "createHub.recentMaterials": "最近使用的素材",
+        "createHub.noRecentMaterials": "暂无素材",
+        "createHub.importSuccess": "素材导入成功！",
+        "createHub.useThisMaterial": "用这个风格写作",
+        "createHub.continueImport": "继续导入",
     },
 }
 

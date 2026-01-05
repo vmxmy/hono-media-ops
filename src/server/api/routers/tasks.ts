@@ -73,8 +73,35 @@ const completeExecutionSchema = z.object({
   coverR2Key: z.string().optional(),
   wechatMediaId: z.string().optional(),
   wechatDraftId: z.string().optional(),
+  // Article content
+  articleTitle: z.string().optional(),
+  articleSubtitle: z.string().optional(),
   articleMarkdown: z.string().optional(),
   articleHtml: z.string().optional(),
+  articleWordCount: z.number().int().optional(),
+  // Processing metadata
+  ready: z.boolean().optional(),
+  humanReview: z.array(z.string()).optional(),
+  transitionsAdded: z.array(z.object({
+    location: z.string(),
+    type: z.string(),
+    beforeContext: z.string(),
+    addedContent: z.string(),
+    afterContext: z.string(),
+  })).optional(),
+  modifications: z.array(z.object({
+    type: z.string(),
+    location: z.string(),
+    original: z.string(),
+    modified: z.string(),
+    reason: z.string(),
+  })).optional(),
+  statistics: z.object({
+    wordCount: z.number().optional(),
+    transitionFixes: z.number().optional(),
+    keywordReplacements: z.number().optional(),
+  }).optional(),
+  reviewSummary: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
 
@@ -136,6 +163,17 @@ export const tasksRouter = createTRPCRouter({
   updateStatusCallback: publicProcedure
     .input(updateStatusSchema)
     .mutation(({ ctx, input }) => ctx.services.task.updateStatus(input)),
+
+  // Public endpoint for n8n to update writing progress
+  updateProgress: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        currentChapter: z.number().int().min(0),
+        totalChapters: z.number().int().min(1),
+      })
+    )
+    .mutation(({ ctx, input }) => ctx.services.task.updateProgress(input)),
 
   delete: protectedProcedure
     .input(idSchema)

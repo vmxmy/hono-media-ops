@@ -203,11 +203,14 @@ export default function ArticlesPage() {
     }
 
     const articleCards: A2UINode[] = articles.map((article): A2UINode => {
+      // Use articleTitle if available, otherwise fallback to topic
+      const displayTitle = article.articleTitle || article.topic
+
       const coverNode: A2UINode = article.coverUrl
         ? {
             type: "image" as const,
             src: article.coverUrl,
-            alt: article.topic,
+            alt: displayTitle,
             style: { width: "100%", height: "160px", objectFit: "cover" as const },
           }
         : {
@@ -217,7 +220,32 @@ export default function ArticlesPage() {
           }
 
       const headerNodes: A2UINode[] = [
-        { type: "text" as const, text: article.topic, variant: "h4" as const, weight: "semibold" as const },
+        {
+          type: "text" as const,
+          text: displayTitle,
+          variant: "h4" as const,
+          weight: "semibold" as const,
+          style: {
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          },
+        },
+        // Subtitle if available
+        ...(article.articleSubtitle ? [{
+          type: "text" as const,
+          text: article.articleSubtitle,
+          variant: "body" as const,
+          color: "muted" as const,
+          style: {
+            fontSize: "0.875rem",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical" as const,
+            overflow: "hidden",
+          },
+        } as A2UINode] : []),
         {
           type: "row" as const,
           align: "center" as const,

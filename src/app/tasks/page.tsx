@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { useTaskPolling } from "@/hooks/use-task-polling"
-import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
+import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type {
   A2UIAppShellNode,
   A2UIColumnNode,
@@ -19,8 +19,6 @@ import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
-const CONFIRM_TOAST_DURATION = 5000
-const CONFIRM_TOAST_LABEL_KEY = "common.confirm"
 
 // Task type from API
 interface TaskWithMaterial {
@@ -31,9 +29,14 @@ interface TaskWithMaterial {
   createdAt: Date
   totalWordCount: number
   articleWordCount?: number | null
+  articleTitle?: string | null
+  articleSubtitle?: string | null
   coverPromptId: string | null
   coverUrl?: string | null
   refMaterialId: string | null
+  // Progress fields for processing tasks
+  currentChapter?: number | null
+  totalChapters?: number | null
   refMaterial?: {
     styleName: string | null
     sourceTitle: string | null
@@ -117,26 +120,24 @@ export default function TasksPage() {
 
   const handleNewTask = () => setIsModalOpen(true)
 
-  const showConfirmToast = (message: string, onConfirm: () => void) => {
-    a2uiToast.warning(message, {
-      duration: CONFIRM_TOAST_DURATION,
-      action: {
-        label: t(CONFIRM_TOAST_LABEL_KEY),
-        onClick: onConfirm,
-      },
+  const confirmLabel = t("common.confirm")
+
+  const handleStop = (id: string) => {
+    showConfirmToast(t("task.stopConfirm"), () => cancelMutation.mutate({ id }), {
+      label: confirmLabel,
     })
   }
 
-  const handleStop = (id: string) => {
-    showConfirmToast(t("task.stopConfirm"), () => cancelMutation.mutate({ id }))
-  }
-
   const handleRetry = (id: string) => {
-    showConfirmToast(t("task.retryConfirm"), () => retryMutation.mutate({ id }))
+    showConfirmToast(t("task.retryConfirm"), () => retryMutation.mutate({ id }), {
+      label: confirmLabel,
+    })
   }
 
   const handleDelete = (id: string) => {
-    showConfirmToast(t("task.deleteConfirm"), () => deleteMutation.mutate({ id }))
+    showConfirmToast(t("task.deleteConfirm"), () => deleteMutation.mutate({ id }), {
+      label: confirmLabel,
+    })
   }
 
   // Get trpc utils for imperative queries
@@ -286,18 +287,43 @@ export default function TasksPage() {
       onClick: { action: "delete", args: [task.id] },
     })
 
+    // Use articleTitle if available, otherwise fallback to topic
+    const displayTitle = task.articleTitle || task.topic || t("tasks.untitledTask")
+
     const headerContentChildren: A2UINode[] = [
       {
-        type: "editable-text",
-        value: task.topic || t("tasks.untitledTask"),
-        placeholder: t("tasks.untitledTask"),
+        type: "text",
+        text: displayTitle,
         variant: "h4",
-        editable: canEdit,
-        onChange: { action: "updateTopic", args: [task.id] },
+        style: {
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        },
       },
+      // Subtitle if available
+      ...(task.articleSubtitle ? [{
+        type: "text",
+        text: task.articleSubtitle,
+        variant: "body",
+        color: "muted",
+        style: {
+          fontSize: "0.875rem",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        },
+      } as A2UINode] : []),
     ]
 
     // Keywords and reference material move to body for consistent layout
+
+    // Check if task has progress data
+    const hasProgress = task.status === "processing" && task.currentChapter != null && task.totalChapters != null && task.totalChapters > 0
+    const progressPercent = hasProgress ? Math.min(Math.round((task.currentChapter! / task.totalChapters!) * 100), 100) : 0
+    const isPolishing = hasProgress && task.currentChapter! >= task.totalChapters!
 
     const headerNodes: A2UINode[] = [
       ...headerContentChildren,
@@ -311,26 +337,98 @@ export default function TasksPage() {
           { type: "text", text: formatWordCount(task.articleWordCount, task.totalWordCount), variant: "caption", color: "muted" },
         ],
       } as A2UIRowNode,
+      // Progress bar for processing tasks
+      ...(hasProgress ? [{
+        type: "column",
+        gap: "0.25rem",
+        children: [
+          {
+            type: "progress",
+            status: "processing",
+            value: progressPercent,
+            style: { height: "6px" },
+          } as A2UINode,
+          {
+            type: "row",
+            align: "center",
+            gap: "0.5rem",
+            children: [
+              {
+                type: "text",
+                text: isPolishing
+                  ? t("tasks.polishing")
+                  : t("tasks.writingProgress", { current: task.currentChapter!, total: task.totalChapters! }),
+                variant: "caption",
+                color: "primary",
+              } as A2UINode,
+              {
+                type: "container",
+                style: {
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--primary)",
+                  animation: "pulse 1.5s ease-in-out infinite",
+                },
+              } as A2UINode,
+            ],
+          } as A2UINode,
+        ],
+      } as A2UINode] : []),
     ]
 
     const bodyNodes: A2UINode[] = [
-      ...(!isCompact ? [{
-        type: "editable-text",
-        value: task.keywords || "",
-        placeholder: t("tasks.noKeywords"),
-        variant: "caption",
-        multiline: true,
-        editable: canEdit,
-        onChange: { action: "updateKeywords", args: [task.id] },
-        style: {
-          fontSize: "0.875rem",
-          lineHeight: "1.5",
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        },
-      } as A2UINode] : []),
+      ...(!isCompact ? [
+        // Topic (editable)
+        {
+          type: "row",
+          align: "start",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: t("taskForm.topic") + ":", variant: "caption", color: "muted", style: { flexShrink: 0 } },
+            {
+              type: "editable-text",
+              value: task.topic || "",
+              placeholder: t("tasks.untitledTask"),
+              variant: "caption",
+              editable: canEdit,
+              onChange: { action: "updateTopic", args: [task.id] },
+              style: {
+                fontSize: "0.875rem",
+                lineHeight: "1.5",
+                flex: 1,
+              },
+            },
+          ],
+        } as A2UINode,
+        // Keywords (editable)
+        {
+          type: "row",
+          align: "start",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: t("taskForm.keywords") + ":", variant: "caption", color: "muted", style: { flexShrink: 0 } },
+            {
+              type: "editable-text",
+              value: task.keywords || "",
+              placeholder: t("tasks.noKeywords"),
+              variant: "caption",
+              multiline: true,
+              editable: canEdit,
+              onChange: { action: "updateKeywords", args: [task.id] },
+              style: {
+                fontSize: "0.875rem",
+                lineHeight: "1.5",
+                flex: 1,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              },
+            },
+          ],
+        } as A2UINode,
+      ] : []),
     ]
 
     const footerNodes: A2UINode[] = [

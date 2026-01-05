@@ -71,6 +71,8 @@ export interface TaskWithExecutions extends Task {
 export interface TaskWithMaterial extends Task {
   coverUrl?: string | null;
   articleWordCount?: number | null;
+  articleTitle?: string | null;
+  articleSubtitle?: string | null;
   refMaterial?: {
     styleName: string | null;
     sourceTitle: string | null;
@@ -139,9 +141,10 @@ export const taskService = {
           },
           coverUrl: sql<string>`
             (
-              select ${taskExecutions.result}->>'coverUrl'
+              select ${taskExecutions.wechatMediaInfo}->>'r2_url'
               from ${taskExecutions}
               where ${taskExecutions.taskId} = ${tasks.id}
+                and ${taskExecutions.status} = 'completed'
               order by ${taskExecutions.startedAt} desc
               limit 1
             )
@@ -157,6 +160,28 @@ export const taskService = {
               limit 1
             )
           `.as("article_markdown"),
+          articleTitle: sql<string>`
+            (
+              select ${taskExecutions.articleTitle}
+              from ${taskExecutions}
+              where ${taskExecutions.taskId} = ${tasks.id}
+                and ${taskExecutions.status} = 'completed'
+                and ${taskExecutions.articleTitle} is not null
+              order by ${taskExecutions.startedAt} desc
+              limit 1
+            )
+          `.as("article_title"),
+          articleSubtitle: sql<string>`
+            (
+              select ${taskExecutions.articleSubtitle}
+              from ${taskExecutions}
+              where ${taskExecutions.taskId} = ${tasks.id}
+                and ${taskExecutions.status} = 'completed'
+                and ${taskExecutions.articleSubtitle} is not null
+              order by ${taskExecutions.startedAt} desc
+              limit 1
+            )
+          `.as("article_subtitle"),
         })
         .from(tasks)
         .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
@@ -174,6 +199,8 @@ export const taskService = {
       ...row.task,
       coverUrl: row.coverUrl ?? null,
       articleWordCount: countArticleWords(row.articleMarkdown),
+      articleTitle: row.articleTitle ?? null,
+      articleSubtitle: row.articleSubtitle ?? null,
       refMaterial: row.refMaterial?.styleName || row.refMaterial?.sourceTitle || row.refMaterial?.sourceUrl
         ? row.refMaterial
         : null,
@@ -338,6 +365,26 @@ export const taskService = {
       .update(tasks)
       .set({
         status: input.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, input.id));
+
+    return { success: true };
+  },
+
+  /**
+   * Update writing progress (called by n8n during chapter loop)
+   */
+  async updateProgress(input: {
+    id: string;
+    currentChapter: number;
+    totalChapters: number;
+  }): Promise<{ success: boolean }> {
+    await db
+      .update(tasks)
+      .set({
+        currentChapter: input.currentChapter,
+        totalChapters: input.totalChapters,
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, input.id));
@@ -525,8 +572,19 @@ export const taskService = {
       coverR2Key?: string;
       wechatMediaId?: string;
       wechatDraftId?: string;
-      articleHtml?: string;
+      // Article content
+      articleTitle?: string;
+      articleSubtitle?: string;
       articleMarkdown?: string;
+      articleHtml?: string;
+      articleWordCount?: number;
+      // Processing metadata
+      ready?: boolean;
+      humanReview?: string[];
+      transitionsAdded?: ExecutionResult["transitionsAdded"];
+      modifications?: ExecutionResult["modifications"];
+      statistics?: ExecutionResult["statistics"];
+      reviewSummary?: string;
       metadata?: Record<string, unknown>;
     }
   ): Promise<{ success: boolean }> {
@@ -551,6 +609,13 @@ export const taskService = {
       coverR2Key: result.coverR2Key,
       wechatMediaId: result.wechatMediaId,
       wechatDraftId: result.wechatDraftId,
+      // Processing metadata
+      ready: result.ready,
+      humanReview: result.humanReview,
+      transitionsAdded: result.transitionsAdded,
+      modifications: result.modifications,
+      statistics: result.statistics,
+      reviewSummary: result.reviewSummary,
       ...result.metadata,
     };
 
@@ -563,8 +628,11 @@ export const taskService = {
         status: result.status,
         errorMessage: result.errorMessage,
         result: executionResult,
+        articleTitle: result.articleTitle,
+        articleSubtitle: result.articleSubtitle,
         articleMarkdown: result.articleMarkdown,
         articleHtml: result.articleHtml,
+        articleWordCount: result.articleWordCount,
       })
       .where(eq(taskExecutions.id, executionId));
 
@@ -584,10 +652,17 @@ export const taskService = {
   },
 
   async getLatestExecution(taskId: string): Promise<TaskExecution | null> {
+    // Return the latest completed execution with article content
     const [execution] = await db
       .select()
       .from(taskExecutions)
-      .where(eq(taskExecutions.taskId, taskId))
+      .where(
+        and(
+          eq(taskExecutions.taskId, taskId),
+          eq(taskExecutions.status, "completed"),
+          isNotNull(taskExecutions.articleMarkdown)
+        )
+      )
       .orderBy(desc(taskExecutions.startedAt))
       .limit(1);
 
@@ -598,10 +673,31 @@ export const taskService = {
     executionId: string,
     result: ExecutionResult
   ): Promise<{ success: boolean }> {
-    await db
-      .update(taskExecutions)
-      .set({ result })
-      .where(eq(taskExecutions.id, executionId));
+    // If coverUrl is provided, also update wechat_media_info.r2_url for consistency
+    if (result.coverUrl) {
+      // First get current wechat_media_info
+      const [current] = await db
+        .select({ wechatMediaInfo: taskExecutions.wechatMediaInfo })
+        .from(taskExecutions)
+        .where(eq(taskExecutions.id, executionId))
+        .limit(1);
+
+      const currentInfo = current?.wechatMediaInfo ?? {};
+      const updatedInfo = { ...currentInfo, r2_url: result.coverUrl } as typeof currentInfo;
+
+      await db
+        .update(taskExecutions)
+        .set({
+          result,
+          wechatMediaInfo: updatedInfo,
+        })
+        .where(eq(taskExecutions.id, executionId));
+    } else {
+      await db
+        .update(taskExecutions)
+        .set({ result })
+        .where(eq(taskExecutions.id, executionId));
+    }
 
     return { success: true };
   },

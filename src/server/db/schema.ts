@@ -205,6 +205,9 @@ export const tasks = pgTable(
     coverPromptId: uuid("cover_prompt_id"),
     // Reference material (link to reverse_engineering)
     refMaterialId: uuid("ref_material_id"),
+    // Writing progress (updated by n8n during chapter loop)
+    currentChapter: integer("current_chapter"),
+    totalChapters: integer("total_chapters"),
     // Timestamps
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -238,14 +241,38 @@ export type ExecutionResult = {
   coverR2Key?: string;
   wechatMediaId?: string;
   wechatDraftId?: string;
+  // Article processing metadata
+  ready?: boolean;
+  humanReview?: string[];
+  transitionsAdded?: Array<{
+    location: string;
+    type: string;
+    beforeContext: string;
+    addedContent: string;
+    afterContext: string;
+  }>;
+  modifications?: Array<{
+    type: string;
+    location: string;
+    original: string;
+    modified: string;
+    reason: string;
+  }>;
+  statistics?: {
+    wordCount?: number;
+    transitionFixes?: number;
+    keywordReplacements?: number;
+  };
+  reviewSummary?: string;
   [key: string]: unknown;
 };
 
 // WeChat media upload result type
 export type WechatMediaInfo = {
-  media_id: string;
-  url: string;
-  item: unknown[];
+  media_id?: string;
+  wechat_media_url?: string;  // 微信素材 CDN 地址
+  r2_url?: string;            // Cloudflare R2 素材地址
+  item?: unknown[];
   uploaded_at?: string;
 };
 
@@ -263,8 +290,11 @@ export const taskExecutions = pgTable(
     inputSnapshot: jsonb("input_snapshot"),
     result: jsonb("result").$type<ExecutionResult>(),
     // Article content (separate columns for performance)
+    articleTitle: text("article_title"),
+    articleSubtitle: text("article_subtitle"),
     articleMarkdown: text("article_markdown"),
     articleHtml: text("article_html"),
+    articleWordCount: integer("article_word_count"),
     // WeChat media upload result
     wechatMediaInfo: jsonb("wechat_media_info").$type<WechatMediaInfo>(),
     // Timestamps
@@ -288,6 +318,151 @@ export const taskExecutionsRelations = relations(taskExecutions, ({ one }) => ({
   task: one(tasks, {
     fields: [taskExecutions.taskId],
     references: [tasks.id],
+  }),
+  blueprint: one(taskBlueprints),
+}));
+
+// ==================== Task Blueprints Table (写作蓝图) ====================
+
+/**
+ * 作者身份配置
+ */
+export type BlueprintIdentity = {
+  archetype: string;           // 作者人格原型，如 "文化评论家/深度观察者"
+  personaDesc: string;         // 人格描述
+  toneKeywords: string;        // 语调关键词，如 "感性, 犀利, 哀而不伤"
+  energyLevel: string;         // 能量级别，如 "由疾促到舒缓"
+  voiceDistance: string;       // 叙事距离，如 "中等（冷静剖析与心理代入交替）"
+  formalityScore: number;      // 正式度评分 (1-10)
+};
+
+/**
+ * 风格约束配置
+ */
+export type BlueprintStyleConfig = {
+  rhythm: string;              // 节奏模式
+  argStyle: string;            // 论证风格
+  dominantDevice: string;      // 主要修辞手法
+  punctuation: string;         // 标点风格
+  mustUse: string[];           // 必须使用的关键词
+  mustAvoid: string[];         // 必须避免的词汇
+  universalConstraints: string[]; // 通用约束
+  signature?: string;          // 签名
+};
+
+/**
+ * 章节/幕结构
+ */
+export type BlueprintAct = {
+  actNumber: number;
+  name: string;
+  openingHook: string;         // 开场钩子
+  closingBridge: string;       // 收尾过渡
+  goal: string;
+  actQuestion: string;         // 本幕提问
+  actDeliverable: string;      // 本幕交付物
+};
+
+/**
+ * 段落详情
+ */
+export type BlueprintParagraph = {
+  pId: string;                 // 段落ID，如 "1/24"
+  act: number;                 // 所属幕
+  heading: string;             // 标题
+  paragraphType: string;       // 段落类型，如 "anchor_scene", "expansion_detail"
+  paragraphFunction: string;   // 段落功能，如 "anchor", "evidence", "transition"
+  mustEstablish: string;       // 必须建立的内容
+  localKeywords: string[];     // 本地关键词
+  microTakeaway: string | null; // 小结/金句
+  wordWeight: number;          // 字数权重 (1-5)
+  stylisticRule: string;       // 风格规则
+  dependsOn: string[];         // 依赖的段落ID
+  dependsOnReason: string;     // 依赖原因
+};
+
+export const taskBlueprints = pgTable(
+  "task_blueprints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    executionId: uuid("execution_id")
+      .notNull()
+      .references(() => taskExecutions.id, { onDelete: "cascade" })
+      .unique(),
+
+    // ==================== 核心字段（便于查询） ====================
+    topic: text("topic").notNull(),
+    wordCount: integer("word_count").notNull(),
+    strategy: text("strategy").notNull(),              // CURATION, ORIGINAL, etc.
+    strategyConfidence: text("strategy_confidence"),   // high, medium, low
+    totalActs: integer("total_acts").notNull(),
+    totalParagraphs: integer("total_paragraphs").notNull(),
+
+    // ==================== JSONB 结构化字段 ====================
+    sourcedFacts: jsonb("sourced_facts").$type<string[]>(),
+    identity: jsonb("identity").$type<BlueprintIdentity>(),
+    styleConfig: jsonb("style_config").$type<BlueprintStyleConfig>(),
+    structuralMap: jsonb("structural_map").$type<BlueprintAct[]>().notNull(),
+    paragraphs: jsonb("paragraphs").$type<BlueprintParagraph[]>().notNull(),
+
+    // ==================== 元数据 ====================
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    executionIdIdx: uniqueIndex("idx_task_blueprints_execution_id").on(table.executionId),
+    strategyIdx: index("idx_task_blueprints_strategy").on(table.strategy),
+    createdAtIdx: index("idx_task_blueprints_created_at").on(table.createdAt),
+  })
+);
+
+export const taskBlueprintsRelations = relations(taskBlueprints, ({ one, many }) => ({
+  execution: one(taskExecutions, {
+    fields: [taskBlueprints.executionId],
+    references: [taskExecutions.id],
+  }),
+  chapters: many(chapterOutputs),
+}));
+
+// ==================== Chapter Outputs Table (章节内容) ====================
+
+export const chapterOutputs = pgTable(
+  "chapter_outputs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    blueprintId: uuid("blueprint_id")
+      .notNull()
+      .references(() => taskBlueprints.id, { onDelete: "cascade" }),
+
+    // ==================== 章节标识 ====================
+    actNumber: integer("act_number").notNull(),      // 幕号 1-6
+    actName: text("act_name"),                       // 幕名
+
+    // ==================== 生成内容 ====================
+    rawContent: text("raw_content"),                 // 内容写作 原始输出
+    formattedContent: text("formatted_content"),     // 排版大师 输出
+    wordCount: integer("word_count"),
+
+    // ==================== 状态 ====================
+    status: text("status").default("pending"),       // pending, writing, completed, failed
+    errorMessage: text("error_message"),
+
+    // ==================== 时间戳 ====================
+    startedAt: timestamp("started_at"),
+    completedAt: timestamp("completed_at"),
+  },
+  (table) => ({
+    blueprintIdIdx: index("idx_chapter_outputs_blueprint_id").on(table.blueprintId),
+    blueprintActIdx: uniqueIndex("idx_chapter_outputs_blueprint_act").on(
+      table.blueprintId,
+      table.actNumber
+    ),
+  })
+);
+
+export const chapterOutputsRelations = relations(chapterOutputs, ({ one }) => ({
+  blueprint: one(taskBlueprints, {
+    fields: [chapterOutputs.blueprintId],
+    references: [taskBlueprints.id],
   }),
 }));
 
@@ -354,12 +529,19 @@ export const imagePrompts = pgTable(
   })
 );
 
-// ==================== Style Analyses Table (风格分析 v7.3) ====================
+// ==================== Style Analyses Table (风格分析 v8.0) ====================
 
 /**
  * StyleIdentityData - 风格身份数据
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type StyleIdentityData = {
+  // v8.0 核心字段
+  archetype?: string; // 作者人格原型，如 "洞察世情的闺蜜史官"
+  tone_keywords?: string; // 语调关键词，如 "唏嘘, 际遇, 刚强"
+  voice_distance?: string; // 叙事视角距离，如 "半全知视角"
+
+  // 兼容旧版字段
   persona_description?: string;
   voice_traits?: {
     formality?: string;
@@ -368,15 +550,20 @@ export type StyleIdentityData = {
     confidence?: string;
   };
   style_name?: string;
-  archetype?: string;
   implied_reader?: string;
   [key: string]: unknown;
 };
 
 /**
  * MetricsConstraintsData - 量化约束数据
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type MetricsConstraintsData = {
+  // v8.0 核心字段
+  rhythm_pattern?: string; // 节奏模式，如 "长叙述铺陈 + 短金句定调"
+  punctuation_logic?: string; // 标点逻辑，如 "高频使用破折号表解释"
+
+  // 兼容旧版字段
   avg_sentence_length?: number;
   sentence_length_std?: number;
   sentence_length_target?: number;
@@ -388,8 +575,15 @@ export type MetricsConstraintsData = {
 
 /**
  * LexicalLogicData - 词汇逻辑数据
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type LexicalLogicData = {
+  // v8.0 核心字段
+  must_use?: string[]; // 必须使用的词汇，如 ["众口一词", "恍若", "际遇"]
+  verb_style?: string; // 动词风格，如 "具有画面感和力度的动词"
+  adj_style?: string; // 形容词风格，如 "叠加式古风修辞与现代犀利评价并存"
+
+  // 兼容旧版字段
   vocabulary_tier?: string;
   preferred_terms?: string[];
   banned_terms?: string[];
@@ -409,8 +603,14 @@ export type RhetoricLogicData = {
 
 /**
  * GoldenSampleData - 黄金样本数据
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type GoldenSampleData = {
+  // v8.0 核心字段（单对象格式）
+  paragraph?: string; // 黄金样本段落全文
+  reason?: string; // 选择该样本的原因
+
+  // 兼容旧版字段（数组格式）
   samples?: Array<{
     text?: string;
     why?: string;
@@ -432,15 +632,21 @@ export type TransferDemoData = {
 
 /**
  * CoreRuleItem - 核心规则条目
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type CoreRuleItem = {
+  // v8.0 核心字段
+  priority?: number; // 规则优先级，如 1, 2, 3
+  rule?: string; // 规则名称，如 "视觉锚点叙事法"
+  evidence?: string; // 规则证据，如 "▲ 15日，何晴告别仪式..."
+  example?: string; // 规则示例说明
+
+  // 兼容旧版字段
   rule_id?: string;
   rule_text?: string;
   importance?: string;
   examples?: string[];
-  priority?: number;
   feature?: string;
-  evidence?: string;
   frequency?: string;
   replication_instruction?: string;
   [key: string]: unknown;
@@ -448,16 +654,25 @@ export type CoreRuleItem = {
 
 /**
  * BlueprintItem - 结构蓝图条目
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type BlueprintItem = {
+  // v8.0 核心字段
+  p_id?: string; // 段落ID，如 "1", "2"
+  strategy?: string; // 段落策略，如 "怀旧切入与悬念铺垫"
+  action?: string; // 具体行动描述
+  word_count_target?: string | number; // 目标字数，如 "150 ± 20" 或 150
+  techniques?: string[]; // 写作技巧列表，如 ["侧面烘托", "引入热点"]
+  pattern_template?: string; // 模式模板，如 "泛指怀旧 -> 特指人物 -> ..."
+  pattern_sample?: string; // 模式样本，具体示例文本
+
+  // 兼容旧版字段
   section?: string;
   section_position?: string;
   position?: string;
-  word_count_target?: number;
   word_percentage?: string;
   function?: string;
   internal_logic?: Record<string, unknown>;
-  techniques?: Array<Record<string, unknown>>;
   sentence_patterns?: Record<string, unknown>;
   do_list?: string[];
   dont_list?: string[];
@@ -466,12 +681,17 @@ export type BlueprintItem = {
 
 /**
  * AntiPatternItem - 反模式条目
+ * 适配 n8n 工作流输入格式 v8.0
  */
 export type AntiPatternItem = {
+  // v8.0 核心字段
+  forbidden?: string; // 禁止的模式，如 "教科书式的生平流水账"
+  fix_suggestion?: string; // 修复建议
+
+  // 兼容旧版字段
   pattern?: string;
   severity?: string;
   example?: string;
-  fix_suggestion?: string;
   [key: string]: unknown;
 };
 
@@ -502,25 +722,27 @@ export const styleAnalyses = pgTable(
     paraCount: integer("para_count"),
 
     // ========== 数值指标（策略层数据，非 jsonb）==========
-    metricsBurstiness: real("metrics_burstiness"), // 句长突变度 (0-1)
+    metricsBurstiness: real("metrics_burstiness"), // 句长突变度
     metricsTtr: real("metrics_ttr"), // 词汇丰富度 TTR (0-1)
+    metricsAvgSentLen: real("metrics_avg_sent_len"), // 平均句长（字符数）
 
     // ========== 策略层：jsonb ==========
-    styleIdentityData: jsonb("style_identity_data").$type<StyleIdentityData>(),
-    metricsConstraintsData: jsonb("metrics_constraints_data").$type<MetricsConstraintsData>(),
-    lexicalLogicData: jsonb("lexical_logic_data").$type<LexicalLogicData>(),
-    rhetoricLogicData: jsonb("rhetoric_logic_data").$type<RhetoricLogicData>(),
-    goldenSampleData: jsonb("golden_sample_data").$type<GoldenSampleData>(),
-    transferDemoData: jsonb("transfer_demo_data").$type<TransferDemoData>(),
+    styleIdentity: jsonb("style_identity").$type<StyleIdentityData>(),
+    metricsConstraints: jsonb("metrics_constraints").$type<MetricsConstraintsData>(),
+    lexicalLogic: jsonb("lexical_logic").$type<LexicalLogicData>(),
+    rhetoricLogic: jsonb("rhetoric_logic").$type<RhetoricLogicData>(),
+    goldenSample: jsonb("golden_sample").$type<GoldenSampleData>(),
+    transferDemo: jsonb("transfer_demo").$type<TransferDemoData>(),
 
     // ========== 数组层：jsonb (各段规则 / 结构) ==========
-    coreRulesData: jsonb("core_rules_data").$type<CoreRuleItem[]>(),
-    blueprintData: jsonb("blueprint_data").$type<BlueprintItem[]>(),
-    antiPatternsData: jsonb("anti_patterns_data").$type<AntiPatternItem[]>(),
+    coreRules: jsonb("core_rules").$type<CoreRuleItem[]>(),
+    blueprint: jsonb("blueprint").$type<BlueprintItem[]>(),
+    antiPatterns: jsonb("anti_patterns").$type<AntiPatternItem[]>(),
 
     // ========== 备份 & 状态 ==========
     rawJsonFull: jsonb("raw_json_full"),
     metadata: jsonb("metadata"), // 解析元数据 (parse_success, parser_version, validation_*)
+    debug: jsonb("_debug"), // n8n 调试信息
     status: reverseLogStatusEnum("status").default("PENDING").notNull(),
 
     // ========== 向量搜索 ==========
@@ -626,6 +848,12 @@ export type NewImagePrompt = typeof imagePrompts.$inferInsert;
 
 export type StyleAnalysis = typeof styleAnalyses.$inferSelect;
 export type NewStyleAnalysis = typeof styleAnalyses.$inferInsert;
+
+export type TaskBlueprint = typeof taskBlueprints.$inferSelect;
+export type NewTaskBlueprint = typeof taskBlueprints.$inferInsert;
+
+export type ChapterOutput = typeof chapterOutputs.$inferSelect;
+export type NewChapterOutput = typeof chapterOutputs.$inferInsert;
 
 export type ArticleEmbedding = typeof articleEmbeddings.$inferSelect;
 export type NewArticleEmbedding = typeof articleEmbeddings.$inferInsert;
