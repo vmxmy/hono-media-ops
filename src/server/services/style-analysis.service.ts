@@ -170,6 +170,7 @@ export const styleAnalysisService = {
           sourceTitle: styleAnalyses.sourceTitle,
           styleName: styleAnalyses.styleName,
           primaryType: styleAnalyses.primaryType,
+          analysisVersion: styleAnalyses.analysisVersion,
           wordCount: styleAnalyses.wordCount,
           paraCount: styleAnalyses.paraCount,
           metricsBurstiness: styleAnalyses.metricsBurstiness,
