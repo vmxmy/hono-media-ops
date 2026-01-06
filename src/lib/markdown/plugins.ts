@@ -4,6 +4,10 @@
  */
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
+import { remarkMark } from "remark-mark-highlight"
+import remarkEmoji from "remark-emoji"
+import remarkBreaks from "remark-breaks"
+import remarkSmartypants from "remark-smartypants"
 import rehypeSlug from "rehype-slug"
 import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
@@ -62,7 +66,14 @@ const sanitizeSchema = {
 /**
  * Remark plugins for Markdown parsing
  */
-export const remarkPlugins: PluggableList = [remarkGfm, remarkMath]
+export const remarkPlugins: PluggableList = [
+  remarkGfm,
+  remarkMath,
+  remarkMark,
+  remarkEmoji,
+  remarkBreaks,
+  remarkSmartypants,
+]
 
 /**
  * Rehype plugins for HTML transformation
