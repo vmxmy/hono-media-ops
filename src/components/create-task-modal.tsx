@@ -152,7 +152,6 @@ export function CreateTaskModal({
   const { t } = useI18n()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState(defaultFormData)
-  const [expandedMaterialId, setExpandedMaterialId] = useState<string | null>(null)
   const [materialSearchQuery, setMaterialSearchQuery] = useState("")
 
   // Fetch materials for step 2
@@ -303,11 +302,6 @@ export function CreateTaskModal({
         case "selectMaterial":
           handleSelectMaterial(args?.[0] as string)
           break
-        case "toggleExpand":
-          setExpandedMaterialId((prev) =>
-            prev === (args?.[0] as string) ? null : (args?.[0] as string)
-          )
-          break
         case "selectCoverPrompt":
           handleSelectCoverPrompt(args?.[0] as string)
           break
@@ -331,26 +325,11 @@ export function CreateTaskModal({
       type: "card",
       hoverable: isCompleted,
       onClick: isCompleted ? { action: "goToStep", args: [step] } : undefined,
-      style: {
-        width: "1.75rem",
-        height: "1.75rem",
-        minWidth: "1.75rem",
-        borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 0,
-        fontSize: "0.75rem",
-        fontWeight: "500",
-        cursor: isCompleted ? "pointer" : "default",
-        backgroundColor:
-          isActive || isCompleted ? "var(--ds-primary)" : "var(--ds-muted)",
-        color:
-          isActive || isCompleted
-            ? "var(--ds-primary-foreground)"
-            : "var(--ds-muted-foreground)",
-        border: "none",
-      },
+      className: `w-7 h-7 min-w-7 rounded-full flex items-center justify-center p-0 text-xs font-medium border-none ${
+        isActive || isCompleted
+          ? "bg-[var(--ds-primary)] text-[var(--ds-primary-foreground)]"
+          : "bg-[var(--ds-muted)] text-[var(--ds-muted-foreground)]"
+      } ${isCompleted ? "cursor-pointer" : "cursor-default"}`,
       children: [
         {
           type: "text",
@@ -364,14 +343,7 @@ export function CreateTaskModal({
     const isCompleted = step < currentStep
     return {
       type: "divider",
-      style: {
-        flex: 1,
-        minWidth: "1rem",
-        maxWidth: "3rem",
-        height: "2px",
-        backgroundColor: isCompleted ? "var(--ds-primary)" : "var(--ds-muted)",
-        margin: "0 0.25rem",
-      },
+      className: `flex-1 min-w-4 max-w-12 h-0.5 mx-1 ${isCompleted ? "bg-[var(--ds-primary)]" : "bg-[var(--ds-muted)]"}`,
     }
   }
 
@@ -379,7 +351,7 @@ export function CreateTaskModal({
     type: "row",
     justify: "center",
     align: "center",
-    style: { marginBottom: "1rem" },
+    className: "mb-4",
     children: [
       createStepBadge(1),
       createStepLine(1),
@@ -536,7 +508,6 @@ export function CreateTaskModal({
     const analysisVersion = material.analysisVersion
 
     const isSelected = formData.selectedMaterialId === material.id
-    const isExpanded = expandedMaterialId === material.id
 
     // Build badges
     const badges: MaterialCardBadge[] = []
@@ -550,22 +521,8 @@ export function CreateTaskModal({
       badges.push({ text: t("common.selected"), color: "success" })
     }
 
-    // Build metrics for display in card (not in tabs)
-    const metrics: MaterialCardMetric[] = []
-    if (wordCount != null) {
-      metrics.push({ value: wordCount, label: t("reverse.totalWords") })
-    }
-    if (avgSentLen != null) {
-      metrics.push({ value: avgSentLen, label: t("insights.avgSentLen") })
-    }
-    if (ttr != null) {
-      metrics.push({ value: ttr, label: "TTR", format: "percent" })
-    }
-
-    // Build expanded content (tabs)
-    const extraContent: A2UINode[] = []
-    if (isExpanded) {
-      const tabNodes: Array<{ label: string; content: A2UINode }> = []
+    // Build tabs content (always visible like material page)
+    const tabNodes: Array<{ label: string; content: A2UINode }> = []
 
       // === STYLE TAB ===
       const hasStyleInfo = styleName || archetype || impliedReader || personaDescription || hasVoiceTraits || toneKeywords.length > 0
@@ -590,27 +547,27 @@ export function CreateTaskModal({
                 gap: "0.25rem",
                 children: [
                   { type: "text" as const, text: t("reverse.personaDescription"), variant: "caption" as const, color: "muted" as const },
-                  { type: "text" as const, text: personaDescription, style: { fontSize: "0.8rem", lineHeight: "1.5" } },
+                  { type: "text" as const, text: personaDescription, className: "text-[0.8rem] leading-normal" },
                 ],
               }] : []),
               ...(hasVoiceTraits ? [{
                 type: "row" as const,
                 gap: "1rem",
-                style: { flexWrap: "wrap" as const },
+                className: "flex-wrap",
                 children: [
-                  ...(voiceFormality ? [{ type: "column" as const, gap: "0.125rem", style: { minWidth: "70px" }, children: [
+                  ...(voiceFormality ? [{ type: "column" as const, gap: "0.125rem", className: "min-w-[70px]", children: [
                     { type: "text" as const, text: t("reverse.voiceFormality"), variant: "caption" as const, color: "muted" as const },
                     { type: "badge" as const, text: voiceFormality, color: "primary" as const },
                   ]}] : []),
-                  ...(voiceEnergy ? [{ type: "column" as const, gap: "0.125rem", style: { minWidth: "70px" }, children: [
+                  ...(voiceEnergy ? [{ type: "column" as const, gap: "0.125rem", className: "min-w-[70px]", children: [
                     { type: "text" as const, text: t("reverse.voiceEnergy"), variant: "caption" as const, color: "muted" as const },
                     { type: "badge" as const, text: voiceEnergy, color: "success" as const },
                   ]}] : []),
-                  ...(voiceWarmth ? [{ type: "column" as const, gap: "0.125rem", style: { minWidth: "70px" }, children: [
+                  ...(voiceWarmth ? [{ type: "column" as const, gap: "0.125rem", className: "min-w-[70px]", children: [
                     { type: "text" as const, text: t("reverse.voiceWarmth"), variant: "caption" as const, color: "muted" as const },
                     { type: "badge" as const, text: voiceWarmth, color: "warning" as const },
                   ]}] : []),
-                  ...(voiceConfidence ? [{ type: "column" as const, gap: "0.125rem", style: { minWidth: "70px" }, children: [
+                  ...(voiceConfidence ? [{ type: "column" as const, gap: "0.125rem", className: "min-w-[70px]", children: [
                     { type: "text" as const, text: t("reverse.voiceConfidence"), variant: "caption" as const, color: "muted" as const },
                     { type: "badge" as const, text: voiceConfidence, color: "default" as const },
                   ]}] : []),
@@ -622,13 +579,13 @@ export function CreateTaskModal({
                 align: "center" as const,
                 children: [
                   { type: "text" as const, text: t("reverse.targetAudience") + ":", variant: "caption" as const, color: "muted" as const },
-                  { type: "text" as const, text: impliedReader, style: { fontSize: "0.8rem" } },
+                  { type: "text" as const, text: impliedReader, className: "text-[0.8rem]" },
                 ],
               }] : []),
               ...(toneKeywords.length > 0 ? [{
                 type: "row" as const,
                 gap: "0.25rem",
-                style: { flexWrap: "wrap" as const },
+                className: "flex-wrap",
                 align: "center" as const,
                 children: [
                   { type: "text" as const, text: t("reverse.toneKeywords") + ":", variant: "caption" as const, color: "muted" as const },
@@ -665,14 +622,14 @@ export function CreateTaskModal({
                   children: coreRules!.slice(0, 5).map((rule) => ({
                     type: "column" as const,
                     gap: "0.25rem",
-                    style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem", borderLeft: "3px solid var(--ds-primary)" },
+                    className: "p-2 bg-muted rounded border-l-[3px] border-l-[var(--ds-primary)]",
                     children: [
                       { type: "row" as const, justify: "between" as const, children: [
-                        { type: "text" as const, text: rule.rule || rule.rule_text || rule.feature || "规则", style: { fontSize: "0.85rem", fontWeight: 500 } },
+                        { type: "text" as const, text: rule.rule || rule.rule_text || rule.feature || "规则", className: "text-[0.85rem] font-medium" },
                         ...(rule.impact ? [{ type: "badge" as const, text: `影响: ${rule.impact}`, color: "info" as const }] : []),
                       ]},
-                      ...(rule.evidence ? [{ type: "text" as const, text: rule.evidence, variant: "caption" as const, style: { fontSize: "0.75rem" } }] : []),
-                      ...(rule.example ? [{ type: "text" as const, text: `示例: ${rule.example}`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                      ...(rule.evidence ? [{ type: "text" as const, text: rule.evidence, variant: "caption" as const, className: "text-xs" }] : []),
+                      ...(rule.example ? [{ type: "text" as const, text: `示例: ${rule.example}`, variant: "caption" as const, color: "muted" as const, className: "text-xs italic" }] : []),
                     ],
                   })),
                 }],
@@ -691,14 +648,14 @@ export function CreateTaskModal({
                     ]}] : []),
                     ...(preferredTerms.length > 0 ? [{ type: "column" as const, gap: "0.25rem", children: [
                       { type: "text" as const, text: t("reverse.preferredTerms"), variant: "caption" as const, color: "muted" as const },
-                      { type: "row" as const, gap: "0.25rem", style: { flexWrap: "wrap" as const }, children: preferredTerms.slice(0, 12).map((term) => ({ type: "badge" as const, text: term, color: "success" as const })) },
+                      { type: "row" as const, gap: "0.25rem", className: "flex-wrap", children: preferredTerms.slice(0, 12).map((term) => ({ type: "badge" as const, text: term, color: "success" as const })) },
                     ]}] : []),
                     ...(bannedTerms.length > 0 ? [{ type: "column" as const, gap: "0.25rem", children: [
                       { type: "text" as const, text: t("reverse.bannedTerms"), variant: "caption" as const, color: "muted" as const },
-                      { type: "row" as const, gap: "0.25rem", style: { flexWrap: "wrap" as const }, children: bannedTerms.slice(0, 12).map((term) => ({ type: "badge" as const, text: term, color: "destructive" as const })) },
+                      { type: "row" as const, gap: "0.25rem", className: "flex-wrap", children: bannedTerms.slice(0, 12).map((term) => ({ type: "badge" as const, text: term, color: "destructive" as const })) },
                     ]}] : []),
-                    ...(adjStyle ? [{ type: "text" as const, text: `形容词: ${adjStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }] : []),
-                    ...(verbStyle ? [{ type: "text" as const, text: `动词: ${verbStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }] : []),
+                    ...(adjStyle ? [{ type: "text" as const, text: `形容词: ${adjStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }] : []),
+                    ...(verbStyle ? [{ type: "text" as const, text: `动词: ${verbStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }] : []),
                   ],
                 }],
               }] : []),
@@ -710,20 +667,20 @@ export function CreateTaskModal({
                   type: "column" as const,
                   gap: "0.5rem",
                   children: [
-                    ...(preferredDevices.length > 0 ? [{ type: "row" as const, gap: "0.25rem", style: { flexWrap: "wrap" as const }, children: [
+                    ...(preferredDevices.length > 0 ? [{ type: "row" as const, gap: "0.25rem", className: "flex-wrap", children: [
                       { type: "text" as const, text: t("reverse.preferredDevices") + ":", variant: "caption" as const, color: "muted" as const },
                       ...preferredDevices.slice(0, 8).map((device) => ({ type: "badge" as const, text: device, color: "info" as const })),
                     ]}] : []),
                     ...(openingPattern ? [{ type: "column" as const, gap: "0.125rem", children: [
                       { type: "text" as const, text: "开场模式:", variant: "caption" as const, color: "muted" as const },
-                      { type: "text" as const, text: openingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                      { type: "text" as const, text: openingPattern, className: "text-[0.8rem] px-2 py-1 bg-muted rounded" },
                     ]}] : []),
                     ...(closingPattern ? [{ type: "column" as const, gap: "0.125rem", children: [
                       { type: "text" as const, text: "收尾模式:", variant: "caption" as const, color: "muted" as const },
-                      { type: "text" as const, text: closingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                      { type: "text" as const, text: closingPattern, className: "text-[0.8rem] px-2 py-1 bg-muted rounded" },
                     ]}] : []),
-                    ...(argStyle ? [{ type: "text" as const, text: `论证风格: ${argStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }] : []),
-                    ...(deviceSample ? [{ type: "text" as const, text: `示例: "${deviceSample}"`, style: { fontSize: "0.8rem", fontStyle: "italic", padding: "0.25rem 0.5rem", backgroundColor: "rgba(59, 130, 246, 0.1)", borderRadius: "0.25rem" } }] : []),
+                    ...(argStyle ? [{ type: "text" as const, text: `论证风格: ${argStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }] : []),
+                    ...(deviceSample ? [{ type: "text" as const, text: `示例: "${deviceSample}"`, className: "text-[0.8rem] italic px-2 py-1 bg-blue-500/10 rounded" }] : []),
                   ],
                 }],
               }] : []),
@@ -738,10 +695,10 @@ export function CreateTaskModal({
                   children: antiPatterns!.slice(0, 5).map((ap) => ({
                     type: "column" as const,
                     gap: "0.125rem",
-                    style: { padding: "0.375rem 0.5rem", backgroundColor: "rgba(255,0,0,0.05)", borderRadius: "0.25rem", borderLeft: "2px solid var(--destructive)" },
+                    className: "px-2 py-1.5 bg-red-500/5 rounded border-l-2 border-l-destructive",
                     children: [
-                      { type: "text" as const, text: `⚠️ ${ap.forbidden || ap.pattern || ""}`, style: { fontSize: "0.8rem", color: "var(--destructive)" } },
-                      ...(ap.bad_case ? [{ type: "text" as const, text: `反例: "${ap.bad_case}"`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                      { type: "text" as const, text: `⚠️ ${ap.forbidden || ap.pattern || ""}`, className: "text-[0.8rem] text-destructive" },
+                      ...(ap.bad_case ? [{ type: "text" as const, text: `反例: "${ap.bad_case}"`, variant: "caption" as const, color: "muted" as const, className: "text-xs italic" }] : []),
                     ],
                   })),
                 }],
@@ -773,23 +730,23 @@ export function CreateTaskModal({
                   type: "text" as const,
                   text: guidelines,
                   variant: "caption" as const,
-                  style: {
-                    fontSize: "0.8rem",
-                    padding: "0.5rem",
-                    backgroundColor: guidelines.startsWith("✅") ? "rgba(34, 197, 94, 0.1)" : guidelines.startsWith("❌") ? "rgba(239, 68, 68, 0.1)" : "var(--muted)",
-                    borderRadius: "0.25rem",
-                    borderLeft: guidelines.startsWith("✅") ? "3px solid var(--success)" : guidelines.startsWith("❌") ? "3px solid var(--destructive)" : "none",
-                  },
+                  className: `text-[0.8rem] p-2 rounded ${
+                    guidelines.startsWith("✅")
+                      ? "bg-green-500/10 border-l-[3px] border-l-success"
+                      : guidelines.startsWith("❌")
+                        ? "bg-red-500/10 border-l-[3px] border-l-destructive"
+                        : "bg-muted"
+                  }`,
                 }] : []
 
                 const expandableChildren: A2UINode[] = [
                   ...(patternSample ? [{ type: "column" as const, gap: "0.25rem", children: [
                     { type: "text" as const, text: "示例", variant: "caption" as const, color: "muted" as const },
-                    { type: "text" as const, text: `"${patternSample}"`, style: { fontSize: "0.8rem", fontStyle: "italic", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem", borderLeft: "3px solid var(--ds-primary)" } },
+                    { type: "text" as const, text: `"${patternSample}"`, className: "text-[0.8rem] italic p-2 bg-muted rounded border-l-[3px] border-l-[var(--ds-primary)]" },
                   ]}] : []),
                   ...(patternTemplate ? [{ type: "column" as const, gap: "0.25rem", children: [
                     { type: "text" as const, text: "句式模板", variant: "caption" as const, color: "muted" as const },
-                    { type: "text" as const, text: patternTemplate, style: { fontSize: "0.75rem", fontFamily: "monospace", padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                    { type: "text" as const, text: patternTemplate, className: "text-xs font-mono p-2 bg-muted rounded" },
                   ]}] : []),
                 ]
 
@@ -850,14 +807,14 @@ export function CreateTaskModal({
                   children: goldenSamples.map((sample) => ({
                     type: "column" as const,
                     gap: "0.375rem",
-                    style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", borderLeft: "3px solid var(--success)" },
+                    className: "p-2 bg-muted rounded-md border-l-[3px] border-l-success",
                     children: [
-                      ...(sample.text ? [{ type: "text" as const, text: sample.text, style: { fontSize: "0.85rem", lineHeight: "1.6", whiteSpace: "pre-wrap" } }] : []),
-                      ...(sample.why ? [{ type: "text" as const, text: `入选理由: ${sample.why}`, style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--success)" } }] : []),
+                      ...(sample.text ? [{ type: "text" as const, text: sample.text, className: "text-[0.85rem] leading-relaxed whitespace-pre-wrap" }] : []),
+                      ...(sample.why ? [{ type: "text" as const, text: `入选理由: ${sample.why}`, className: "text-xs italic text-success" }] : []),
                       ...((sample as { tech_list?: string[] }).tech_list && (sample as { tech_list?: string[] }).tech_list!.length > 0 ? [{
                         type: "row" as const,
                         gap: "0.25rem",
-                        style: { flexWrap: "wrap" as const },
+                        className: "flex-wrap",
                         children: [
                           { type: "text" as const, text: "技巧:", variant: "caption" as const, color: "muted" as const },
                           ...(sample as { tech_list?: string[] }).tech_list!.map((tech) => ({ type: "badge" as const, text: tech, color: "info" as const })),
@@ -880,11 +837,11 @@ export function CreateTaskModal({
                     return {
                       type: "column" as const,
                       gap: "0.375rem",
-                      style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                      className: "p-2 bg-muted rounded-md",
                       children: [
-                        ...(pairWithTopic.topic ? [{ type: "text" as const, text: pairWithTopic.topic, style: { fontSize: "0.85rem", fontWeight: 500 } }] : []),
-                        ...(pair.after ? [{ type: "text" as const, text: pair.after, style: { fontSize: "0.85rem", lineHeight: "1.5", backgroundColor: "rgba(0,255,0,0.05)", padding: "0.5rem", borderRadius: "0.25rem", whiteSpace: "pre-wrap" } }] : []),
-                        ...(pair.explanation ? [{ type: "text" as const, text: `保留元素: ${pair.explanation}`, style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--muted-foreground)" } }] : []),
+                        ...(pairWithTopic.topic ? [{ type: "text" as const, text: pairWithTopic.topic, className: "text-[0.85rem] font-medium" }] : []),
+                        ...(pair.after ? [{ type: "text" as const, text: pair.after, className: "text-[0.85rem] leading-normal bg-green-500/5 p-2 rounded whitespace-pre-wrap" }] : []),
+                        ...(pair.explanation ? [{ type: "text" as const, text: `保留元素: ${pair.explanation}`, className: "text-xs italic text-muted-foreground" }] : []),
                       ],
                     }
                   }),
@@ -910,25 +867,25 @@ export function CreateTaskModal({
               ...(hasMetrics ? [{
                 type: "row" as const,
                 gap: "1rem",
-                style: { flexWrap: "wrap" as const, padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                className: "flex-wrap p-2 bg-muted rounded-md",
                 children: [
-                  ...(wordCount != null ? [{ type: "column" as const, gap: "0.125rem", style: { textAlign: "center" as const, minWidth: "50px" }, children: [
+                  ...(wordCount != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
                     { type: "text" as const, text: wordCount.toString(), variant: "h4" as const },
                     { type: "text" as const, text: "字", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
-                  ...(paraCount != null ? [{ type: "column" as const, gap: "0.125rem", style: { textAlign: "center" as const, minWidth: "50px" }, children: [
+                  ...(paraCount != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
                     { type: "text" as const, text: paraCount.toString(), variant: "h4" as const },
                     { type: "text" as const, text: "段", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
-                  ...(ttr != null ? [{ type: "column" as const, gap: "0.125rem", style: { textAlign: "center" as const, minWidth: "50px" }, children: [
+                  ...(ttr != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
                     { type: "text" as const, text: (ttr * 100).toFixed(0) + "%", variant: "h4" as const },
                     { type: "text" as const, text: "TTR", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
-                  ...(burstiness != null ? [{ type: "column" as const, gap: "0.125rem", style: { textAlign: "center" as const, minWidth: "50px" }, children: [
+                  ...(burstiness != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
                     { type: "text" as const, text: (burstiness * 100).toFixed(0) + "%", variant: "h4" as const },
                     { type: "text" as const, text: "突变度", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
-                  ...(avgSentLen != null ? [{ type: "column" as const, gap: "0.125rem", style: { textAlign: "center" as const, minWidth: "50px" }, children: [
+                  ...(avgSentLen != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
                     { type: "text" as const, text: avgSentLen.toFixed(0), variant: "h4" as const },
                     { type: "text" as const, text: "句长", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
@@ -940,7 +897,7 @@ export function CreateTaskModal({
                 {
                   type: "text" as const,
                   text: executionPrompt,
-                  style: { fontSize: "0.85rem", lineHeight: "1.6", whiteSpace: "pre-wrap", backgroundColor: "var(--muted)", padding: "0.75rem", borderRadius: "0.375rem", fontFamily: "monospace" },
+                  className: "text-[0.85rem] leading-relaxed whitespace-pre-wrap bg-muted p-3 rounded-md font-mono",
                 },
               ] : []),
             ],
@@ -948,13 +905,14 @@ export function CreateTaskModal({
         })
       }
 
-      if (tabNodes.length > 0) {
-        extraContent.push({
-          type: "container",
-          style: { marginTop: "0.75rem" },
-          children: [{ type: "tabs", tabs: tabNodes }],
-        })
-      }
+    // Build extraContent with tabs
+    const extraContent: A2UINode[] = []
+    if (tabNodes.length > 0) {
+      extraContent.push({
+        type: "container",
+        className: "mt-2",
+        children: [{ type: "tabs", tabs: tabNodes }],
+      })
     }
 
     // Build card title
@@ -969,16 +927,11 @@ export function CreateTaskModal({
       titleHref: material.sourceUrl ?? undefined,
       subtitle,
       badges,
-      metrics: isExpanded ? undefined : metrics,
       extraContent,
       version: analysisVersion ?? undefined,
-      headerAction: {
-        text: isExpanded ? t("common.collapse") : t("common.expand"),
-        variant: "secondary",
-        action: { action: "toggleExpand", args: [material.id] },
-      },
       onClick: { action: "selectMaterial", args: [material.id] },
       selected: isSelected,
+      hoverable: false,
       compact: true,
     })
   }
@@ -993,7 +946,7 @@ export function CreateTaskModal({
       body.push({
         type: "column",
         gap: "0.5rem",
-        style: { alignItems: "center", padding: "1rem" },
+        className: "items-center p-4",
         children: [
           { type: "text", text: hasSearch ? t("reverse.noSearchResults") : t("taskForm.noMaterials"), color: "muted" },
           ...(hasSearch ? [
@@ -1062,7 +1015,7 @@ export function CreateTaskModal({
           {
             type: "column",
             gap: "0.5rem",
-            style: { flex: 1, minWidth: 0 },
+            className: "flex-1 min-w-0",
             children: [
               { type: "text" as const, text: prompt.title, weight: "medium" as const },
               ...(badges.length > 0
@@ -1079,7 +1032,7 @@ export function CreateTaskModal({
                   alt: prompt.title,
                   width: "64px",
                   height: "64px",
-                  style: { borderRadius: "0.5rem", objectFit: "cover" as const },
+                  className: "rounded-lg object-cover",
                 },
               ]
             : []),
@@ -1095,8 +1048,8 @@ export function CreateTaskModal({
       type: "card",
       hoverable: true,
       onClick: { action: "selectCoverPrompt", args: [prompt.id] },
-      style: isSelected
-        ? { borderColor: "var(--ds-primary)", borderWidth: "2px", backgroundColor: "var(--ds-accent)" }
+      className: isSelected
+        ? "border-[var(--ds-primary)] border-2 bg-[var(--ds-accent)]"
         : undefined,
       children,
     }
@@ -1199,7 +1152,7 @@ export function CreateTaskModal({
     open: isOpen,
     title: isRegenerate ? t("taskForm.regenerateTitle") : t("taskForm.title"),
     onClose: { action: "close" },
-    style: { maxWidth: "42rem" },
+    className: "max-w-[42rem]",
     children: [
       {
         type: "column",
@@ -1207,7 +1160,7 @@ export function CreateTaskModal({
         children: [
           {
             type: "container",
-            style: { maxHeight: "60vh", overflowY: "auto" },
+            className: "max-h-[60vh] overflow-y-auto",
             children: [stepIndicator, stepContent],
           },
           getNavigationButtons(),

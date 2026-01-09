@@ -8,6 +8,7 @@ import type { CSSProperties } from "react"
 export interface A2UIBaseNode {
   id?: string
   style?: CSSProperties
+  className?: string
 }
 
 // Action definition

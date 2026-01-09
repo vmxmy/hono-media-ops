@@ -149,7 +149,7 @@ export default function TasksPage() {
       setArticleViewerState({
         isOpen: true,
         markdown: execution.articleMarkdown,
-        title: taskTopic,
+        title: execution.articleTitle || taskTopic,
         taskId,
         executionId: execution.id,
         executionResult: execution.result,
@@ -295,12 +295,7 @@ export default function TasksPage() {
         type: "text",
         text: displayTitle,
         variant: "h4",
-        style: {
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        },
+        className: "line-clamp-2",
       },
       // Subtitle if available
       ...(task.articleSubtitle ? [{
@@ -308,13 +303,7 @@ export default function TasksPage() {
         text: task.articleSubtitle,
         variant: "body",
         color: "muted",
-        style: {
-          fontSize: "0.875rem",
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        },
+        className: "text-sm line-clamp-2",
       } as A2UINode] : []),
     ]
 
@@ -346,7 +335,7 @@ export default function TasksPage() {
             type: "progress",
             status: "processing",
             value: progressPercent,
-            style: { height: "6px" },
+            className: "h-1.5",
           } as A2UINode,
           {
             type: "row",
@@ -363,13 +352,7 @@ export default function TasksPage() {
               } as A2UINode,
               {
                 type: "container",
-                style: {
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--primary)",
-                  animation: "pulse 1.5s ease-in-out infinite",
-                },
+                className: "w-1.5 h-1.5 rounded-full bg-primary animate-pulse",
               } as A2UINode,
             ],
           } as A2UINode,
@@ -385,7 +368,7 @@ export default function TasksPage() {
           align: "start",
           gap: "0.5rem",
           children: [
-            { type: "text", text: t("taskForm.topic") + ":", variant: "caption", color: "muted", style: { flexShrink: 0 } },
+            { type: "text", text: t("taskForm.topic") + ":", variant: "caption", color: "muted", className: "shrink-0" },
             {
               type: "editable-text",
               value: task.topic || "",
@@ -393,11 +376,7 @@ export default function TasksPage() {
               variant: "caption",
               editable: canEdit,
               onChange: { action: "updateTopic", args: [task.id] },
-              style: {
-                fontSize: "0.875rem",
-                lineHeight: "1.5",
-                flex: 1,
-              },
+              className: "text-sm leading-normal flex-1",
             },
           ],
         } as A2UINode,
@@ -407,7 +386,7 @@ export default function TasksPage() {
           align: "start",
           gap: "0.5rem",
           children: [
-            { type: "text", text: t("taskForm.keywords") + ":", variant: "caption", color: "muted", style: { flexShrink: 0 } },
+            { type: "text", text: t("taskForm.keywords") + ":", variant: "caption", color: "muted", className: "shrink-0" },
             {
               type: "editable-text",
               value: task.keywords || "",
@@ -416,15 +395,7 @@ export default function TasksPage() {
               multiline: true,
               editable: canEdit,
               onChange: { action: "updateKeywords", args: [task.id] },
-              style: {
-                fontSize: "0.875rem",
-                lineHeight: "1.5",
-                flex: 1,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              },
+              className: "text-sm leading-normal flex-1 line-clamp-2",
             },
           ],
         } as A2UINode,
@@ -461,25 +432,14 @@ export default function TasksPage() {
                               text: `原文: ${task.refMaterial.sourceTitle ?? task.refMaterial.sourceUrl}`,
                               href: task.refMaterial.sourceUrl,
                               external: true,
-                              style: {
-                                fontSize: "0.75rem",
-                                maxWidth: "var(--a2ui-ref-title-max)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "var(--a2ui-ref-title-white-space)",
-                              },
+                              className: "text-xs max-w-[var(--a2ui-ref-title-max)] overflow-hidden text-ellipsis whitespace-[var(--a2ui-ref-title-white-space)]",
                             } as A2UINode)
                           : ({
                               type: "text",
                               text: `原文: ${task.refMaterial.sourceTitle ?? "-"}`,
                               variant: "caption",
                               color: "muted",
-                              style: {
-                                maxWidth: "var(--a2ui-ref-title-max)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "var(--a2ui-ref-title-white-space)",
-                              },
+                              className: "max-w-[var(--a2ui-ref-title-max)] overflow-hidden text-ellipsis whitespace-[var(--a2ui-ref-title-white-space)]",
                             } as A2UINode),
                       ],
                     } as A2UINode,
@@ -513,18 +473,11 @@ export default function TasksPage() {
             type: "image",
             src: task.coverUrl,
             alt: task.topic,
-            style: { width: "100%", height: "160px", objectFit: "cover" },
+            className: "w-full h-40 object-cover",
           }
         : {
             type: "container",
-            style: {
-              width: "100%",
-              height: "160px",
-              backgroundColor: "var(--muted)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            },
+            className: "w-full h-40 bg-muted flex items-center justify-center",
             children: [{ type: "text", text: "任务", color: "muted" }],
           },
       header: headerNodes,
@@ -552,7 +505,7 @@ export default function TasksPage() {
       return {
         type: "card",
         hoverable: false,
-        style: { padding: "2rem", textAlign: "center" },
+        className: "p-8 text-center",
         children: [{ type: "text", text: `错误: ${error.message}`, color: "muted" }],
       }
     }
@@ -570,12 +523,12 @@ export default function TasksPage() {
       return {
         type: "card",
         hoverable: false,
-        style: { padding: "2rem", textAlign: "center" },
+        className: "p-8 text-center",
         children: [
           {
             type: "column",
             gap: "0.75rem",
-            style: { alignItems: "center" },
+            className: "items-center",
             children: [
               { type: "text", text: hasSearch ? t("tasks.noSearchResults") : t("tasks.noTasks"), color: "muted" },
               ...(hasSearch ? [
@@ -636,7 +589,7 @@ export default function TasksPage() {
         placeholder: t("tasks.searchPlaceholder"),
         inputType: "text",
         autocomplete: "off",
-        style: { maxWidth: "100%" },
+        className: "max-w-full",
         onChange: { action: "setSearch" },
       },
     ],
@@ -760,29 +713,22 @@ export default function TasksPage() {
 
   const listColumn: A2UINode = {
     type: "container",
-    style: {
-      flex: 1,
-      minWidth: "280px",
-      minHeight: 0,
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-    },
+    className: "flex-1 min-w-[280px] min-h-0 flex flex-col overflow-hidden",
     children: [
       // Header stays fixed
       {
         type: "container",
-        style: { flexShrink: 0, paddingBottom: "0.75rem" },
+        className: "shrink-0 pb-3",
         children: [headerNode],
       },
       // Task list scrolls independently
       {
         type: "scroll-area",
-        style: { flex: 1, minHeight: 0 },
+        className: "flex-1 min-h-0",
         children: [
           {
             type: "container",
-            style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+            className: "flex flex-col gap-3",
             children: [getTaskListContent(isSplitView)],
           },
         ],
@@ -792,24 +738,11 @@ export default function TasksPage() {
 
   const viewerColumn: A2UINode = {
     type: "container",
-    style: {
-      flex: isMobileArticleView ? 1 : 1.4,
-      minWidth: isMobileArticleView ? 0 : "320px",
-      minHeight: 0,
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-    },
+    className: `${isMobileArticleView ? "flex-1 min-w-0" : "flex-[1.4] min-w-[320px]"} min-h-0 flex flex-col overflow-hidden`,
     children: [
       {
         type: "container",
-        style: {
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+        className: "flex-1 min-h-0 flex flex-col overflow-hidden",
         children: [
           {
             type: "article-viewer-modal",
@@ -833,13 +766,7 @@ export default function TasksPage() {
     if (isMobileArticleView) {
       return {
         type: "container",
-        style: {
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+        className: "flex-1 min-h-0 flex flex-col overflow-hidden",
         children: [viewerColumn],
       }
     }
@@ -848,14 +775,7 @@ export default function TasksPage() {
     if (isSplitView) {
       return {
         type: "container",
-        style: {
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "row",
-          gap: "1rem",
-          overflow: "hidden",
-        },
+        className: "flex-1 min-h-0 flex flex-row gap-4 overflow-hidden",
         children: [listColumn, viewerColumn],
       }
     }
@@ -863,26 +783,20 @@ export default function TasksPage() {
     // Default: show only task list
     return {
       type: "container",
-      style: {
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      },
+      className: "flex-1 min-h-0 flex flex-col overflow-hidden",
       children: [
         {
           type: "container",
-          style: { flexShrink: 0, paddingBottom: "0.75rem" },
+          className: "shrink-0 pb-3",
           children: [headerNode],
         },
         {
           type: "scroll-area",
-          style: { flex: 1, minHeight: 0 },
+          className: "flex-1 min-h-0",
           children: [
             {
               type: "container",
-              style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+              className: "flex flex-col gap-3",
               children: [getTaskListContent(false)],
             },
           ],

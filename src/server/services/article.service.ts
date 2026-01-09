@@ -15,6 +15,8 @@ export interface PublishedArticle {
   executionId: string | null;
   articleMarkdown: string | null;
   articleHtml: string | null;
+  articleTitle: string | null;
+  articleSubtitle: string | null;
 }
 
 export interface ArticleListItem {
@@ -486,6 +488,8 @@ export const articleService = {
         executionId: taskExecutions.id,
         articleMarkdown: taskExecutions.articleMarkdown,
         articleHtml: taskExecutions.articleHtml,
+        articleTitle: taskExecutions.articleTitle,
+        articleSubtitle: taskExecutions.articleSubtitle,
         coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`,
       })
       .from(tasks)
@@ -514,6 +518,8 @@ export const articleService = {
       executionId: row.executionId,
       articleMarkdown: row.articleMarkdown,
       articleHtml: row.articleHtml,
+      articleTitle: row.articleTitle,
+      articleSubtitle: row.articleSubtitle,
     };
   },
 

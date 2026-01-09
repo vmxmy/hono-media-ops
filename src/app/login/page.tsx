@@ -151,9 +151,9 @@ function LoginPageContent() {
       {
         type: "column",
         gap: "0.5rem",
-        style: { textAlign: "center", alignItems: "center" },
+        className: "text-center items-center",
         children: [
-          { type: "image", src: "/logo.png", alt: "Wonton", style: { height: "64px", width: "auto" } },
+          { type: "image", src: "/logo.png", alt: "Wonton", className: "h-16 w-auto" },
           { type: "text", text: t("app.description"), color: "muted" },
         ],
       },
@@ -232,7 +232,7 @@ function LoginPageContent() {
             text: t("auth.orContinueWith"),
             variant: "caption",
             color: "muted",
-            style: { whiteSpace: "nowrap" },
+            className: "whitespace-nowrap",
           },
           { type: "divider" },
         ],
@@ -269,12 +269,7 @@ function LoginPageContent() {
   if (status === "loading") {
     const loadingNode: A2UINode = {
       type: "container",
-      style: {
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      },
+      className: "min-h-screen flex items-center justify-center",
       children: [{ type: "text", text: t("common.loading"), color: "muted" }],
     }
     return <A2UIRenderer node={loadingNode} />
@@ -282,31 +277,20 @@ function LoginPageContent() {
 
   const pageNode: A2UINode = {
     type: "container",
-    style: { position: "relative", minHeight: "100vh" },
+    className: "relative min-h-screen",
     children: [
       {
         type: "container",
-        style: { position: "absolute", right: "1rem", top: "1rem" },
+        className: "absolute right-4 top-4",
         children: [{ type: "theme-switcher" } as A2UINode],
       },
       {
         type: "container",
-        style: {
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "0 1rem",
-        },
+        className: "min-h-screen flex items-center justify-center px-4",
         children: [
           {
             type: "card",
-            style: {
-              width: "100%",
-              maxWidth: "28rem",
-              padding: "2rem",
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)",
-            },
+            className: "w-full max-w-md p-8 shadow-xl",
             children: [buildLoginPage()],
           },
         ],

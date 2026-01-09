@@ -147,7 +147,7 @@ export default function InsightsPage() {
     if (!profile) {
       return {
         type: "card",
-        style: { padding: "2rem", textAlign: "center" },
+        className: "p-8 text-center",
         children: [{ type: "text", text: t("insights.noProfile"), color: "muted" }],
       }
     }
@@ -165,7 +165,7 @@ export default function InsightsPage() {
             {
               type: "column",
               gap: "0.25rem",
-              style: { textAlign: "center" },
+              className: "text-center",
               children: [
                 { type: "text", text: String(profile.totalAnalyses), variant: "h1", weight: "bold" },
                 { type: "text", text: t("insights.totalAnalyses"), variant: "caption", color: "muted" },
@@ -174,7 +174,7 @@ export default function InsightsPage() {
             {
               type: "column",
               gap: "0.25rem",
-              style: { textAlign: "center" },
+              className: "text-center",
               children: [
                 { type: "text", text: profile.lastAnalysisAt ? new Date(profile.lastAnalysisAt).toLocaleDateString() : "-", variant: "h3" },
                 { type: "text", text: t("insights.lastAnalysis"), variant: "caption", color: "muted" },
@@ -183,7 +183,7 @@ export default function InsightsPage() {
             {
               type: "column",
               gap: "0.25rem",
-              style: { textAlign: "center" },
+              className: "text-center",
               children: [
                 { type: "text", text: String(profile.topPrimaryTypes.length), variant: "h3" },
                 { type: "text", text: t("insights.topCategories"), variant: "caption", color: "muted" },
@@ -208,11 +208,11 @@ export default function InsightsPage() {
     const buildStatItem = (value: string | number, label: string, description?: string): A2UINode => ({
       type: "column",
       gap: "0.25rem",
-      style: { textAlign: "center", flex: 1, minWidth: "100px" },
+      className: "text-center flex-1 min-w-[100px]",
       children: [
         { type: "text", text: String(value), variant: "h2", weight: "bold" },
         { type: "text", text: label, variant: "caption", color: "muted" },
-        ...(description ? [{ type: "text", text: description, variant: "caption", color: "muted", style: { fontSize: "10px" } } as A2UINode] : []),
+        ...(description ? [{ type: "text", text: description, variant: "caption", color: "muted", className: "text-[10px]" } as A2UINode] : []),
       ],
     })
 
@@ -349,7 +349,7 @@ export default function InsightsPage() {
                   curve: "catmullRom",
                   xLegend: t("common.date"),
                 } as A2UINode)
-              : { type: "text", text: t("common.noData"), color: "muted", style: { textAlign: "center", padding: "2rem" } },
+              : { type: "text", text: t("common.noData"), color: "muted", className: "text-center p-8" },
           ],
         },
       ],

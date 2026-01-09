@@ -117,7 +117,7 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
     const emptyNode: A2UINode = {
       type: "card",
       hoverable: false,
-      style: { padding: "2rem", textAlign: "center" },
+      className: "p-8 text-center",
       children: [{ type: "text", text: t("reverse.noLogs"), color: "muted" }],
     }
     return <A2UIRenderer node={emptyNode} />
@@ -135,13 +135,9 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
 
   const headerNode: A2UINode = {
     type: "container",
+    className: "grid gap-2 px-4 py-3 bg-[var(--ds-muted)] border-b border-[var(--ds-border)]",
     style: {
-      display: "grid",
       gridTemplateColumns: gridTemplate,
-      gap: "0.5rem",
-      padding: "0.75rem 1rem",
-      backgroundColor: "var(--ds-muted)",
-      borderBottom: "1px solid var(--ds-border)",
     },
     children: headerLabels.map((col, idx) => {
       if (!col.key) {
@@ -154,7 +150,7 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
         text: `${col.label}${arrow}`,
         variant: isActive ? "primary" : "muted",
         onClick: { action: "sort", args: [col.key] },
-        style: { fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" },
+        className: "text-xs font-semibold uppercase tracking-wider",
       } as A2UINode
     }),
   }
@@ -165,13 +161,9 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
     const metricsTtr = row.metricsTtr
     return {
       type: "container",
+      className: "grid gap-2 px-4 py-3 items-center border-b border-[var(--ds-border)]",
       style: {
-        display: "grid",
         gridTemplateColumns: gridTemplate,
-        gap: "0.5rem",
-        padding: "0.75rem 1rem",
-        alignItems: "center",
-        borderBottom: "1px solid var(--ds-border)",
       },
       children: [
         {
@@ -179,7 +171,7 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
           text: title,
           variant: "default",
           onClick: { action: "view", args: [row.id] },
-          style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+          className: "overflow-hidden text-ellipsis whitespace-nowrap",
         },
         row.primaryType
           ? { type: "badge", text: row.primaryType, color: "default" }
@@ -220,12 +212,7 @@ export function MaterialsTable({ data, onClone, onDelete, onViewDetail }: Materi
 
   const tableNode: A2UINode = {
     type: "container",
-    style: {
-      border: "1px solid var(--ds-border)",
-      borderRadius: "0.75rem",
-      overflow: "hidden",
-      backgroundColor: "var(--ds-card)",
-    },
+    className: "border border-[var(--ds-border)] rounded-xl overflow-hidden bg-[var(--ds-card)]",
     children: [headerNode, ...rows],
   }
 

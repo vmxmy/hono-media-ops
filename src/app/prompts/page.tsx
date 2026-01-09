@@ -289,19 +289,19 @@ export default function ImagePromptsPage() {
         {
           type: "form-field",
           label: t("imagePrompts.modelLabel"),
-          style: { flex: 1 },
+          className: "flex-1",
           children: [{ type: "select", id: "model", value: formData.model, options: MODEL_OPTIONS, onChange: { action: "setModel" } }],
         },
         {
           type: "form-field",
           label: t("imagePrompts.ratioLabel"),
-          style: { flex: 1 },
+          className: "flex-1",
           children: [{ type: "select", id: "ratio", value: formData.ratio, options: RATIO_OPTIONS, onChange: { action: "setRatio" } }],
         },
         {
           type: "form-field",
           label: t("imagePrompts.resolutionLabel"),
-          style: { flex: 1 },
+          className: "flex-1",
           children: [{ type: "select", id: "resolution", value: formData.resolution, options: RESOLUTION_OPTIONS, onChange: { action: "setResolution" } }],
         },
       ],
@@ -314,13 +314,13 @@ export default function ImagePromptsPage() {
         {
           type: "form-field",
           label: t("imagePrompts.categoryLabel"),
-          style: { flex: 1 },
+          className: "flex-1",
           children: [{ type: "select", id: "category", value: formData.category, options: CATEGORY_OPTIONS, onChange: { action: "setCategory" } }],
         },
         {
           type: "form-field",
           label: t("imagePrompts.tagsLabel"),
-          style: { flex: 2 },
+          className: "flex-[2]",
           children: [{ type: "input", id: "tags", name: "tags", value: formData.tags, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.tagsPlaceholder"), onChange: { action: "setTags" } }],
         },
       ],
@@ -373,7 +373,7 @@ export default function ImagePromptsPage() {
     responsive: true,
     align: "center",
     children: [
-      { type: "input", id: "search", name: "search", value: searchQuery, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.searchPlaceholder"), style: { flex: 1, minWidth: "200px" }, onChange: { action: "setSearchQuery" } },
+      { type: "input", id: "search", name: "search", value: searchQuery, inputType: "text", autocomplete: "off", placeholder: t("imagePrompts.searchPlaceholder"), className: "flex-1 min-w-[200px]", onChange: { action: "setSearchQuery" } },
       { type: "select", id: "categoryFilter", value: categoryFilter, options: [{ value: "", label: t("imagePrompts.allCategories") }, ...CATEGORY_OPTIONS], onChange: { action: "setCategoryFilter" } },
     ],
   }
@@ -391,7 +391,7 @@ export default function ImagePromptsPage() {
           {
             type: "card",
             hoverable: false,
-            style: { padding: "2rem", textAlign: "center" },
+            className: "p-8 text-center",
             children: [{ type: "text", text: t("imagePrompts.noPrompts"), color: "muted" }],
           },
         ],
@@ -418,7 +418,7 @@ export default function ImagePromptsPage() {
             {
               type: "column",
               gap: "0.25rem",
-              style: { flex: 1, minWidth: 0 },
+              className: "flex-1 min-w-0",
               children: [
                 { type: "text", text: prompt.title, variant: "h4" },
                 {
@@ -452,12 +452,12 @@ export default function ImagePromptsPage() {
       if (prompt.previewUrl) {
         cardContent.push({
           type: "container",
-          style: { borderRadius: "0.375rem", overflow: "hidden", marginTop: "0.5rem" },
+          className: "rounded-md overflow-hidden mt-2",
           children: [{
             type: "image",
             src: prompt.previewUrl,
             alt: prompt.title,
-            style: { width: "100%", maxHeight: "150px", objectFit: "cover" },
+            className: "w-full max-h-[150px] object-cover",
           }],
         } as A2UINode)
       }
@@ -468,7 +468,7 @@ export default function ImagePromptsPage() {
         text: prompt.prompt.length > 120 ? prompt.prompt.slice(0, 120) + "..." : prompt.prompt,
         variant: "body",
         color: "muted",
-        style: { fontSize: "0.875rem" },
+        className: "text-[0.875rem]",
       })
 
       // Add tags if available
@@ -536,16 +536,16 @@ export default function ImagePromptsPage() {
         gap: "1.5rem",
         responsive: true,
         children: [
-          { type: "column", gap: "0", style: { flex: 1, minWidth: 0, maxWidth: "400px" }, children: [formCard] },
+          { type: "column", gap: "0", className: "flex-1 min-w-0 max-w-[400px]", children: [formCard] },
           {
             type: "column",
             gap: "1rem",
-            style: { flex: 2, minWidth: 0 },
+            className: "flex-[2] min-w-0",
             children: [
               filterBar,
               buildPromptsList(),
               ...(pagination ? [pagination] : []),
-              { type: "text", text: t("imagePrompts.totalRecords", { count: promptsData?.total ?? 0 }), variant: "caption", color: "muted", style: { textAlign: "center" } },
+              { type: "text", text: t("imagePrompts.totalRecords", { count: promptsData?.total ?? 0 }), variant: "caption", color: "muted", className: "text-center" },
             ],
           },
         ],

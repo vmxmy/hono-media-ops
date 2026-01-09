@@ -164,17 +164,17 @@ export function CreateHubModal({
         type: "card",
         hoverable: true,
         onClick: { action: "goToImport" },
-        style: { flex: 1, minWidth: "140px", cursor: "pointer" },
+        className: "flex-1 min-w-[140px] cursor-pointer",
         children: [
           {
             type: "column",
             gap: "0.5rem",
-            style: { padding: "1rem 0.5rem", textAlign: "center", alignItems: "center" },
+            className: "py-4 px-2 text-center items-center",
             children: [
               {
                 type: "text",
                 text: "📥",
-                style: { fontSize: "2rem" },
+                className: "text-[2rem]",
               },
               {
                 type: "text",
@@ -196,17 +196,17 @@ export function CreateHubModal({
         type: "card",
         hoverable: true,
         onClick: { action: "startWriting" },
-        style: { flex: 1, minWidth: "140px", cursor: "pointer" },
+        className: "flex-1 min-w-[140px] cursor-pointer",
         children: [
           {
             type: "column",
             gap: "0.5rem",
-            style: { padding: "1rem 0.5rem", textAlign: "center", alignItems: "center" },
+            className: "py-4 px-2 text-center items-center",
             children: [
               {
                 type: "text",
                 text: "✏️",
-                style: { fontSize: "2rem" },
+                className: "text-[2rem]",
               },
               {
                 type: "text",
@@ -231,7 +231,7 @@ export function CreateHubModal({
         text: t("createHub.whatToDo"),
         variant: "h3",
         weight: "semibold",
-        style: { marginBottom: "0.5rem" },
+        className: "mb-2",
       },
       {
         type: "row",
@@ -245,7 +245,7 @@ export function CreateHubModal({
     if (recentMaterials.length > 0) {
       children.push({
         type: "divider",
-        style: { margin: "1rem 0" },
+        className: "my-4",
       })
       children.push({
         type: "text",
@@ -253,7 +253,7 @@ export function CreateHubModal({
         variant: "body",
         weight: "medium",
         color: "muted",
-        style: { marginBottom: "0.5rem" },
+        className: "mb-2",
       })
       children.push({
         type: "column",
@@ -267,7 +267,7 @@ export function CreateHubModal({
             type: "card",
             hoverable: true,
             onClick: { action: "startWritingWithMaterial", args: [material.id] },
-            style: { cursor: "pointer", padding: "0.75rem" },
+            className: "cursor-pointer p-3",
             children: [
               {
                 type: "row",
@@ -277,17 +277,13 @@ export function CreateHubModal({
                   {
                     type: "column",
                     gap: "0.25rem",
-                    style: { flex: 1, minWidth: 0 },
+                    className: "flex-1 min-w-0",
                     children: [
                       {
                         type: "text",
                         text: title,
                         weight: "medium",
-                        style: {
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        },
+                        className: "overflow-hidden text-ellipsis whitespace-nowrap",
                       },
                       ...(archetype
                         ? [
@@ -425,12 +421,12 @@ export function CreateHubModal({
     return {
       type: "column",
       gap: "1.5rem",
-      style: { padding: "1rem 0", alignItems: "center" },
+      className: "py-4 items-center",
       children: [
         {
           type: "text",
           text: "✅",
-          style: { fontSize: "3rem" },
+          className: "text-[3rem]",
         },
         {
           type: "text",
@@ -481,7 +477,7 @@ export function CreateHubModal({
     open: isOpen,
     title: t("createHub.title"),
     onClose: { action: "close" },
-    style: { maxWidth: "28rem" },
+    className: "max-w-[28rem]",
     children: [contentNode],
   }
 

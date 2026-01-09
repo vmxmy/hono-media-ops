@@ -305,7 +305,7 @@ export default function ProfilePage() {
                 value: profile?.email ?? profile?.name ?? "",
                 inputType: "text",
                 autocomplete: "username",
-                style: { display: "none" },
+                className: "hidden",
               } as A2UINode,
               {
                 type: "form-field",
@@ -620,7 +620,7 @@ export default function ProfilePage() {
     children: [
       {
         type: "container",
-        style: { maxWidth: "960px", margin: "0 auto", width: "100%" },
+        className: "max-w-[960px] mx-auto w-full",
         children: [pageContent],
       },
     ],

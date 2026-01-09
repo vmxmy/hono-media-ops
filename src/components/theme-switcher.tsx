@@ -131,7 +131,7 @@ export function ThemeSwitcher() {
     size: "sm",
     variant: "secondary",
     onClick: { action: "toggleOpen" },
-    style: { width: "2.25rem", height: "2.25rem", padding: 0 },
+    className: "w-9 h-9 p-0",
   }
 
   const themeOptions = [
@@ -152,13 +152,7 @@ export function ThemeSwitcher() {
       type: "card",
       hoverable: true,
       onClick: { action: "setPalette", args: [option.value] },
-      style: {
-        padding: "0.5rem",
-        cursor: "pointer",
-        borderWidth: option.selected ? "2px" : "1px",
-        borderColor: option.selected ? "var(--ds-primary)" : "var(--ds-border)",
-        backgroundColor: option.selected ? "var(--ds-accent)" : undefined,
-      },
+      className: `p-2 cursor-pointer ${option.selected ? "border-2 border-[var(--ds-primary)] bg-[var(--ds-accent)]" : "border border-[var(--ds-border)]"}`,
       children: [
         {
           type: "row",
@@ -171,10 +165,11 @@ export function ThemeSwitcher() {
                   {
                     type: "row" as const,
                     gap: "0",
-                    style: { borderRadius: "0.25rem", overflow: "hidden", flexShrink: 0 },
+                    className: "rounded overflow-hidden shrink-0",
                     children: option.colors.map((color, idx) => ({
                       type: "container" as const,
-                      style: { width: "0.75rem", height: "1.25rem", backgroundColor: color },
+                      className: "w-3 h-5",
+                      style: { backgroundColor: color },
                       id: `${option.key}-color-${idx}`,
                     })),
                   },
@@ -190,25 +185,18 @@ export function ThemeSwitcher() {
 
   const dropdownNode: A2UINode = {
     type: "container",
-    style: {
-      position: "absolute",
-      right: 0,
-      top: "100%",
-      marginTop: "0.5rem",
-      width: "16rem",
-      zIndex: 50,
-    },
+    className: "absolute right-0 top-full mt-2 w-64 z-50",
     children: [
       {
         type: "card",
         hoverable: false,
-        style: { padding: "0.75rem" },
+        className: "p-3",
         children: [
           headerNode,
-          { type: "text", text: t("settings.theme"), variant: "caption", color: "muted", style: { marginTop: "0.75rem", marginBottom: "0.5rem" } },
+          { type: "text", text: t("settings.theme"), variant: "caption", color: "muted", className: "mt-3 mb-2" },
           {
             type: "container",
-            style: { maxHeight: "12rem", overflowY: "auto" },
+            className: "max-h-48 overflow-y-auto",
             children: [themeListNode],
           },
           {
@@ -216,7 +204,7 @@ export function ThemeSwitcher() {
             text: isDark ? t("settings.dark") : t("settings.light"),
             variant: "caption",
             color: "muted",
-            style: { marginTop: "0.5rem" },
+            className: "mt-2",
           },
         ],
       },

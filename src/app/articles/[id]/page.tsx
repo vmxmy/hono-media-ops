@@ -68,7 +68,7 @@ export default function ArticleDetailPage({ params }: Props) {
     if (isLoading) {
       return {
         type: "container",
-        style: { padding: "4rem", textAlign: "center" },
+        className: "p-16 text-center",
         children: [{ type: "text", text: t("articles.loadingArticle"), color: "muted" }]
       }
     }
@@ -77,7 +77,7 @@ export default function ArticleDetailPage({ params }: Props) {
       return {
         type: "column",
         gap: "1rem",
-        style: { padding: "2rem", alignItems: "center" },
+        className: "p-8 items-center",
         children: [
           { type: "alert", message: t("articles.loadError", { error: error.message }), variant: "error" },
           { type: "button", text: t("articles.backToList"), variant: "secondary", onClick: { action: "backToList" } },
@@ -89,7 +89,7 @@ export default function ArticleDetailPage({ params }: Props) {
       return {
         type: "column",
         gap: "1rem",
-        style: { padding: "4rem", alignItems: "center", textAlign: "center" },
+        className: "p-16 items-center text-center",
         children: [
           { type: "text", text: t("articles.articleNotFound"), color: "muted" },
           { type: "button", text: t("articles.backToList"), variant: "secondary", onClick: { action: "backToList" } },
@@ -99,22 +99,24 @@ export default function ArticleDetailPage({ params }: Props) {
 
     const readingTime = estimateReadingTime(article.articleMarkdown)
 
+    const displayTitle = article.articleTitle || article.topic;
+
     return {
       type: "column",
       gap: "0", // Gap handled by internal padding/margins
-      style: { maxWidth: "800px", margin: "0 auto", width: "100%", backgroundColor: "var(--background)" },
+      className: "max-w-3xl mx-auto w-full bg-background",
       children: [
         // Top Navigation
         {
           type: "row",
-          style: { padding: "1rem 0" },
+          className: "py-4",
           children: [
             {
               type: "button",
               text: t("articles.backToList"),
               variant: "text",
               onClick: { action: "backToList" },
-              style: { color: "var(--muted-foreground)" }
+              className: "text-muted-foreground"
             }
           ],
         },
@@ -123,17 +125,31 @@ export default function ArticleDetailPage({ params }: Props) {
         {
           type: "column",
           gap: "1.5rem",
-          style: { padding: "2rem 0", borderBottom: "1px solid var(--border)" },
+          className: "py-8 border-b border-border",
           children: [
             // Cover Image
             ...(article.coverUrl ? [{
               type: "image" as const,
               src: article.coverUrl,
-              alt: article.topic,
-              style: { width: "100%", borderRadius: "0.5rem", maxHeight: "400px", objectFit: "cover" as const }
+              alt: displayTitle,
+              className: "w-full rounded-lg max-h-96 object-cover"
             }] : []),
             // Title
-            { type: "text", text: article.topic, variant: "h1", weight: "bold", style: { fontSize: "2.5rem", lineHeight: "1.2" } },
+            {
+              type: "text",
+              text: displayTitle,
+              variant: "h1",
+              weight: "bold",
+              className: "text-4xl leading-tight"
+            },
+            // Subtitle
+            ...(article.articleSubtitle ? [{
+              type: "text" as const,
+              text: article.articleSubtitle,
+              variant: "h4" as const,
+              color: "muted" as const,
+              className: "text-2xl font-normal -mt-2"
+            }] : []),
             // Meta
             {
               type: "row",
@@ -152,12 +168,12 @@ export default function ArticleDetailPage({ params }: Props) {
         // Article Body (Markdown)
         {
           type: "container",
-          style: { padding: "2rem 0" },
+          className: "py-8",
           children: [
-            { 
-              type: "markdown", 
+            {
+              type: "markdown",
               content: article.articleMarkdown ?? "",
-              style: { fontSize: "1.125rem", lineHeight: "1.8" }
+              className: "text-lg leading-relaxed"
             }
           ],
         },
@@ -165,14 +181,14 @@ export default function ArticleDetailPage({ params }: Props) {
         // Footer Navigation
         {
           type: "container",
-          style: { padding: "2rem 0", borderTop: "1px solid var(--border)", marginTop: "2rem" },
+          className: "py-8 border-t border-border mt-8",
           children: [
             {
               type: "button",
               text: t("articles.backToList"),
               variant: "text",
               onClick: { action: "backToList" },
-              style: { color: "var(--muted-foreground)" }
+              className: "text-muted-foreground"
             }
           ],
         },
@@ -196,7 +212,7 @@ export default function ArticleDetailPage({ params }: Props) {
     children: [
       {
         type: "container",
-        style: { padding: "0 1rem" },
+        className: "px-4",
         children: [buildContent()]
       }
     ],

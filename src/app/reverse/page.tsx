@@ -225,12 +225,12 @@ export default function ReversePage() {
       return {
         type: "card",
         hoverable: false,
-        style: { padding: "2rem", textAlign: "center" },
+        className: "p-8 text-center",
         children: [
           {
             type: "column",
             gap: "0.75rem",
-            style: { alignItems: "center" },
+            className: "items-center",
             children: [
               { type: "text", text: hasSearch ? t("reverse.noSearchResults") : t("reverse.noRecords"), color: "muted" },
               ...(hasSearch ? [
@@ -356,7 +356,7 @@ export default function ReversePage() {
                       gap: "0.25rem",
                       children: [
                         { type: "text" as const, text: t("reverse.personaDescription"), variant: "caption" as const, color: "muted" as const },
-                        { type: "text" as const, text: personaDescription, style: { fontSize: "0.8rem", lineHeight: "1.5" } },
+                        { type: "text" as const, text: personaDescription, className: "text-[0.8rem] leading-normal" },
                       ],
                     },
                   ]
@@ -367,14 +367,14 @@ export default function ReversePage() {
                     {
                       type: "row" as const,
                       gap: "1rem",
-                      style: { flexWrap: "wrap" as const },
+                      className: "flex-wrap",
                       children: [
                         ...(voiceFormality
                           ? [
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { minWidth: "70px" },
+                                className: "min-w-[70px]",
                                 children: [
                                   { type: "text" as const, text: t("reverse.voiceFormality"), variant: "caption" as const, color: "muted" as const },
                                   { type: "badge" as const, text: voiceFormality, color: "primary" as const },
@@ -387,7 +387,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { minWidth: "70px" },
+                                className: "min-w-[70px]",
                                 children: [
                                   { type: "text" as const, text: t("reverse.voiceEnergy"), variant: "caption" as const, color: "muted" as const },
                                   { type: "badge" as const, text: voiceEnergy, color: "success" as const },
@@ -400,7 +400,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { minWidth: "70px" },
+                                className: "min-w-[70px]",
                                 children: [
                                   { type: "text" as const, text: t("reverse.voiceWarmth"), variant: "caption" as const, color: "muted" as const },
                                   { type: "badge" as const, text: voiceWarmth, color: "warning" as const },
@@ -413,7 +413,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { minWidth: "70px" },
+                                className: "min-w-[70px]",
                                 children: [
                                   { type: "text" as const, text: t("reverse.voiceConfidence"), variant: "caption" as const, color: "muted" as const },
                                   { type: "badge" as const, text: voiceConfidence, color: "default" as const },
@@ -426,7 +426,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { minWidth: "70px" },
+                                className: "min-w-[70px]",
                                 children: [
                                   { type: "text" as const, text: "距离", variant: "caption" as const, color: "muted" as const },
                                   { type: "badge" as const, text: voiceDistance, color: "default" as const },
@@ -447,7 +447,7 @@ export default function ReversePage() {
                       align: "center" as const,
                       children: [
                         { type: "text" as const, text: t("reverse.targetAudience") + ":", variant: "caption" as const, color: "muted" as const },
-                        { type: "text" as const, text: impliedReader, style: { fontSize: "0.8rem" } },
+                        { type: "text" as const, text: impliedReader, className: "text-[0.8rem]" },
                       ],
                     },
                   ]
@@ -458,7 +458,7 @@ export default function ReversePage() {
                     {
                       type: "row" as const,
                       gap: "0.25rem",
-                      style: { flexWrap: "wrap" as const },
+                      className: "flex-wrap",
                       align: "center" as const,
                       children: [
                         { type: "text" as const, text: t("reverse.toneKeywords") + ":", variant: "caption" as const, color: "muted" as const },
@@ -502,13 +502,13 @@ export default function ReversePage() {
                     type: "text" as const,
                     text: guidelines,
                     variant: "caption" as const,
-                    style: {
-                      fontSize: "0.8rem",
-                      padding: "0.5rem",
-                      backgroundColor: guidelines.startsWith("✅") ? "rgba(34, 197, 94, 0.1)" : guidelines.startsWith("❌") ? "rgba(239, 68, 68, 0.1)" : "var(--muted)",
-                      borderRadius: "0.25rem",
-                      borderLeft: guidelines.startsWith("✅") ? "3px solid var(--success)" : guidelines.startsWith("❌") ? "3px solid var(--destructive)" : "none",
-                    },
+                    className: `text-[0.8rem] p-2 rounded ${
+                      guidelines.startsWith("✅")
+                        ? "bg-[rgba(34,197,94,0.1)] border-l-[3px] border-success"
+                        : guidelines.startsWith("❌")
+                        ? "bg-[rgba(239,68,68,0.1)] border-l-[3px] border-destructive"
+                        : "bg-muted"
+                    }`,
                   })
                 }
 
@@ -525,14 +525,7 @@ export default function ReversePage() {
                       {
                         type: "text" as const,
                         text: `"${patternSample}"`,
-                        style: {
-                          fontSize: "0.8rem",
-                          fontStyle: "italic",
-                          padding: "0.5rem",
-                          backgroundColor: "var(--muted)",
-                          borderRadius: "0.25rem",
-                          borderLeft: "3px solid var(--ds-primary)",
-                        },
+                        className: "text-[0.8rem] italic p-2 bg-muted rounded border-l-[3px] border-primary",
                       },
                     ],
                   })
@@ -548,13 +541,7 @@ export default function ReversePage() {
                       {
                         type: "text" as const,
                         text: patternTemplate,
-                        style: {
-                          fontSize: "0.75rem",
-                          fontFamily: "monospace",
-                          padding: "0.5rem",
-                          backgroundColor: "var(--muted)",
-                          borderRadius: "0.25rem",
-                        },
+                        className: "text-[0.75rem] font-mono p-2 bg-muted rounded",
                       },
                     ],
                   })
@@ -603,7 +590,7 @@ export default function ReversePage() {
                       {
                         type: "row" as const,
                         gap: "0.375rem",
-                        style: { flexWrap: "wrap" as const },
+                        className: "flex-wrap",
                         children: techniques.map((tech) => ({
                           type: "badge" as const,
                           text: (tech.name as string) || (tech.technique as string) || JSON.stringify(tech).slice(0, 30),
@@ -620,12 +607,12 @@ export default function ReversePage() {
                     type: "column" as const,
                     gap: "0.25rem",
                     children: [
-                      { type: "text" as const, text: "✓ 推荐做法", variant: "label" as const, style: { color: "var(--success)" } },
+                      { type: "text" as const, text: "✓ 推荐做法", variant: "label" as const, className: "text-success" },
                       ...doList.map((item) => ({
                         type: "text" as const,
                         text: `• ${item}`,
                         variant: "caption" as const,
-                        style: { fontSize: "0.8rem", paddingLeft: "0.5rem" },
+                        className: "text-[0.8rem] pl-2",
                       })),
                     ],
                   })
@@ -637,12 +624,12 @@ export default function ReversePage() {
                     type: "column" as const,
                     gap: "0.25rem",
                     children: [
-                      { type: "text" as const, text: "✗ 避免做法", variant: "label" as const, style: { color: "var(--destructive)" } },
+                      { type: "text" as const, text: "✗ 避免做法", variant: "label" as const, className: "text-destructive" },
                       ...dontList.map((item) => ({
                         type: "text" as const,
                         text: `• ${item}`,
                         variant: "caption" as const,
-                        style: { fontSize: "0.8rem", paddingLeft: "0.5rem" },
+                        className: "text-[0.8rem] pl-2",
                       })),
                     ],
                   })
@@ -662,7 +649,7 @@ export default function ReversePage() {
                         type: "text" as const,
                         text: logicText,
                         variant: "caption" as const,
-                        style: { fontSize: "0.75rem", whiteSpace: "pre-wrap", backgroundColor: "var(--muted)", padding: "0.5rem", borderRadius: "0.25rem" },
+                        className: "text-[0.75rem] whitespace-pre-wrap bg-muted p-2 rounded",
                       },
                     ],
                   })
@@ -682,7 +669,7 @@ export default function ReversePage() {
                         type: "text" as const,
                         text: patternText,
                         variant: "caption" as const,
-                        style: { fontSize: "0.75rem", whiteSpace: "pre-wrap", backgroundColor: "var(--muted)", padding: "0.5rem", borderRadius: "0.25rem" },
+                        className: "text-[0.75rem] whitespace-pre-wrap bg-muted p-2 rounded",
                       },
                     ],
                   })
@@ -741,18 +728,18 @@ export default function ReversePage() {
                           children: coreRules!.slice(0, 5).map((rule) => ({
                             type: "column" as const,
                             gap: "0.25rem",
-                            style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem", borderLeft: "3px solid var(--ds-primary)" },
+                            className: "p-2 bg-muted rounded border-l-[3px] border-primary",
                             children: [
                               {
                                 type: "row" as const,
                                 justify: "between" as const,
                                 children: [
-                                  { type: "text" as const, text: rule.rule || rule.rule_text || rule.feature || "规则", style: { fontSize: "0.85rem", fontWeight: 500 } },
+                                  { type: "text" as const, text: rule.rule || rule.rule_text || rule.feature || "规则", className: "text-[0.85rem] font-medium" },
                                   ...(rule.impact ? [{ type: "badge" as const, text: `影响: ${rule.impact}`, color: "info" as const }] : []),
                                 ],
                               },
-                              ...(rule.evidence ? [{ type: "text" as const, text: rule.evidence, variant: "caption" as const, style: { fontSize: "0.75rem" } }] : []),
-                              ...(rule.example ? [{ type: "text" as const, text: `示例: ${rule.example}`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                              ...(rule.evidence ? [{ type: "text" as const, text: rule.evidence, variant: "caption" as const, className: "text-[0.75rem]" }] : []),
+                              ...(rule.example ? [{ type: "text" as const, text: `示例: ${rule.example}`, variant: "caption" as const, color: "muted" as const, className: "text-[0.75rem] italic" }] : []),
                             ],
                           })),
                         },
@@ -797,7 +784,7 @@ export default function ReversePage() {
                                       {
                                         type: "row" as const,
                                         gap: "0.25rem",
-                                        style: { flexWrap: "wrap" as const },
+                                        className: "flex-wrap",
                                         children: preferredTerms.slice(0, 12).map((term) => ({
                                           type: "badge" as const,
                                           text: term,
@@ -819,7 +806,7 @@ export default function ReversePage() {
                                       {
                                         type: "row" as const,
                                         gap: "0.25rem",
-                                        style: { flexWrap: "wrap" as const },
+                                        className: "flex-wrap",
                                         children: bannedTerms.slice(0, 12).map((term) => ({
                                           type: "badge" as const,
                                           text: term,
@@ -832,10 +819,10 @@ export default function ReversePage() {
                               : []),
                             // Adjective & Verb style
                             ...(adjStyle
-                              ? [{ type: "text" as const, text: `形容词: ${adjStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              ? [{ type: "text" as const, text: `形容词: ${adjStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }]
                               : []),
                             ...(verbStyle
-                              ? [{ type: "text" as const, text: `动词: ${verbStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              ? [{ type: "text" as const, text: `动词: ${verbStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }]
                               : []),
                           ],
                         },
@@ -861,7 +848,7 @@ export default function ReversePage() {
                                   {
                                     type: "row" as const,
                                     gap: "0.25rem",
-                                    style: { flexWrap: "wrap" as const },
+                                    className: "flex-wrap",
                                     children: [
                                       { type: "text" as const, text: t("reverse.preferredDevices") + ":", variant: "caption" as const, color: "muted" as const },
                                       ...preferredDevices.slice(0, 8).map((device) => ({
@@ -881,7 +868,7 @@ export default function ReversePage() {
                                     gap: "0.125rem",
                                     children: [
                                       { type: "text" as const, text: "开场模式:", variant: "caption" as const, color: "muted" as const },
-                                      { type: "text" as const, text: openingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                                      { type: "text" as const, text: openingPattern, className: "text-[0.8rem] p-1 px-2 bg-muted rounded" },
                                     ],
                                   },
                                 ]
@@ -894,14 +881,14 @@ export default function ReversePage() {
                                     gap: "0.125rem",
                                     children: [
                                       { type: "text" as const, text: "收尾模式:", variant: "caption" as const, color: "muted" as const },
-                                      { type: "text" as const, text: closingPattern, style: { fontSize: "0.8rem", padding: "0.25rem 0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.25rem" } },
+                                      { type: "text" as const, text: closingPattern, className: "text-[0.8rem] p-1 px-2 bg-muted rounded" },
                                     ],
                                   },
                                 ]
                               : []),
                             // Argument style
                             ...(argStyle
-                              ? [{ type: "text" as const, text: `论证风格: ${argStyle}`, variant: "caption" as const, style: { fontSize: "0.8rem" } }]
+                              ? [{ type: "text" as const, text: `论证风格: ${argStyle}`, variant: "caption" as const, className: "text-[0.8rem]" }]
                               : []),
                             // Device sample
                             ...(deviceSample
@@ -909,7 +896,7 @@ export default function ReversePage() {
                                   {
                                     type: "text" as const,
                                     text: `示例: "${deviceSample}"`,
-                                    style: { fontSize: "0.8rem", fontStyle: "italic", padding: "0.25rem 0.5rem", backgroundColor: "rgba(59, 130, 246, 0.1)", borderRadius: "0.25rem" },
+                                    className: "text-[0.8rem] italic p-1 px-2 bg-[rgba(59,130,246,0.1)] rounded",
                                   },
                                 ]
                               : []),
@@ -934,10 +921,10 @@ export default function ReversePage() {
                           children: antiPatterns!.slice(0, 5).map((ap) => ({
                             type: "column" as const,
                             gap: "0.125rem",
-                            style: { padding: "0.375rem 0.5rem", backgroundColor: "rgba(255,0,0,0.05)", borderRadius: "0.25rem", borderLeft: "2px solid var(--destructive)" },
+                            className: "p-1.5 px-2 bg-[rgba(255,0,0,0.05)] rounded border-l-2 border-destructive",
                             children: [
-                              { type: "text" as const, text: `⚠️ ${ap.forbidden || ap.pattern || ""}`, style: { fontSize: "0.8rem", color: "var(--destructive)" } },
-                              ...(ap.bad_case ? [{ type: "text" as const, text: `反例: "${ap.bad_case}"`, variant: "caption" as const, color: "muted" as const, style: { fontSize: "0.75rem", fontStyle: "italic" } }] : []),
+                              { type: "text" as const, text: `⚠️ ${ap.forbidden || ap.pattern || ""}`, className: "text-[0.8rem] text-destructive" },
+                              ...(ap.bad_case ? [{ type: "text" as const, text: `反例: "${ap.bad_case}"`, variant: "caption" as const, color: "muted" as const, className: "text-[0.75rem] italic" }] : []),
                             ],
                           })),
                         },
@@ -974,14 +961,14 @@ export default function ReversePage() {
                           children: goldenSamples.map((sample, idx) => ({
                             type: "column" as const,
                             gap: "0.375rem",
-                            style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem", borderLeft: "3px solid var(--success)" },
+                            className: "p-2 bg-muted rounded-md border-l-[3px] border-success",
                             children: [
                               ...(sample.text
                                 ? [
                                     {
                                       type: "text" as const,
                                       text: sample.text,
-                                      style: { fontSize: "0.85rem", lineHeight: "1.6", whiteSpace: "pre-wrap" },
+                                      className: "text-[0.85rem] leading-relaxed whitespace-pre-wrap",
                                     },
                                   ]
                                 : []),
@@ -990,7 +977,7 @@ export default function ReversePage() {
                                     {
                                       type: "text" as const,
                                       text: `入选理由: ${sample.why}`,
-                                      style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--success)" },
+                                      className: "text-[0.75rem] italic text-success",
                                     },
                                   ]
                                 : []),
@@ -1000,7 +987,7 @@ export default function ReversePage() {
                                     {
                                       type: "row" as const,
                                       gap: "0.25rem",
-                                      style: { flexWrap: "wrap" as const },
+                                      className: "flex-wrap",
                                       children: [
                                         { type: "text" as const, text: "技巧:", variant: "caption" as const, color: "muted" as const },
                                         ...(sample as { tech_list?: string[] }).tech_list!.map((tech) => ({
@@ -1036,11 +1023,11 @@ export default function ReversePage() {
                             return {
                               type: "column" as const,
                               gap: "0.375rem",
-                              style: { padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                              className: "p-2 bg-muted rounded-md",
                               children: [
                                 // Topic
                                 ...(pairWithTopic.topic
-                                  ? [{ type: "text" as const, text: pairWithTopic.topic, style: { fontSize: "0.85rem", fontWeight: 500 } }]
+                                  ? [{ type: "text" as const, text: pairWithTopic.topic, className: "text-[0.85rem] font-medium" }]
                                   : []),
                                 // After text (迁移后的文本)
                                 ...(pair.after
@@ -1048,7 +1035,7 @@ export default function ReversePage() {
                                       {
                                         type: "text" as const,
                                         text: pair.after,
-                                        style: { fontSize: "0.85rem", lineHeight: "1.5", backgroundColor: "rgba(0,255,0,0.05)", padding: "0.5rem", borderRadius: "0.25rem", whiteSpace: "pre-wrap" },
+                                        className: "text-[0.85rem] leading-normal bg-[rgba(0,255,0,0.05)] p-2 rounded whitespace-pre-wrap",
                                       },
                                     ]
                                   : []),
@@ -1058,7 +1045,7 @@ export default function ReversePage() {
                                       {
                                         type: "text" as const,
                                         text: `保留元素: ${pair.explanation}`,
-                                        style: { fontSize: "0.75rem", fontStyle: "italic", color: "var(--muted-foreground)" },
+                                        className: "text-[0.75rem] italic text-muted-foreground",
                                       },
                                     ]
                                   : []),
@@ -1089,14 +1076,14 @@ export default function ReversePage() {
                     {
                       type: "row" as const,
                       gap: "1rem",
-                      style: { flexWrap: "wrap" as const, padding: "0.5rem", backgroundColor: "var(--muted)", borderRadius: "0.375rem" },
+                      className: "flex-wrap p-2 bg-muted rounded-md",
                       children: [
                         ...(wordCount != null
                           ? [
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                className: "text-center min-w-[50px]",
                                 children: [
                                   { type: "text" as const, text: wordCount.toString(), variant: "h4" as const },
                                   { type: "text" as const, text: "字", variant: "caption" as const, color: "muted" as const },
@@ -1109,7 +1096,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                className: "text-center min-w-[50px]",
                                 children: [
                                   { type: "text" as const, text: paraCount.toString(), variant: "h4" as const },
                                   { type: "text" as const, text: "段", variant: "caption" as const, color: "muted" as const },
@@ -1122,7 +1109,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                className: "text-center min-w-[50px]",
                                 children: [
                                   { type: "text" as const, text: (ttr * 100).toFixed(0) + "%", variant: "h4" as const },
                                   { type: "text" as const, text: "TTR", variant: "caption" as const, color: "muted" as const },
@@ -1135,7 +1122,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                className: "text-center min-w-[50px]",
                                 children: [
                                   { type: "text" as const, text: (burstiness * 100).toFixed(0) + "%", variant: "h4" as const },
                                   { type: "text" as const, text: "突变度", variant: "caption" as const, color: "muted" as const },
@@ -1148,7 +1135,7 @@ export default function ReversePage() {
                               {
                                 type: "column" as const,
                                 gap: "0.125rem",
-                                style: { textAlign: "center" as const, minWidth: "50px" },
+                                className: "text-center min-w-[50px]",
                                 children: [
                                   { type: "text" as const, text: avgSentLen.toFixed(0), variant: "h4" as const },
                                   { type: "text" as const, text: "句长", variant: "caption" as const, color: "muted" as const },
@@ -1168,15 +1155,7 @@ export default function ReversePage() {
                     {
                       type: "text" as const,
                       text: executionPrompt,
-                      style: {
-                        fontSize: "0.85rem",
-                        lineHeight: "1.6",
-                        whiteSpace: "pre-wrap",
-                        backgroundColor: "var(--muted)",
-                        padding: "0.75rem",
-                        borderRadius: "0.375rem",
-                        fontFamily: "monospace",
-                      },
+                      className: "text-[0.85rem] leading-relaxed whitespace-pre-wrap bg-muted p-3 rounded-md font-mono",
                     },
                   ]
                 : []),
@@ -1255,7 +1234,7 @@ export default function ReversePage() {
       const extraContent: A2UINode[] = [
         {
           type: "container",
-          style: { marginTop: "0.5rem" },
+          className: "mt-2",
           children: [{ type: "tabs", tabs }],
         },
       ]
@@ -1282,11 +1261,7 @@ export default function ReversePage() {
 
     return {
       type: "container",
-      style: {
-        display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 550px), 1fr))",
-        gap: "0.75rem",
-      },
+      className: isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-[repeat(auto-fit,minmax(min(100%,550px),1fr))] gap-3",
       children: logCards,
     }
   }
@@ -1375,7 +1350,7 @@ export default function ReversePage() {
         metaChildren.push({
           type: "row",
           gap: "0.5rem",
-          style: { flexWrap: "wrap" },
+          className: "flex-wrap",
           children: [
             { type: "text", text: `${t("reverse.toneKeywords")}: ` },
             ...toneKeywords.slice(0, 10).map((k) => ({ type: "badge" as const, text: k, color: "default" as const })),
@@ -1400,7 +1375,7 @@ export default function ReversePage() {
     detailItems.push({
       type: "row",
       justify: "end",
-      style: { marginTop: "0.5rem" },
+      className: "mt-2",
       children: [{ type: "button", text: t("common.cancel"), variant: "secondary", onClick: { action: "closeDetailModal" } }],
     })
 
@@ -1413,7 +1388,7 @@ export default function ReversePage() {
         {
           type: "column",
           gap: "1rem",
-          style: { maxHeight: "70vh", overflow: "auto" },
+          className: "max-h-[70vh] overflow-auto",
           children: detailItems,
         },
       ],
@@ -1466,7 +1441,7 @@ export default function ReversePage() {
         placeholder: t("reverse.searchPlaceholder"),
         inputType: "text",
         autocomplete: "off",
-        style: { maxWidth: "100%" },
+        className: "max-w-full",
         onChange: { action: "setSearch" },
       },
     ],
@@ -1475,28 +1450,22 @@ export default function ReversePage() {
   // Build page structure with scroll-area
   const pageNode: A2UINode = {
     type: "container",
-    style: {
-      flex: 1,
-      minHeight: 0,
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-    },
+    className: "flex-1 min-h-0 flex flex-col overflow-hidden",
     children: [
       // Header stays fixed
       {
         type: "container",
-        style: { flexShrink: 0, paddingBottom: "0.75rem" },
+        className: "flex-shrink-0 pb-3",
         children: [headerNode],
       },
       // Content scrolls independently
       {
         type: "scroll-area",
-        style: { flex: 1, minHeight: 0 },
+        className: "flex-1 min-h-0",
         children: [
           {
             type: "container",
-            style: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+            className: "flex flex-col gap-3",
             children: viewMode === "card" ? [buildListNode()] : [buildTableNode()],
           },
         ],

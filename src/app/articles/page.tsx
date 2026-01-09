@@ -107,7 +107,7 @@ export default function ArticlesPage() {
   const headerNode: A2UINode = {
     type: "column",
     gap: "1.5rem",
-    style: { textAlign: "center", padding: "2rem 0" },
+    className: "text-center py-8",
     children: [
       { type: "text", text: t("articles.title"), variant: "h1", weight: "bold" },
       { type: "text", text: t("articles.subtitle"), variant: "body", color: "muted" },
@@ -124,7 +124,7 @@ export default function ArticlesPage() {
             placeholder: t("articles.searchPlaceholder"),
             inputType: "text",
             autocomplete: "off",
-            style: { maxWidth: "500px", width: "100%" },
+            className: "max-w-[500px] w-full",
             onChange: { action: "setSearch" },
           },
         ],
@@ -139,29 +139,29 @@ export default function ArticlesPage() {
         type: "card",
         id: `article-loading-${index}`,
         hoverable: false,
-        style: { padding: 0, overflow: "hidden" },
+        className: "p-0 overflow-hidden",
         children: [
           {
             type: "container",
-            style: { height: "160px", backgroundColor: "var(--muted)" },
+            className: "h-40 bg-muted",
           },
           {
             type: "column",
             gap: "0.75rem",
-            style: { padding: "1.25rem" },
+            className: "p-5",
             children: [
-              { type: "container", style: { height: "18px", width: "70%", backgroundColor: "var(--muted)", borderRadius: "6px" } },
-              { type: "container", style: { height: "12px", width: "90%", backgroundColor: "var(--muted)", borderRadius: "6px" } },
-              { type: "container", style: { height: "12px", width: "80%", backgroundColor: "var(--muted)", borderRadius: "6px" } },
-              { type: "container", style: { height: "12px", width: "55%", backgroundColor: "var(--muted)", borderRadius: "6px" } },
+              { type: "container", className: "h-[18px] w-[70%] bg-muted rounded-md" },
+              { type: "container", className: "h-3 w-[90%] bg-muted rounded-md" },
+              { type: "container", className: "h-3 w-[80%] bg-muted rounded-md" },
+              { type: "container", className: "h-3 w-[55%] bg-muted rounded-md" },
             ],
           },
         ],
       }))
 
-      return { 
+      return {
         type: "container",
-        style: { display: "flex", flexDirection: "column", gap: "2rem" },
+        className: "flex flex-col gap-8",
         children: loadingCards,
       }
     }
@@ -180,14 +180,14 @@ export default function ArticlesPage() {
       const hasSearch = searchQuery.trim().length > 0
       return {
         type: "card" as const,
-        style: { padding: "3rem", textAlign: "center" as const },
+        className: "p-12 text-center",
         children: [
           {
             type: "column" as const,
             gap: "1rem",
-            style: { alignItems: "center" },
+            className: "items-center",
             children: [
-              { type: "text" as const, text: "📰", style: { fontSize: "3rem" } },
+              { type: "text" as const, text: "📰", className: "text-5xl" },
               { type: "text" as const, text: hasSearch ? t("articles.noSearchResults") : t("articles.noArticles"), variant: "h3" as const },
               { type: "text" as const, text: hasSearch ? t("articles.tryDifferentKeywords") : t("articles.moreContentComing"), color: "muted" as const },
               ...(hasSearch ? [{
@@ -211,11 +211,11 @@ export default function ArticlesPage() {
             type: "image" as const,
             src: article.coverUrl,
             alt: displayTitle,
-            style: { width: "100%", height: "160px", objectFit: "cover" as const },
+            className: "w-full h-40 object-cover",
           }
         : {
             type: "container" as const,
-            style: { width: "100%", height: "160px", backgroundColor: "var(--muted)", display: "flex", alignItems: "center", justifyContent: "center" },
+            className: "w-full h-40 bg-muted flex items-center justify-center",
             children: [{ type: "text" as const, text: t("articles.noCover"), color: "muted" as const }],
           }
 
@@ -225,12 +225,7 @@ export default function ArticlesPage() {
           text: displayTitle,
           variant: "h4" as const,
           weight: "semibold" as const,
-          style: {
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          },
+          className: "line-clamp-2",
         },
         // Subtitle if available
         ...(article.articleSubtitle ? [{
@@ -238,13 +233,7 @@ export default function ArticlesPage() {
           text: article.articleSubtitle,
           variant: "body" as const,
           color: "muted" as const,
-          style: {
-            fontSize: "0.875rem",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical" as const,
-            overflow: "hidden",
-          },
+          className: "text-sm line-clamp-2",
         } as A2UINode] : []),
         {
           type: "row" as const,
@@ -266,14 +255,7 @@ export default function ArticlesPage() {
           text: article.excerpt ?? "",
           variant: "body" as const,
           color: "muted" as const,
-          style: {
-            fontSize: "0.875rem",
-            lineHeight: "1.5",
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden"
-          }
+          className: "text-sm leading-normal line-clamp-3",
         },
       ]
 
@@ -294,7 +276,7 @@ export default function ArticlesPage() {
                           type: "badge" as const,
                           text: article.styleName,
                           color: "default" as const,
-                          style: { maxWidth: "10rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+                          className: "max-w-40 overflow-hidden text-ellipsis whitespace-nowrap"
                         }]
                       : []),
                     ...(formatPrimaryType(article.primaryType)
@@ -302,7 +284,7 @@ export default function ArticlesPage() {
                           type: "badge" as const,
                           text: formatPrimaryType(article.primaryType) ?? "",
                           color: "default" as const,
-                          style: { maxWidth: "6rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+                          className: "max-w-24 overflow-hidden text-ellipsis whitespace-nowrap"
                         }]
                       : []),
               ],
@@ -332,14 +314,7 @@ export default function ArticlesPage() {
 
     return {
       type: "container",
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "2rem",
-        maxWidth: "800px",
-        margin: "0 auto",
-        width: "100%",
-      },
+      className: "flex flex-col gap-8 max-w-[800px] mx-auto w-full",
       children: articleCards,
     }
   }
@@ -347,13 +322,13 @@ export default function ArticlesPage() {
   // Build pagination
   const total = data?.total ?? 0
   const totalPages = Math.ceil(total / pageSize)
-  
+
   const paginationNode: A2UINode | null = totalPages > 1 ? {
     type: "row",
     justify: "center",
     align: "center",
     gap: "1rem",
-    style: { marginTop: "2rem" },
+    className: "mt-8",
     children: [
       {
         type: "button",
@@ -400,7 +375,7 @@ export default function ArticlesPage() {
     children: [
       {
         type: "container",
-        style: { maxWidth: "1200px", margin: "0 auto", width: "100%" },
+        className: "max-w-[1200px] mx-auto w-full",
         children: [pageContent]
       }
     ],

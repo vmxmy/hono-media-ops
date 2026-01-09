@@ -127,21 +127,13 @@ export function ArticleViewerModal({
     if (coverUrl) {
       previewChildren.push({
         type: "container",
-        style: {
-          marginBottom: "1.5rem",
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-        },
+        className: "mb-6 rounded-lg overflow-hidden",
         children: [
           {
             type: "image",
             src: coverUrl,
             alt: title ?? "Cover",
-            style: {
-              width: "100%",
-              maxHeight: "300px",
-              objectFit: "cover",
-            },
+            className: "w-full max-h-[300px] object-cover",
           },
         ],
       } as A2UINode)
@@ -171,10 +163,7 @@ export function ArticleViewerModal({
         content: {
           type: "column",
           gap: "0",
-          style: {
-            flex: 1,
-            minHeight: 0,
-          },
+          className: "flex-1 min-h-0",
           children: [
             {
               type: "markdown-editor",
@@ -182,10 +171,7 @@ export function ArticleViewerModal({
               value: editMarkdown,
               preview: "live",
               height: "100%",
-              style: {
-                flex: 1,
-                minHeight: 0,
-              },
+              className: "flex-1 min-h-0",
               onChange: { action: "updateMarkdown" },
             } as A2UINode,
           ],
@@ -201,11 +187,7 @@ export function ArticleViewerModal({
   // 第一段：标题栏
   const titleSection: A2UINode = {
     type: "container",
-    style: {
-      padding: "1rem",
-      flexShrink: 0,
-      borderBottom: "1px solid var(--ds-border)",
-    },
+    className: "p-4 shrink-0 border-b border-[var(--ds-border)]",
     children: [
       {
         type: "row",
@@ -224,12 +206,10 @@ export function ArticleViewerModal({
                 type: "text" as const,
                 text: saveStatusText,
                 variant: "caption" as const,
-                style: {
-                  color: saveStatus === "saving" ? "var(--ds-warning)" :
-                         saveStatus === "saved" ? "var(--ds-success)" :
-                         saveStatus === "error" ? "var(--ds-destructive)" :
-                         "var(--ds-muted-foreground)",
-                },
+                className: saveStatus === "saving" ? "text-[var(--ds-warning)]" :
+                         saveStatus === "saved" ? "text-[var(--ds-success)]" :
+                         saveStatus === "error" ? "text-[var(--ds-destructive)]" :
+                         "text-[var(--ds-muted-foreground)]",
               }] : []),
               {
                 type: "button",
@@ -262,12 +242,7 @@ export function ArticleViewerModal({
       // 无数据时显示添加按钮
       return {
         type: "container",
-        style: {
-          padding: "0.5rem 1rem",
-          flexShrink: 0,
-          borderBottom: "1px solid var(--ds-border)",
-          backgroundColor: "var(--ds-muted)",
-        },
+        className: "px-4 py-2 shrink-0 border-b border-[var(--ds-border)] bg-[var(--ds-muted)]",
         children: [
           {
             type: "row",
@@ -292,12 +267,7 @@ export function ArticleViewerModal({
       // 编辑模式
       return {
         type: "container",
-        style: {
-          padding: "1rem",
-          flexShrink: 0,
-          borderBottom: "1px solid var(--ds-border)",
-          backgroundColor: "var(--ds-accent)",
-        },
+        className: "p-4 shrink-0 border-b border-[var(--ds-border)] bg-[var(--ds-accent)]",
         children: [
           {
             type: "column",
@@ -340,12 +310,7 @@ export function ArticleViewerModal({
     // 显示模式
     return {
       type: "container",
-      style: {
-        padding: "0.5rem 1rem",
-        flexShrink: 0,
-        borderBottom: "1px solid var(--ds-border)",
-        backgroundColor: "var(--ds-accent)",
-      },
+      className: "px-4 py-2 shrink-0 border-b border-[var(--ds-border)] bg-[var(--ds-accent)]",
       children: [
         {
           type: "row",
@@ -390,11 +355,7 @@ export function ArticleViewerModal({
   // 第二段：Tab 栏
   const tabSection: A2UINode = {
     type: "container",
-    style: {
-      padding: "0 1rem",
-      flexShrink: 0,
-      borderBottom: "1px solid var(--ds-border)",
-    },
+    className: "px-4 shrink-0 border-b border-[var(--ds-border)]",
     children: [
       {
         type: "row",
@@ -407,13 +368,7 @@ export function ArticleViewerModal({
             text: tab.label,
             variant: "ghost",
             size: "sm",
-            style: {
-              flex: 1,
-              borderRadius: 0,
-              borderBottom: isActive ? "2px solid var(--ds-primary)" : "2px solid transparent",
-              color: isActive ? "var(--ds-foreground)" : "var(--ds-muted-foreground)",
-              marginBottom: "-1px",
-            },
+            className: `flex-1 rounded-none -mb-px ${isActive ? "border-b-2 border-b-[var(--ds-primary)] text-[var(--ds-foreground)]" : "border-b-2 border-b-transparent text-[var(--ds-muted-foreground)]"}`,
             onClick: { action: "tab", args: [index] },
           }
         }),
@@ -427,27 +382,16 @@ export function ArticleViewerModal({
   const contentSection: A2UINode = isSourceTab
     ? {
         type: "container",
-        style: {
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          padding: "1rem",
-        },
+        className: "flex-1 min-h-0 flex flex-col p-4",
         children: [tabs[activeTab]?.content ?? { type: "text", text: "" }],
       }
     : {
         type: "scroll-area",
-        style: {
-          flex: 1,
-          minHeight: 0,
-        },
+        className: "flex-1 min-h-0",
         children: [
           {
             type: "container",
-            style: {
-              padding: "1rem",
-            },
+            className: "p-4",
             children: [tabs[activeTab]?.content ?? { type: "text", text: "" }],
           },
         ],
@@ -456,14 +400,7 @@ export function ArticleViewerModal({
   const panelNode: A2UINode = {
     type: "card",
     hoverable: false,
-    style: {
-      flex: 1,
-      minHeight: 0,
-      display: "flex",
-      flexDirection: "column",
-      padding: "0",
-      overflow: "hidden",
-    },
+    className: "flex-1 min-h-0 flex flex-col p-0 overflow-hidden",
     children: [titleSection, ...(resultSection ? [resultSection] : []), tabSection, contentSection],
   }
 

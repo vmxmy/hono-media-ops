@@ -23,7 +23,7 @@ export function A2UIColumn({ node, renderChildren }: A2UIComponentProps<A2UIColu
   }
 
   return (
-    <div style={style}>
+    <div style={style} className={node.className}>
       {node.children && renderChildren?.(node.children)}
     </div>
   )
@@ -55,7 +55,7 @@ export function A2UIRow({ node, renderChildren }: A2UIComponentProps<A2UIRowNode
     ...node.style,
   }
 
-  const className = node.responsive ? "a2ui-row-responsive" : ""
+  const className = `${node.responsive ? "a2ui-row-responsive" : ""} ${node.className || ""}`.trim()
 
   return (
     <div style={style} className={className}>
@@ -66,7 +66,7 @@ export function A2UIRow({ node, renderChildren }: A2UIComponentProps<A2UIRowNode
 
 export function A2UIContainer({ node, renderChildren }: A2UIComponentProps<A2UIContainerNode>) {
   return (
-    <div style={node.style}>
+    <div style={node.style} className={node.className}>
       {node.children && renderChildren?.(node.children)}
     </div>
   )
@@ -95,11 +95,13 @@ export function A2UICard({ node, onAction, renderChildren }: A2UIComponentProps<
     ? () => onAction(node.onClick!.action, node.onClick!.args)
     : undefined
 
+  const className = `rounded-lg border border-border bg-card p-3 shadow-sm transition-colors md:p-4 ${
+    node.hoverable !== false ? "hover:bg-card/80" : ""
+  } ${handleClick ? "cursor-pointer" : ""} ${node.className || ""}`.trim()
+
   return (
     <div
-      className={`rounded-lg border border-border bg-card p-3 shadow-sm transition-colors md:p-4 ${
-        node.hoverable !== false ? "hover:bg-card/80" : ""
-      } ${handleClick ? "cursor-pointer" : ""}`}
+      className={className}
       style={node.style}
       onClick={handleClick}
     >
