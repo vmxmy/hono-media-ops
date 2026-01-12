@@ -4,19 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode } from "@/lib/a2ui"
-import type { WechatMediaInfo } from "@/server/db/schema"
-import { assembleChapterMarkdown, parseChapterMarkdown } from "@/lib/markdown"
+import type { WechatMediaInfoItem } from "@/server/db/schema"
+import { assembleChapterMarkdown, parseChapterMarkdown, type MediaLike } from "@/lib/markdown"
 import {
   markdownToWechatHtmlSync,
   copyHtmlToClipboard,
   STYLE_PRESET_LABELS,
   type StylePreset,
 } from "@/lib/wechat"
+import { api } from "@/trpc/react"
 
-type MediaDraftItem = WechatMediaInfo & {
+type MediaDraftItem = WechatMediaInfoItem & {
   act_number?: number | string
   act_name?: string | null
 }
+
+// Helper to normalize media info to array
+type WechatMediaInfoProp = WechatMediaInfoItem | WechatMediaInfoItem[] | null | undefined
 
 interface ArticleViewerModalProps {
   isOpen: boolean
@@ -24,7 +28,7 @@ interface ArticleViewerModalProps {
   markdown: string
   title?: string
   executionId?: string
-  wechatMediaInfo?: WechatMediaInfo | WechatMediaInfo[] | null
+  wechatMediaInfo?: WechatMediaInfoProp
   chapters?: Array<{
     id: string
     actNumber: number
@@ -58,7 +62,29 @@ export function ArticleViewerModal({
   const [chapterEdits, setChapterEdits] = useState(chapters ?? [])
   const [dirtyChapterIds, setDirtyChapterIds] = useState<Set<string>>(new Set())
   const [editorMarkdown, setEditorMarkdown] = useState("")
-  const [stylePreset, setStylePreset] = useState<StylePreset>("default")
+  const [stylePreset, setStylePreset] = useState<StylePreset>("modern")
+  const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "success" | "error">("idle")
+  const [publishMessage, setPublishMessage] = useState("")
+
+  // tRPC mutation for publishing to WeChat
+  const publishMutation = api.export.publishToWechat.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        setPublishStatus("success")
+        setPublishMessage(locale === "zh-CN" ? "发布成功" : "Published successfully")
+        setTimeout(() => setPublishStatus("idle"), 3000)
+      } else {
+        setPublishStatus("error")
+        setPublishMessage(result.message ?? "Publish failed")
+        setTimeout(() => setPublishStatus("idle"), 5000)
+      }
+    },
+    onError: (error) => {
+      setPublishStatus("error")
+      setPublishMessage(error.message)
+      setTimeout(() => setPublishStatus("idle"), 5000)
+    },
+  })
 
   const normalizedMedia: MediaDraftItem[] = useMemo(() => {
     if (Array.isArray(wechatMediaInfo)) return wechatMediaInfo as MediaDraftItem[]
@@ -99,7 +125,7 @@ export function ArticleViewerModal({
 
   const assembledMarkdown = useMemo(() => {
     if (chapterEdits.length > 0) {
-      return assembleChapterMarkdown(chapterEdits, { media: wechatMediaInfo, mediaStrategy: "latest" })
+      return assembleChapterMarkdown(chapterEdits, { media: wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest" })
     }
     return markdown
   }, [chapterEdits, markdown, wechatMediaInfo])
@@ -167,7 +193,7 @@ export function ArticleViewerModal({
           setIsEditing(false)
           break
         case "editMediaField": {
-          const [value, index, key] = args as [string, number, keyof WechatMediaInfo]
+          const [value, index, key] = args as [string, number, keyof WechatMediaInfoItem]
           setMediaDraft((prev) => prev.map((item, i) => (i === index ? { ...item, [key]: value } : item)))
           break
         }
@@ -179,7 +205,7 @@ export function ArticleViewerModal({
         case "addMediaItem": {
           setMediaDraft((prev) => [
             ...prev,
-            { act_number: "", act_name: "", r2_url: "", wechat_media_url: "", media_id: "" },
+            { act_number: undefined, act_name: "", r2_url: "", wechat_media_url: "", media_id: "" } as MediaDraftItem,
           ])
           break
         }
@@ -216,9 +242,46 @@ export function ArticleViewerModal({
         case "setStylePreset":
           setStylePreset(args?.[0] as StylePreset ?? "default")
           break
+        case "publishToWechat": {
+          if (publishStatus === "publishing") return
+          const thumbMediaId = normalizedMedia.slice(-1)[0]?.media_id
+          if (!thumbMediaId) {
+            setPublishStatus("error")
+            setPublishMessage(locale === "zh-CN" ? "缺少封面图 media_id，请先上传封面到微信" : "Missing cover image media_id")
+            setTimeout(() => setPublishStatus("idle"), 5000)
+            return
+          }
+          if (!wechatResult.html || wechatResult.html.trim().length === 0) {
+            setPublishStatus("error")
+            setPublishMessage(locale === "zh-CN" ? "文章内容为空" : "Article content is empty")
+            setTimeout(() => setPublishStatus("idle"), 5000)
+            return
+          }
+          // Generate clean digest: remove markdown syntax (images, links, headers, bold, etc.)
+          const cleanDigest = assembledMarkdown
+            .replace(/!\[[^\]]*\]\([^)]+\)/g, "") // remove images
+            .replace(/\[[^\]]*\]\([^)]+\)/g, "") // remove links
+            .replace(/^#{1,6}\s+/gm, "") // remove headers
+            .replace(/\*\*([^*]+)\*\*/g, "$1") // remove bold
+            .replace(/\*([^*]+)\*/g, "$1") // remove italic
+            .replace(/`([^`]+)`/g, "$1") // remove inline code
+            .replace(/\n+/g, " ") // replace newlines with space
+            .replace(/\s+/g, " ") // collapse whitespace
+            .trim()
+            .slice(0, 120)
+          setPublishStatus("publishing")
+          publishMutation.mutate({
+            title: title ?? "Untitled",
+            html: wechatResult.html,
+            thumbMediaId,
+            author: "ziikoo",
+            digest: cleanDigest,
+          })
+          break
+        }
       }
     },
-    [onClose, wechatMediaInfo, isEditing, onUpdateMediaInfo, assembledMarkdown, onUpdateMarkdown, chapters, chapterEdits, wechatResult.html, mediaDraft, normalizedMedia]
+    [onClose, wechatMediaInfo, isEditing, onUpdateMediaInfo, assembledMarkdown, onUpdateMarkdown, chapters, chapterEdits, wechatResult.html, mediaDraft, normalizedMedia, publishStatus, publishMutation, title]
   )
 
   const tabs = useMemo(() => {
@@ -312,6 +375,20 @@ export function ArticleViewerModal({
             gap: "0.5rem",
             align: "center",
             children: [
+              {
+                type: "button",
+                text: publishStatus === "publishing"
+                  ? (locale === "zh-CN" ? "发布中..." : "Publishing...")
+                  : publishStatus === "success"
+                  ? (locale === "zh-CN" ? "✓ 已发布" : "✓ Published")
+                  : publishStatus === "error"
+                  ? (locale === "zh-CN" ? "发布失败" : "Failed")
+                  : (locale === "zh-CN" ? "发布到公众号" : "Publish to WeChat"),
+                variant: publishStatus === "success" ? "primary" : publishStatus === "error" ? "destructive" : "secondary",
+                size: "sm",
+                disabled: publishStatus === "publishing",
+                onClick: { action: "publishToWechat" },
+              },
               {
                 type: "button",
                 text: htmlCopied
@@ -452,7 +529,7 @@ export function ArticleViewerModal({
               {
                 type: "input" as const,
                 placeholder: "幕次",
-                value: item.act_number ?? "",
+                value: item.act_number != null ? String(item.act_number) : "",
                 onChange: { action: "editMediaAct", args: [index, "act_number"] },
                 className: "min-w-[120px]",
               },

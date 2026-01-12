@@ -6,6 +6,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     N8N_WEBHOOK_URL: z.string().url().optional(),
     N8N_REVERSE_WEBHOOK_URL: z.string().url().optional(),
+    N8N_WECHAT_PUBLISH_URL: z.string().url().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
     // Storage configuration
@@ -32,6 +33,7 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL,
     N8N_REVERSE_WEBHOOK_URL: process.env.N8N_REVERSE_WEBHOOK_URL,
+    N8N_WECHAT_PUBLISH_URL: process.env.N8N_WECHAT_PUBLISH_URL,
     NODE_ENV: process.env.NODE_ENV,
 
     // Storage
