@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import type { WechatMediaInfo } from "@/server/db/schema";
 
 // ==================== Input Schemas ====================
 
@@ -214,7 +215,7 @@ export const tasksRouter = createTRPCRouter({
       })
     )
     .mutation(({ ctx, input }) =>
-      ctx.services.task.updateExecutionMediaInfo(input.executionId, input.wechatMediaInfo)
+      ctx.services.task.updateExecutionMediaInfo(input.executionId, input.wechatMediaInfo as WechatMediaInfo)
     ),
 
   updateExecutionMarkdown: protectedProcedure

@@ -713,7 +713,7 @@ export const taskService = {
 
   async updateExecutionMediaInfo(
     executionId: string,
-    wechatMediaInfo: unknown
+    wechatMediaInfo: WechatMediaInfo
   ): Promise<{ success: boolean }> {
     await db
       .update(taskExecutions)
