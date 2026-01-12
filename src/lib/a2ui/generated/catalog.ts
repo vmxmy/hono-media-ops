@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-04T08:53:18.110Z
+// Generated at: 2026-01-12T09:24:06.205Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -999,9 +999,9 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "string",
         description: "Execution ID for updates",
       },
-      executionResult: {
+      wechatMediaInfo: {
         type: "object",
-        description: "Execution result containing coverUrl, wechatMediaId, etc.",
+        description: "WeChat media info containing r2_url, media_id, etc.",
       },
       onClose: {
         type: "action",

@@ -7,6 +7,7 @@ import {
   type Task,
   type TaskExecution,
   type ExecutionResult,
+  type WechatMediaInfo,
 } from "@/server/db/schema";
 import { env } from "@/env";
 import { countArticleWords } from "./article.service";
@@ -605,9 +606,7 @@ export const taskService = {
       : null;
 
     const executionResult: ExecutionResult = {
-      coverUrl: result.coverUrl,
       coverR2Key: result.coverR2Key,
-      wechatMediaId: result.wechatMediaId,
       wechatDraftId: result.wechatDraftId,
       // Processing metadata
       ready: result.ready,
@@ -619,6 +618,13 @@ export const taskService = {
       ...result.metadata,
     };
 
+    // Build wechatMediaInfo from coverUrl and wechatMediaId
+    const wechatMediaInfo: WechatMediaInfo = {
+      ...(execution.wechatMediaInfo ?? {}),
+      ...(result.coverUrl ? { r2_url: result.coverUrl } : {}),
+      ...(result.wechatMediaId ? { media_id: result.wechatMediaId } : {}),
+    };
+
     // Update execution record
     await db
       .update(taskExecutions)
@@ -628,6 +634,7 @@ export const taskService = {
         status: result.status,
         errorMessage: result.errorMessage,
         result: executionResult,
+        wechatMediaInfo: Object.keys(wechatMediaInfo).length > 0 ? wechatMediaInfo : undefined,
         articleTitle: result.articleTitle,
         articleSubtitle: result.articleSubtitle,
         articleMarkdown: result.articleMarkdown,
@@ -671,33 +678,26 @@ export const taskService = {
 
   async updateExecutionResult(
     executionId: string,
-    result: ExecutionResult
+    updates: { coverUrl?: string; wechatMediaId?: string }
   ): Promise<{ success: boolean }> {
-    // If coverUrl is provided, also update wechat_media_info.r2_url for consistency
-    if (result.coverUrl) {
-      // First get current wechat_media_info
-      const [current] = await db
-        .select({ wechatMediaInfo: taskExecutions.wechatMediaInfo })
-        .from(taskExecutions)
-        .where(eq(taskExecutions.id, executionId))
-        .limit(1);
+    // Get current wechat_media_info
+    const [current] = await db
+      .select({ wechatMediaInfo: taskExecutions.wechatMediaInfo })
+      .from(taskExecutions)
+      .where(eq(taskExecutions.id, executionId))
+      .limit(1);
 
-      const currentInfo = current?.wechatMediaInfo ?? {};
-      const updatedInfo = { ...currentInfo, r2_url: result.coverUrl } as typeof currentInfo;
+    const currentInfo = current?.wechatMediaInfo ?? {};
+    const updatedInfo: WechatMediaInfo = {
+      ...currentInfo,
+      ...(updates.coverUrl !== undefined ? { r2_url: updates.coverUrl } : {}),
+      ...(updates.wechatMediaId !== undefined ? { media_id: updates.wechatMediaId } : {}),
+    };
 
-      await db
-        .update(taskExecutions)
-        .set({
-          result,
-          wechatMediaInfo: updatedInfo,
-        })
-        .where(eq(taskExecutions.id, executionId));
-    } else {
-      await db
-        .update(taskExecutions)
-        .set({ result })
-        .where(eq(taskExecutions.id, executionId));
-    }
+    await db
+      .update(taskExecutions)
+      .set({ wechatMediaInfo: updatedInfo })
+      .where(eq(taskExecutions.id, executionId));
 
     return { success: true };
   },

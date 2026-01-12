@@ -195,16 +195,15 @@ export const tasksRouter = createTRPCRouter({
     .input(
       z.object({
         executionId: z.string(),
-        result: z.object({
-          coverUrl: z.string().optional(),
-          wechatMediaId: z.string().optional(),
-          coverR2Key: z.string().optional(),
-          wechatDraftId: z.string().optional(),
-        }),
+        coverUrl: z.string().optional(),
+        wechatMediaId: z.string().optional(),
       })
     )
     .mutation(({ ctx, input }) =>
-      ctx.services.task.updateExecutionResult(input.executionId, input.result)
+      ctx.services.task.updateExecutionResult(input.executionId, {
+        coverUrl: input.coverUrl,
+        wechatMediaId: input.wechatMediaId,
+      })
     ),
 
   updateExecutionMarkdown: protectedProcedure

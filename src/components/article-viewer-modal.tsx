@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode } from "@/lib/a2ui"
-import type { ExecutionResult } from "@/server/db/schema"
+import type { WechatMediaInfo } from "@/server/db/schema"
 import { useAutoSave, getSaveStatusText, getSaveStatusClass } from "@/hooks/use-auto-save"
 import { WechatExportModal } from "@/components/wechat-export-modal"
 
@@ -14,8 +14,8 @@ interface ArticleViewerModalProps {
   markdown: string
   title?: string
   executionId?: string
-  executionResult?: ExecutionResult | null
-  onUpdateResult?: (result: ExecutionResult) => void
+  wechatMediaInfo?: WechatMediaInfo | null
+  onUpdateResult?: (updates: { coverUrl?: string; wechatMediaId?: string }) => void
   onUpdateMarkdown?: (markdown: string) => void
 }
 
@@ -25,7 +25,7 @@ export function ArticleViewerModal({
   markdown,
   title,
   executionId,
-  executionResult,
+  wechatMediaInfo,
   onUpdateResult,
   onUpdateMarkdown,
 }: ArticleViewerModalProps) {
@@ -34,8 +34,8 @@ export function ArticleViewerModal({
   const [mediaIdCopied, setMediaIdCopied] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
-  const [editCoverUrl, setEditCoverUrl] = useState(executionResult?.coverUrl ?? "")
-  const [editMediaId, setEditMediaId] = useState(executionResult?.wechatMediaId ?? "")
+  const [editCoverUrl, setEditCoverUrl] = useState(wechatMediaInfo?.r2_url ?? "")
+  const [editMediaId, setEditMediaId] = useState(wechatMediaInfo?.media_id ?? "")
   const [showExportModal, setShowExportModal] = useState(false)
 
   // Auto-save hook for markdown content
@@ -66,8 +66,8 @@ export function ArticleViewerModal({
           })
           break
         case "copyMediaId":
-          if (executionResult?.wechatMediaId) {
-            navigator.clipboard.writeText(executionResult.wechatMediaId).then(() => {
+          if (wechatMediaInfo?.media_id) {
+            navigator.clipboard.writeText(wechatMediaInfo.media_id).then(() => {
               setMediaIdCopied(true)
               setTimeout(() => setMediaIdCopied(false), 2000)
             })
@@ -84,15 +84,14 @@ export function ArticleViewerModal({
         case "toggleEdit":
           if (isEditing) {
             // Cancel editing, reset values
-            setEditCoverUrl(executionResult?.coverUrl ?? "")
-            setEditMediaId(executionResult?.wechatMediaId ?? "")
+            setEditCoverUrl(wechatMediaInfo?.r2_url ?? "")
+            setEditMediaId(wechatMediaInfo?.media_id ?? "")
           }
           setIsEditing(!isEditing)
           break
         case "saveResult":
           if (onUpdateResult) {
             onUpdateResult({
-              ...executionResult,
               coverUrl: editCoverUrl || undefined,
               wechatMediaId: editMediaId || undefined,
             })
@@ -116,11 +115,11 @@ export function ArticleViewerModal({
           break
       }
     },
-    [onClose, executionResult, isEditing, editCoverUrl, editMediaId, onUpdateResult, setEditMarkdown, forceSave]
+    [onClose, wechatMediaInfo, isEditing, editCoverUrl, editMediaId, onUpdateResult, setEditMarkdown, forceSave]
   )
 
   const tabs = useMemo(() => {
-    const coverUrl = executionResult?.coverUrl
+    const coverUrl = wechatMediaInfo?.r2_url
     const previewChildren: A2UINode[] = []
 
     // 添加封面图
@@ -178,7 +177,7 @@ export function ArticleViewerModal({
         } as A2UINode,
       },
     ]
-  }, [editMarkdown, t, executionResult?.coverUrl, title, hasUnsavedChanges, saveStatus])
+  }, [editMarkdown, t, wechatMediaInfo?.r2_url, title, hasUnsavedChanges, saveStatus])
 
   // Get save status text for display
   const saveStatusText = getSaveStatusText(saveStatus, hasUnsavedChanges, locale === "zh-CN" ? "zh-CN" : "en")
@@ -235,8 +234,8 @@ export function ArticleViewerModal({
 
   // 素材信息栏 - 显示/编辑模式
   const buildResultSection = (): A2UINode | null => {
-    const hasCover = !!executionResult?.coverUrl
-    const hasMediaId = !!executionResult?.wechatMediaId
+    const hasCover = !!wechatMediaInfo?.r2_url
+    const hasMediaId = !!wechatMediaInfo?.media_id
 
     if (!hasCover && !hasMediaId && !isEditing) {
       // 无数据时显示添加按钮
@@ -321,7 +320,7 @@ export function ArticleViewerModal({
             ...(hasCover
               ? [
                   { type: "badge" as const, text: "✅ 有封面", color: "success" as const },
-                  { type: "link" as const, text: "📷 查看", href: executionResult.coverUrl, variant: "primary" as const, external: true },
+                  { type: "link" as const, text: "📷 查看", href: wechatMediaInfo?.r2_url, variant: "primary" as const, external: true },
                 ]
               : [{ type: "badge" as const, text: "无封面", color: "default" as const }]),
             ...(hasMediaId

@@ -59,8 +59,8 @@ export default function TasksPage() {
     title: string
     taskId?: string
     executionId?: string
-    executionResult?: { coverUrl?: string; wechatMediaId?: string } | null
-  }>({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, executionResult: null })
+    wechatMediaInfo?: { r2_url?: string; media_id?: string } | null
+  }>({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, wechatMediaInfo: null })
   const [regenerateData, setRegenerateData] = useState<{
     topic?: string
     keywords?: string
@@ -152,7 +152,7 @@ export default function TasksPage() {
         title: execution.articleTitle || taskTopic,
         taskId,
         executionId: execution.id,
-        executionResult: execution.result,
+        wechatMediaInfo: execution.wechatMediaInfo,
       })
     }
   }
@@ -163,16 +163,21 @@ export default function TasksPage() {
     },
   })
 
-  const handleUpdateExecutionResult = (result: { coverUrl?: string; wechatMediaId?: string }) => {
+  const handleUpdateExecutionResult = (updates: { coverUrl?: string; wechatMediaId?: string }) => {
     if (articleViewerState.executionId) {
       updateExecutionResultMutation.mutate({
         executionId: articleViewerState.executionId,
-        result,
+        coverUrl: updates.coverUrl,
+        wechatMediaId: updates.wechatMediaId,
       })
       // Update local state
       setArticleViewerState((prev) => ({
         ...prev,
-        executionResult: result,
+        wechatMediaInfo: {
+          ...prev.wechatMediaInfo,
+          r2_url: updates.coverUrl ?? prev.wechatMediaInfo?.r2_url,
+          media_id: updates.wechatMediaId ?? prev.wechatMediaInfo?.media_id,
+        },
       }))
     }
   }
@@ -644,7 +649,7 @@ export default function TasksPage() {
           handleCreateTaskSuccess()
           break
         case "closeArticleViewer":
-          setArticleViewerState({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, executionResult: null })
+          setArticleViewerState({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, wechatMediaInfo: null })
           break
         case "updateExecutionResult": {
           const result = args?.[0] as { coverUrl?: string; wechatMediaId?: string }
@@ -750,7 +755,7 @@ export default function TasksPage() {
             markdown: articleViewerState.markdown,
             title: articleViewerState.title,
             executionId: articleViewerState.executionId,
-            executionResult: articleViewerState.executionResult ?? undefined,
+            wechatMediaInfo: articleViewerState.wechatMediaInfo ?? undefined,
             onClose: { action: "closeArticleViewer" },
             onUpdateResult: { action: "updateExecutionResult" },
             onUpdateMarkdown: { action: "updateMarkdown" },

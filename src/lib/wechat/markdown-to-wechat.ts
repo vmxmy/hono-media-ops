@@ -11,12 +11,13 @@
 
 import { unified, type Plugin } from "unified"
 import remarkParse from "remark-parse"
-import remarkGfm from "remark-gfm"
 import remarkRehype from "remark-rehype"
 import rehypeStringify from "rehype-stringify"
 import { visit } from "unist-util-visit"
 import type { Element, Root } from "hast"
 import { getStylePreset, type StylePreset, type WechatStyles } from "./styles"
+import { remarkPlugins, rehypePluginsNoRaw } from "@/lib/markdown/engine"
+import { KATEX_INLINE_RULES } from "@/lib/markdown/katex-inline-styles"
 
 // ==================== Types ====================
 
@@ -78,11 +79,33 @@ const ELEMENT_STYLE_MAP: Record<string, keyof WechatStyles> = {
   code: "code",
   pre: "pre",
   blockquote: "blockquote",
+  mark: "mark",
+  sup: "sup",
+  sub: "sub",
+  kbd: "kbd",
   table: "table",
   th: "th",
   td: "td",
   hr: "hr",
   img: "img",
+}
+
+/**
+ * Callout configuration (GitHub Flavored Markdown style)
+ */
+const CALLOUT_CONFIG: Record<string, { icon: string; color: string; bgColor: string; borderColor: string }> = {
+  NOTE: { icon: "ℹ️", color: "#1f2937", bgColor: "#f3f4f6", borderColor: "#d1d5db" },
+  TIP: { icon: "💡", color: "#166534", bgColor: "#dcfce7", borderColor: "#86efac" },
+  IMPORTANT: { icon: "✨", color: "#4338ca", bgColor: "#e0e7ff", borderColor: "#a5b4fc" },
+  WARNING: { icon: "⚠️", color: "#9a3412", bgColor: "#ffedd5", borderColor: "#fdba74" },
+  CAUTION: { icon: "🛑", color: "#991b1b", bgColor: "#fee2e2", borderColor: "#fca5a5" },
+}
+
+const CALLOUT_ALIASES: Record<string, string> = {
+  INFO: "NOTE",
+  SUCCESS: "TIP",
+  DANGER: "CAUTION",
+  ERROR: "CAUTION",
 }
 
 // ==================== Functions ====================
@@ -111,15 +134,108 @@ function countWords(text: string): number {
 }
 
 /**
+ * Create a rehype plugin to process callouts (admonitions)
+ */
+function rehypeWechatCallouts(styles: WechatStyles): Plugin<[], Root> {
+  return () => (tree: Root) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (node.tagName !== "blockquote" || !parent || typeof index !== "number") return
+
+      // Check first child paragraph
+      const firstChild = node.children.find((c) => c.type === "element" && c.tagName === "p") as Element
+      if (!firstChild || !firstChild.children || firstChild.children.length === 0) return
+
+      // Check for [!TYPE] text node
+      const firstTextNode = firstChild.children[0]
+      if (firstTextNode.type !== "text" || !firstTextNode.value.trim().startsWith("[!")) return
+
+      const match = firstTextNode.value.match(/^\[!([A-Z]+)\]/)
+      if (!match) return
+
+      const type = match[1]
+      const configType = CALLOUT_ALIASES[type] || (CALLOUT_CONFIG[type] ? type : "NOTE")
+      const config = CALLOUT_CONFIG[configType]
+
+      // Remove the [!TYPE] marker
+      firstTextNode.value = firstTextNode.value.replace(/^\[![A-Z]+\]\s*/, "")
+
+      // Transform blockquote to div with callout styles
+      node.tagName = "div"
+
+      // Apply base style + color overrides
+      const baseStyle = styles.callout || ""
+      
+      // Override colors if specific config exists, otherwise use base style
+      // We explicitly set these to ensure the look matches the type
+      const colorStyle = `background-color: ${config.bgColor}; border-color: ${config.borderColor}; color: ${config.color};`
+      
+      // If the style preset relies on border-left, we might need to adjust it
+      // For simplicity, we append specific colors to the base style
+      const existingStyle = (node.properties?.style as string) ?? ""
+      node.properties = node.properties ?? {}
+      node.properties.style = `${existingStyle} ${baseStyle}; ${colorStyle}`.replace(/;;/g, ";")
+
+      // Insert icon at the beginning of the first paragraph
+      firstChild.children.unshift({
+        type: "text",
+        value: `${config.icon} `
+      })
+    })
+  }
+}
+
+/**
+ * Create a rehype plugin to add image captions from alt text
+ */
+function rehypeWechatCaptions(styles: WechatStyles): Plugin<[], Root> {
+  return () => (tree: Root) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (node.tagName !== "img" || !parent || typeof index !== "number") return
+
+      const alt = node.properties?.alt as string
+      if (!alt) return
+
+      // Only add caption if style is defined
+      if (!styles.figcaption) return
+
+      // Create caption node
+      const caption: Element = {
+        type: "element",
+        tagName: "span",
+        properties: {
+          style: styles.figcaption,
+        },
+        children: [{ type: "text", value: alt }],
+      }
+
+      // If inside paragraph, insert after image
+      if ((parent as Element).tagName === "p") {
+        // Insert <br> and caption after image
+        parent.children.splice(index + 1, 0, 
+          { type: "element", tagName: "br", properties: {}, children: [] },
+          caption
+        )
+        // Skip visiting the new nodes
+        return index + 3
+      }
+    })
+  }
+}
+
+/**
  * Create a rehype plugin to inject inline styles
  */
 function rehypeWechatStyles(styles: WechatStyles): Plugin<[], Root> {
   return () => (tree: Root) => {
     visit(tree, "element", (node: Element) => {
       const tagName = node.tagName.toLowerCase()
-      const styleKey = ELEMENT_STYLE_MAP[tagName]
+      const styleKey = tagName === "mark" ? "mark" : ELEMENT_STYLE_MAP[tagName]
 
       if (styleKey && styles[styleKey]) {
+        if (tagName === "mark") {
+          node.tagName = "span"
+        }
+
         // Get existing style
         const existingStyle =
           (node.properties?.style as string) ?? ""
@@ -202,6 +318,90 @@ function rehypeSanitizeForWechat(): Plugin<[], Root> {
 }
 
 /**
+ * Create a rehype plugin to add KaTeX inline styles for WeChat
+ */
+function rehypeInlineKatexStyles(): Plugin<[], Root> {
+  return () => (tree: Root) => {
+    const getClassList = (node: Element): string[] => {
+      const className = node.properties?.className ?? node.properties?.class
+      if (Array.isArray(className)) return className.map(String)
+      if (typeof className === "string") return className.split(/\s+/).filter(Boolean)
+      return []
+    }
+
+    const applyRules = (node: Element, inKatex: boolean) => {
+      const classList = getClassList(node)
+      const isKatexRoot = classList.includes("katex") || classList.includes("katex-display")
+      const nextInKatex = inKatex || isKatexRoot
+
+      if (nextInKatex) {
+        const matchedStyles: string[] = []
+        for (const rule of KATEX_INLINE_RULES) {
+          if (rule.requiresKatex && !nextInKatex) continue
+          if (rule.tag && rule.tag !== node.tagName) continue
+          if (rule.classes.length > 0 && !rule.classes.every((c) => classList.includes(c))) {
+            continue
+          }
+          matchedStyles.push(rule.style)
+        }
+
+        if (matchedStyles.length > 0) {
+          node.properties = node.properties ?? {}
+          const existingStyle = (node.properties.style as string) ?? ""
+          const inlineStyle = matchedStyles.join("; ")
+          node.properties.style = existingStyle
+            ? `${inlineStyle}; ${existingStyle}`
+            : inlineStyle
+        }
+      }
+
+      if (node.children) {
+        for (const child of node.children) {
+          if (child.type === "element") {
+            applyRules(child, nextInKatex)
+          }
+        }
+      }
+    }
+
+    for (const child of tree.children) {
+      if (child.type === "element") {
+        applyRules(child, false)
+      }
+    }
+  }
+}
+
+/**
+ * Create a rehype plugin to normalize GFM elements for WeChat
+ */
+function rehypeWechatGfm(styles: WechatStyles): Plugin<[], Root> {
+  return () => (tree: Root) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (!parent || typeof index !== "number") return
+      if (node.tagName !== "input") return
+
+      const type = node.properties?.type as string | undefined
+      if (type !== "checkbox") return
+
+      const checked = Boolean(node.properties?.checked)
+      const label = checked ? "☑" : "☐"
+
+      const checkboxNode: Element = {
+        type: "element",
+        tagName: "span",
+        properties: {
+          style: styles.checkbox,
+        },
+        children: [{ type: "text", value: `${label} ` }],
+      }
+
+      parent.children.splice(index, 1, checkboxNode)
+    })
+  }
+}
+
+/**
  * Convert Markdown to WeChat-compatible HTML
  *
  * @param markdown - Markdown content to convert
@@ -238,9 +438,14 @@ export async function markdownToWechatHtml(
   // Create unified processor
   const processor = unified()
     .use(remarkParse)
-    .use(remarkGfm)
+    .use(remarkPlugins as any)
     .use(remarkRehype, { allowDangerousHtml: false })
     .use(rehypeSanitizeForWechat())
+    .use(rehypePluginsNoRaw as any)
+    .use(rehypeInlineKatexStyles())
+    .use(rehypeWechatGfm(styles))
+    .use(rehypeWechatCallouts(styles))
+    .use(rehypeWechatCaptions(styles))
     .use(rehypeWechatStyles(styles))
     .use(rehypeExtractImages(images))
     .use(rehypeStringify)
@@ -283,9 +488,14 @@ export function markdownToWechatHtmlSync(
 
   const processor = unified()
     .use(remarkParse)
-    .use(remarkGfm)
+    .use(remarkPlugins as any)
     .use(remarkRehype, { allowDangerousHtml: false })
     .use(rehypeSanitizeForWechat())
+    .use(rehypePluginsNoRaw as any)
+    .use(rehypeInlineKatexStyles())
+    .use(rehypeWechatGfm(styles))
+    .use(rehypeWechatCallouts(styles))
+    .use(rehypeWechatCaptions(styles))
     .use(rehypeWechatStyles(styles))
     .use(rehypeExtractImages(images))
     .use(rehypeStringify)

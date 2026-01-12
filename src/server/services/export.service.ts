@@ -62,8 +62,8 @@ export const exportService = {
       stylePreset: options?.stylePreset ?? "default",
     })
 
-    // Get cover URL from result
-    const coverUrl = (execution.result as { coverUrl?: string })?.coverUrl
+    // Get cover URL from wechatMediaInfo
+    const coverUrl = execution.wechatMediaInfo?.r2_url
 
     return {
       ...result,
@@ -122,7 +122,7 @@ export const exportService = {
     }
 
     const markdown = execution.articleMarkdown ?? ""
-    const coverUrl = (execution.result as { coverUrl?: string })?.coverUrl
+    const coverUrl = execution.wechatMediaInfo?.r2_url
 
     // Count images in markdown
     const imageMatches = markdown.match(/!\[[^\]]*\]\([^)]+\)/g) ?? []

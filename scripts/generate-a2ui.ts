@@ -124,6 +124,7 @@ function generateTypes(schema: CatalogSchema): string {
   lines.push("export interface A2UIBaseNode {")
   lines.push("  id?: string")
   lines.push("  style?: CSSProperties")
+  lines.push("  className?: string")
   lines.push("}")
   lines.push("")
 

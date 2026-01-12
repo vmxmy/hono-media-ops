@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-04T08:53:18.108Z
+// Generated at: 2026-01-12T09:24:06.204Z
 
 import type { CSSProperties } from "react"
 
@@ -422,7 +422,7 @@ export interface A2UIArticleViewerModalNode extends A2UIBaseNode {
   markdown: string // Markdown content
   title?: string // Modal title
   executionId?: string // Execution ID for updates
-  executionResult?: Record<string, unknown> // Execution result containing coverUrl, wechatMediaId, etc.
+  wechatMediaInfo?: Record<string, unknown> // WeChat media info containing r2_url, media_id, etc.
   onClose?: A2UIAction // Close action
   onUpdateResult?: A2UIAction // Update result action
   onUpdateMarkdown?: A2UIAction // Update markdown content action

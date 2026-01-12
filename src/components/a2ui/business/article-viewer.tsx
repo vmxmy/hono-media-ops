@@ -19,8 +19,8 @@ export function A2UIArticleViewerModal({
         markdown={node.markdown}
         title={node.title}
         executionId={node.executionId}
-        executionResult={node.executionResult as { coverUrl?: string; wechatMediaId?: string } | null | undefined}
-        onUpdateResult={(result) => dispatchA2UIAction(onAction, node.onUpdateResult, [result])}
+        wechatMediaInfo={node.wechatMediaInfo as { r2_url?: string; media_id?: string } | null | undefined}
+        onUpdateResult={(updates) => dispatchA2UIAction(onAction, node.onUpdateResult, [updates])}
         onUpdateMarkdown={(markdown) => dispatchA2UIAction(onAction, node.onUpdateMarkdown, [markdown])}
       />
     </div>

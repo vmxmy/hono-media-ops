@@ -19,7 +19,7 @@ import type {
   A2UIFormFieldNode,
   A2UICollapsibleNode,
 } from "@/lib/a2ui"
-import { remarkPlugins, rehypePlugins } from "@/lib/markdown"
+import { remarkPlugins, rehypePluginsNoRaw } from "@/lib/markdown"
 import { useI18n } from "@/contexts/i18n-context"
 import { compressImage, getCompressionSummary } from "@/lib/image/compress"
 
@@ -583,7 +583,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
       <div
         ref={containerRef}
         data-color-mode="auto"
-        className="relative"
+        className={`relative ${node.className ?? ""}`.trim()}
         style={{
           ...node.style,
           display: "flex",
@@ -605,7 +605,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
           visibleDragbar={false}
           previewOptions={{
             remarkPlugins,
-            rehypePlugins,
+            rehypePlugins: rehypePluginsNoRaw,
           }}
         />
       </div>
@@ -615,7 +615,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
   return (
     <div
       data-color-mode="auto"
-      className="relative"
+      className={`relative ${node.className ?? ""}`.trim()}
       style={node.style}
       onPaste={handlePaste}
       onDrop={handleDrop}
@@ -633,7 +633,7 @@ export function A2UIMarkdownEditor({ node, onAction }: A2UIComponentProps<A2UIMa
         visibleDragbar={false}
         previewOptions={{
           remarkPlugins,
-          rehypePlugins,
+          rehypePlugins: rehypePluginsNoRaw,
         }}
       />
     </div>

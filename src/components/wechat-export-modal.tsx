@@ -119,6 +119,7 @@ export function WechatExportModal({
               <option value="default">{getPresetLabel("default")}</option>
               <option value="elegant">{getPresetLabel("elegant")}</option>
               <option value="tech">{getPresetLabel("tech")}</option>
+              <option value="modern">{getPresetLabel("modern")}</option>
             </select>
           </div>
 
