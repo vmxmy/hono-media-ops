@@ -17,6 +17,7 @@ export interface PublishedArticle {
   articleHtml: string | null;
   articleTitle: string | null;
   articleSubtitle: string | null;
+  wechatMediaInfo?: unknown | null;
 }
 
 export interface ArticleListItem {
@@ -127,7 +128,19 @@ export const articleService = {
         articleMarkdown: taskExecutions.articleMarkdown,
         articleTitle: taskExecutions.articleTitle,
         articleSubtitle: taskExecutions.articleSubtitle,
-        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
+        coverUrl: sql<string>`
+          (
+            select elem->>'r2_url'
+            from jsonb_array_elements(
+              case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
+                   then ${taskExecutions.wechatMediaInfo}
+                   else '[]'::jsonb
+              end
+            ) elem
+            order by elem->>'uploaded_at' desc nulls last
+            limit 1
+          )
+        `.as("cover_url"),
         startedAt: taskExecutions.startedAt,
       })
       .from(taskExecutions)
@@ -198,7 +211,19 @@ export const articleService = {
         articleMarkdown: taskExecutions.articleMarkdown,
         articleTitle: taskExecutions.articleTitle,
         articleSubtitle: taskExecutions.articleSubtitle,
-        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
+        coverUrl: sql<string>`
+          (
+            select elem->>'r2_url'
+            from jsonb_array_elements(
+              case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
+                   then ${taskExecutions.wechatMediaInfo}
+                   else '[]'::jsonb
+              end
+            ) elem
+            order by elem->>'uploaded_at' desc nulls last
+            limit 1
+          )
+        `.as("cover_url"),
         startedAt: taskExecutions.startedAt,
       })
       .from(taskExecutions)
@@ -280,7 +305,19 @@ export const articleService = {
           articleMarkdown: taskExecutions.articleMarkdown,
           articleTitle: taskExecutions.articleTitle,
           articleSubtitle: taskExecutions.articleSubtitle,
-          coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
+          coverUrl: sql<string>`
+            (
+              select elem->>'r2_url'
+              from jsonb_array_elements(
+                case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
+                     then ${taskExecutions.wechatMediaInfo}
+                     else '[]'::jsonb
+                end
+              ) elem
+              order by elem->>'uploaded_at' desc nulls last
+              limit 1
+            )
+          `.as("cover_url"),
         })
         .from(taskExecutions)
         .where(
@@ -391,7 +428,19 @@ export const articleService = {
           articleMarkdown: taskExecutions.articleMarkdown,
           articleTitle: taskExecutions.articleTitle,
           articleSubtitle: taskExecutions.articleSubtitle,
-          coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`.as("cover_url"),
+          coverUrl: sql<string>`
+            (
+              select elem->>'r2_url'
+              from jsonb_array_elements(
+                case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
+                     then ${taskExecutions.wechatMediaInfo}
+                     else '[]'::jsonb
+                end
+              ) elem
+              order by elem->>'uploaded_at' desc nulls last
+              limit 1
+            )
+          `.as("cover_url"),
         })
         .from(taskExecutions)
         .where(
@@ -490,7 +539,20 @@ export const articleService = {
         articleHtml: taskExecutions.articleHtml,
         articleTitle: taskExecutions.articleTitle,
         articleSubtitle: taskExecutions.articleSubtitle,
-        coverUrl: sql<string>`${taskExecutions.wechatMediaInfo}->>'r2_url'`,
+        coverUrl: sql<string>`
+          (
+            select elem->>'r2_url'
+            from jsonb_array_elements(
+              case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
+                   then ${taskExecutions.wechatMediaInfo}
+                   else '[]'::jsonb
+              end
+            ) elem
+            order by elem->>'uploaded_at' desc nulls last
+            limit 1
+          )
+        `,
+        wechatMediaInfo: taskExecutions.wechatMediaInfo,
       })
       .from(tasks)
       .innerJoin(taskExecutions, eq(tasks.id, taskExecutions.taskId))
@@ -520,6 +582,7 @@ export const articleService = {
       articleHtml: row.articleHtml,
       articleTitle: row.articleTitle,
       articleSubtitle: row.articleSubtitle,
+      wechatMediaInfo: row.wechatMediaInfo,
     };
   },
 

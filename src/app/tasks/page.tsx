@@ -16,6 +16,7 @@ import type {
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
 import { buildStandardCardNode } from "@/lib/a2ui/article-card"
+import { assembleChapterMarkdown } from "@/lib/markdown"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
@@ -59,7 +60,13 @@ export default function TasksPage() {
     title: string
     taskId?: string
     executionId?: string
-    wechatMediaInfo?: { r2_url?: string; media_id?: string } | null
+    wechatMediaInfo?: unknown | null
+    chapters?: Array<{
+      id: string
+      actNumber: number
+      actName: string
+      formattedContent: string
+    }>
   }>({ isOpen: false, markdown: "", title: "", taskId: undefined, executionId: undefined, wechatMediaInfo: null })
   const [regenerateData, setRegenerateData] = useState<{
     topic?: string
@@ -145,16 +152,28 @@ export default function TasksPage() {
 
   const handleViewArticle = async (taskId: string, taskTopic: string) => {
     const execution = await trpcUtils.tasks.getLatestExecution.fetch({ id: taskId })
-    if (execution?.articleMarkdown) {
-      setArticleViewerState({
-        isOpen: true,
-        markdown: execution.articleMarkdown,
-        title: execution.articleTitle || taskTopic,
-        taskId,
-        executionId: execution.id,
-        wechatMediaInfo: execution.wechatMediaInfo,
-      })
-    }
+    if (!execution) return
+
+    const chaptersRaw = await trpcUtils.chapters.getByExecutionId.fetch({ executionId: execution.id })
+    const chapters = chaptersRaw.map((chapter) => ({
+      id: chapter.id,
+      actNumber: chapter.actNumber,
+      actName: chapter.actName ?? "",
+      formattedContent: chapter.formattedContent ?? "",
+    }))
+    const markdown = chapters.length > 0
+      ? assembleChapterMarkdown(chapters, { media: execution.wechatMediaInfo, mediaStrategy: "latest" })
+      : (execution.articleMarkdown ?? "")
+
+    setArticleViewerState({
+      isOpen: true,
+      markdown,
+      title: execution.articleTitle || taskTopic,
+      taskId,
+      executionId: execution.id,
+      wechatMediaInfo: execution.wechatMediaInfo,
+      chapters,
+    })
   }
 
   const updateExecutionResultMutation = api.tasks.updateExecutionResult.useMutation({
@@ -174,15 +193,15 @@ export default function TasksPage() {
       setArticleViewerState((prev) => ({
         ...prev,
         wechatMediaInfo: {
-          ...prev.wechatMediaInfo,
-          r2_url: updates.coverUrl ?? prev.wechatMediaInfo?.r2_url,
-          media_id: updates.wechatMediaId ?? prev.wechatMediaInfo?.media_id,
+          ...(prev.wechatMediaInfo as Record<string, unknown> | null),
+          r2_url: updates.coverUrl ?? (prev.wechatMediaInfo as any)?.r2_url,
+          media_id: updates.wechatMediaId ?? (prev.wechatMediaInfo as any)?.media_id,
         },
       }))
     }
   }
 
-  const updateExecutionMarkdownMutation = api.tasks.updateExecutionMarkdown.useMutation({
+  const updateChapterMutation = api.chapters.update.useMutation({
     onSuccess: () => {
       invalidate()
       a2uiToast.success(t("common.saved"))
@@ -192,18 +211,40 @@ export default function TasksPage() {
     },
   })
 
-  const handleUpdateMarkdown = (markdown: string) => {
-    if (articleViewerState.executionId) {
-      updateExecutionMarkdownMutation.mutate({
-        executionId: articleViewerState.executionId,
-        markdown,
-      })
-      // Update local state
-      setArticleViewerState((prev) => ({
+  const handleUpdateChapter = (chapterId: string, formattedContent: string) => {
+    updateChapterMutation.mutate({ chapterId, formattedContent })
+    setArticleViewerState((prev) => {
+      const chapters = prev.chapters?.map((chapter) =>
+        chapter.id === chapterId ? { ...chapter, formattedContent } : chapter
+      )
+      return {
         ...prev,
-        markdown,
-      }))
-    }
+        chapters,
+        markdown: chapters ? assembleChapterMarkdown(chapters) : prev.markdown,
+      }
+    })
+  }
+
+  const updateMediaInfoMutation = api.tasks.updateExecutionMediaInfo.useMutation({
+    onSuccess: () => {
+      invalidate()
+      a2uiToast.success(t("common.saved"))
+    },
+    onError: () => {
+      a2uiToast.error(t("task.updateFailed"))
+    },
+  })
+
+  const handleUpdateMediaInfo = (wechatMediaInfo: unknown) => {
+    if (!articleViewerState.executionId) return
+    updateMediaInfoMutation.mutate({
+      executionId: articleViewerState.executionId,
+      wechatMediaInfo,
+    })
+    setArticleViewerState((prev) => ({
+      ...prev,
+      wechatMediaInfo: wechatMediaInfo as any,
+    }))
   }
 
   const handleRegenerate = (task: TaskWithMaterial) => {
@@ -400,7 +441,14 @@ export default function TasksPage() {
               multiline: true,
               editable: canEdit,
               onChange: { action: "updateKeywords", args: [task.id] },
-              className: "text-sm leading-normal flex-1 line-clamp-2",
+              style: {
+                flex: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              },
             },
           ],
         } as A2UINode,
@@ -656,9 +704,14 @@ export default function TasksPage() {
           handleUpdateExecutionResult(result)
           break
         }
-        case "updateMarkdown": {
-          const markdown = args?.[0] as string
-          handleUpdateMarkdown(markdown)
+        case "updateChapter": {
+          const [chapterId, formattedContent] = args as [string, string]
+          handleUpdateChapter(chapterId, formattedContent)
+          break
+        }
+        case "updateMediaInfo": {
+          const next = args?.[0]
+          handleUpdateMediaInfo(next)
           break
         }
         // Editable text actions
@@ -698,7 +751,8 @@ export default function TasksPage() {
       handleCreateTaskClose,
       handleCreateTaskSuccess,
       handleUpdateExecutionResult,
-      handleUpdateMarkdown,
+      handleUpdateChapter,
+      handleUpdateMediaInfo,
     ]
   )
 
@@ -755,10 +809,12 @@ export default function TasksPage() {
             markdown: articleViewerState.markdown,
             title: articleViewerState.title,
             executionId: articleViewerState.executionId,
-            wechatMediaInfo: articleViewerState.wechatMediaInfo ?? undefined,
+            wechatMediaInfo: (articleViewerState.wechatMediaInfo ?? undefined) as any,
+            chapters: articleViewerState.chapters ?? undefined,
             onClose: { action: "closeArticleViewer" },
             onUpdateResult: { action: "updateExecutionResult" },
-            onUpdateMarkdown: { action: "updateMarkdown" },
+            onUpdateChapter: { action: "updateChapter" },
+            onUpdateMediaInfo: { action: "updateMediaInfo" },
           },
         ],
       },

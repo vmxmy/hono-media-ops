@@ -206,6 +206,17 @@ export const tasksRouter = createTRPCRouter({
       })
     ),
 
+  updateExecutionMediaInfo: protectedProcedure
+    .input(
+      z.object({
+        executionId: z.string(),
+        wechatMediaInfo: z.any(),
+      })
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.services.task.updateExecutionMediaInfo(input.executionId, input.wechatMediaInfo)
+    ),
+
   updateExecutionMarkdown: protectedProcedure
     .input(
       z.object({

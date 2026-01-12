@@ -142,11 +142,17 @@ export const taskService = {
           },
           coverUrl: sql<string>`
             (
-              select ${taskExecutions.wechatMediaInfo}->>'r2_url'
-              from ${taskExecutions}
-              where ${taskExecutions.taskId} = ${tasks.id}
-                and ${taskExecutions.status} = 'completed'
-              order by ${taskExecutions.startedAt} desc
+              select elem->>'r2_url'
+              from ${taskExecutions} te,
+                   jsonb_array_elements(
+                     case when jsonb_typeof(te.wechat_media_info) = 'array'
+                          then te.wechat_media_info
+                          else '[]'::jsonb
+                     end
+                   ) elem
+              where te.task_id = ${tasks.id}
+                and te.status = 'completed'
+              order by elem->>'uploaded_at' desc nulls last
               limit 1
             )
           `.as("cover_url"),
@@ -619,8 +625,11 @@ export const taskService = {
     };
 
     // Build wechatMediaInfo from coverUrl and wechatMediaId
+    const existingMediaInfo = Array.isArray(execution.wechatMediaInfo)
+      ? {}
+      : (execution.wechatMediaInfo ?? {});
     const wechatMediaInfo: WechatMediaInfo = {
-      ...(execution.wechatMediaInfo ?? {}),
+      ...existingMediaInfo,
       ...(result.coverUrl ? { r2_url: result.coverUrl } : {}),
       ...(result.wechatMediaId ? { media_id: result.wechatMediaId } : {}),
     };
@@ -659,15 +668,14 @@ export const taskService = {
   },
 
   async getLatestExecution(taskId: string): Promise<TaskExecution | null> {
-    // Return the latest completed execution with article content
+    // Return the latest completed execution
     const [execution] = await db
       .select()
       .from(taskExecutions)
       .where(
         and(
           eq(taskExecutions.taskId, taskId),
-          eq(taskExecutions.status, "completed"),
-          isNotNull(taskExecutions.articleMarkdown)
+          eq(taskExecutions.status, "completed")
         )
       )
       .orderBy(desc(taskExecutions.startedAt))
@@ -687,9 +695,10 @@ export const taskService = {
       .where(eq(taskExecutions.id, executionId))
       .limit(1);
 
-    const currentInfo = current?.wechatMediaInfo ?? {};
+    const currentInfo = current?.wechatMediaInfo;
+    const baseInfo = Array.isArray(currentInfo) ? {} : (currentInfo ?? {});
     const updatedInfo: WechatMediaInfo = {
-      ...currentInfo,
+      ...baseInfo,
       ...(updates.coverUrl !== undefined ? { r2_url: updates.coverUrl } : {}),
       ...(updates.wechatMediaId !== undefined ? { media_id: updates.wechatMediaId } : {}),
     };
@@ -697,6 +706,18 @@ export const taskService = {
     await db
       .update(taskExecutions)
       .set({ wechatMediaInfo: updatedInfo })
+      .where(eq(taskExecutions.id, executionId));
+
+    return { success: true };
+  },
+
+  async updateExecutionMediaInfo(
+    executionId: string,
+    wechatMediaInfo: unknown
+  ): Promise<{ success: boolean }> {
+    await db
+      .update(taskExecutions)
+      .set({ wechatMediaInfo })
       .where(eq(taskExecutions.id, executionId));
 
     return { success: true };

@@ -268,13 +268,17 @@ export type ExecutionResult = {
 };
 
 // WeChat media upload result type
-export type WechatMediaInfo = {
+export type WechatMediaInfoItem = {
+  act_number?: number;
+  act_name?: string | null;
   media_id?: string;
   wechat_media_url?: string;  // 微信素材 CDN 地址
   r2_url?: string;            // Cloudflare R2 素材地址
   item?: unknown[];
   uploaded_at?: string;
 };
+
+export type WechatMediaInfo = WechatMediaInfoItem | WechatMediaInfoItem[];
 
 export const taskExecutions = pgTable(
   "task_executions",

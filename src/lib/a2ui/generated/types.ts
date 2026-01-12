@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-12T09:24:06.204Z
+// Generated at: 2026-01-12T14:58:51.917Z
 
 import type { CSSProperties } from "react"
 
@@ -62,6 +62,7 @@ export type A2UINode =
   | A2UICreateTaskModalNode
   | A2UIReverseSubmitModalNode
   | A2UIMarkdownNode
+  | A2UIHtmlNode
   | A2UIStatCardNode
   | A2UIEmptyStateNode
   | A2UITaskStatusCardNode
@@ -420,12 +421,15 @@ export interface A2UIArticleViewerModalNode extends A2UIBaseNode {
   type: "article-viewer-modal"
   open: boolean // Open state
   markdown: string // Markdown content
+  chapters?: Array<{ id: string; actNumber: number; actName: string; formattedContent: string }> // Chapter outputs for editing
   title?: string // Modal title
   executionId?: string // Execution ID for updates
   wechatMediaInfo?: Record<string, unknown> // WeChat media info containing r2_url, media_id, etc.
   onClose?: A2UIAction // Close action
   onUpdateResult?: A2UIAction // Update result action
   onUpdateMarkdown?: A2UIAction // Update markdown content action
+  onUpdateChapter?: A2UIAction // Update chapter content action
+  onUpdateMediaInfo?: A2UIAction // Update wechat media info action
 }
 
 // Create task modal
@@ -450,6 +454,12 @@ export interface A2UIReverseSubmitModalNode extends A2UIBaseNode {
 export interface A2UIMarkdownNode extends A2UIBaseNode {
   type: "markdown"
   content: string // Markdown source content
+}
+
+// Raw HTML content renderer (uses dangerouslySetInnerHTML)
+export interface A2UIHtmlNode extends A2UIBaseNode {
+  type: "html"
+  content: string // HTML content to render
 }
 
 // Statistics card displaying a metric with optional change indicator

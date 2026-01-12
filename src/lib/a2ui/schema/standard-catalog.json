@@ -1025,6 +1025,19 @@
           "required": true,
           "description": "Markdown content"
         },
+        "chapters": {
+          "type": "array",
+          "description": "Chapter outputs for editing",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "actNumber": { "type": "number" },
+              "actName": { "type": "string" },
+              "formattedContent": { "type": "string" }
+            }
+          }
+        },
         "title": {
           "type": "string",
           "description": "Modal title"
@@ -1048,6 +1061,14 @@
         "onUpdateMarkdown": {
           "type": "action",
           "description": "Update markdown content action"
+        },
+        "onUpdateChapter": {
+          "type": "action",
+          "description": "Update chapter content action"
+        },
+        "onUpdateMediaInfo": {
+          "type": "action",
+          "description": "Update wechat media info action"
         }
       }
     },
@@ -1105,6 +1126,17 @@
           "type": "string",
           "required": true,
           "description": "Markdown source content"
+        }
+      }
+    },
+    "html": {
+      "description": "Raw HTML content renderer (uses dangerouslySetInnerHTML)",
+      "category": "custom",
+      "properties": {
+        "content": {
+          "type": "string",
+          "required": true,
+          "description": "HTML content to render"
         }
       }
     },

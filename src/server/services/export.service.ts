@@ -8,6 +8,8 @@ import { eq } from "drizzle-orm"
 import { db } from "@/server/db"
 import { taskExecutions } from "@/server/db/schema"
 import { markdownToWechatHtml, type StylePreset, type WechatHtmlResult } from "@/lib/wechat"
+import { chapterService } from "./chapter.service"
+import { assembleChapterMarkdown } from "@/lib/markdown"
 
 // ==================== Types ====================
 
@@ -41,21 +43,19 @@ export const exportService = {
     executionId: string,
     options?: WechatExportOptions
   ): Promise<WechatExportResult> {
-    // Fetch execution with task info
     const [execution] = await db
       .select()
       .from(taskExecutions)
       .where(eq(taskExecutions.id, executionId))
       .limit(1)
+    if (!execution) throw new Error(`Execution not found: ${executionId}`)
 
-    if (!execution) {
-      throw new Error(`Execution not found: ${executionId}`)
-    }
-
-    const markdown = execution.articleMarkdown
-    if (!markdown) {
-      throw new Error("No article content found in execution")
-    }
+    // Assemble markdown from chapters as single source of truth
+    const chapters = await chapterService.getByExecutionId(executionId)
+    const markdown = chapters.length > 0
+      ? assembleChapterMarkdown(chapters)
+      : execution.articleMarkdown
+    if (!markdown) throw new Error("No article content found in execution")
 
     // Convert markdown to WeChat HTML
     const result = await markdownToWechatHtml(markdown, {
@@ -81,15 +81,13 @@ export const exportService = {
       .from(taskExecutions)
       .where(eq(taskExecutions.id, executionId))
       .limit(1)
+    if (!execution) throw new Error(`Execution not found: ${executionId}`)
 
-    if (!execution) {
-      throw new Error(`Execution not found: ${executionId}`)
-    }
-
-    const markdown = execution.articleMarkdown
-    if (!markdown) {
-      throw new Error("No article content found in execution")
-    }
+    const chapters = await chapterService.getByExecutionId(executionId)
+    const markdown = chapters.length > 0
+      ? assembleChapterMarkdown(chapters)
+      : execution.articleMarkdown
+    if (!markdown) throw new Error("No article content found in execution")
 
     // Generate filename from execution ID and timestamp
     const timestamp = new Date().toISOString().slice(0, 10)
@@ -121,7 +119,10 @@ export const exportService = {
       throw new Error(`Execution not found: ${executionId}`)
     }
 
-    const markdown = execution.articleMarkdown ?? ""
+    const chapters = await chapterService.getByExecutionId(executionId)
+    const markdown = chapters.length > 0
+      ? assembleChapterMarkdown(chapters)
+      : (execution.articleMarkdown ?? "")
     const coverUrl = execution.wechatMediaInfo?.r2_url
 
     // Count images in markdown

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useCallback } from "react"
+import { use, useCallback, useMemo } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
@@ -13,6 +13,7 @@ import type {
   A2UIRowNode 
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import { assembleChapterMarkdown } from "@/lib/markdown"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -29,6 +30,14 @@ export default function ArticleDetailPage({ params }: Props) {
   const navItems = buildNavItems(t)
 
   const { data: article, isLoading, error } = api.articles.getById.useQuery({ id })
+  const { data: chapters, isLoading: chaptersLoading } = api.chapters.getByTaskId.useQuery({ id })
+
+  const assembledMarkdown = useMemo(() => {
+    if (chapters && chapters.length > 0) {
+      return assembleChapterMarkdown(chapters, { media: article?.wechatMediaInfo as any, mediaStrategy: "latest" })
+    }
+    return article?.articleMarkdown ?? ""
+  }, [chapters, article?.articleMarkdown, article?.wechatMediaInfo])
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
@@ -65,7 +74,7 @@ export default function ArticleDetailPage({ params }: Props) {
 
   // Build content
   const buildContent = (): A2UINode => {
-    if (isLoading) {
+    if (isLoading || chaptersLoading) {
       return {
         type: "container",
         className: "p-16 text-center",
@@ -97,7 +106,7 @@ export default function ArticleDetailPage({ params }: Props) {
       }
     }
 
-    const readingTime = estimateReadingTime(article.articleMarkdown)
+    const readingTime = estimateReadingTime(assembledMarkdown)
 
     const displayTitle = article.articleTitle || article.topic;
 
@@ -172,7 +181,7 @@ export default function ArticleDetailPage({ params }: Props) {
           children: [
             {
               type: "markdown",
-              content: article.articleMarkdown ?? "",
+              content: assembledMarkdown,
               className: "text-lg leading-relaxed"
             }
           ],
