@@ -8,12 +8,16 @@ import { remarkMark } from "remark-mark-highlight"
 import remarkEmoji from "remark-emoji"
 import remarkBreaks from "remark-breaks"
 import remarkSmartypants from "remark-smartypants"
+import { remarkSlider } from "./remark-slider"
+import { remarkRuby } from "./remark-ruby"
+import { remarkFootnotes } from "./remark-footnotes"
 import rehypeSlug from "rehype-slug"
 import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
 import rehypeRaw from "rehype-raw"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
 import { rehypeReviewHighlight } from "./rehype-review-highlight"
+import { rehypePlantUML } from "./rehype-plantuml"
 import type { PluggableList } from "unified"
 
 /**
@@ -50,6 +54,12 @@ export const sanitizeSchema = {
     "div",
     // Review highlight element
     "mark",
+    // Slider elements (WeChat compatible)
+    "section",
+    // Ruby annotation elements
+    "ruby",
+    "rt",
+    "rp",
   ],
   attributes: {
     ...defaultSchema.attributes,
@@ -60,6 +70,9 @@ export const sanitizeSchema = {
     code: [...(defaultSchema.attributes?.["code"] ?? []), "className", "class"],
     pre: [...(defaultSchema.attributes?.["pre"] ?? []), "className", "class"],
     mark: ["data-review", "className", "class"],
+    img: [...(defaultSchema.attributes?.["img"] ?? []), "loading", "alt", "src", "style", "title"],
+    div: [...(defaultSchema.attributes?.["div"] ?? []), "data-plantuml-url", "className", "class", "style"],
+    section: ["data-role", "className", "class", "style"],
   },
 }
 
@@ -73,16 +86,20 @@ export const remarkPlugins: PluggableList = [
   remarkEmoji,
   remarkBreaks,
   remarkSmartypants,
+  remarkSlider,
+  remarkRuby,
+  remarkFootnotes,
 ]
 
 /**
  * Rehype plugins for HTML transformation
- * Order matters: raw → sanitize → highlight → katex → slug
+ * Order matters: raw → review → sanitize → plantuml → highlight → katex → slug
  */
 export const rehypePlugins: PluggableList = [
   rehypeRaw,
   rehypeReviewHighlight,
   [rehypeSanitize, sanitizeSchema],
+  rehypePlantUML,
   rehypeHighlight,
   rehypeKatex,
   rehypeSlug,
@@ -93,6 +110,7 @@ export const rehypePlugins: PluggableList = [
  */
 export const rehypePluginsNoRaw: PluggableList = [
   rehypeReviewHighlight,
+  rehypePlantUML,
   rehypeHighlight,
   rehypeKatex,
   rehypeSlug,

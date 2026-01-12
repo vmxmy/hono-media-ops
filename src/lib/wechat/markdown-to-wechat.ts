@@ -91,21 +91,47 @@ const ELEMENT_STYLE_MAP: Record<string, keyof WechatStyles> = {
 }
 
 /**
- * Callout configuration (GitHub Flavored Markdown style)
+ * Callout configuration (GitHub Flavored Markdown + Obsidian-style)
+ * Extended variants for richer content authoring
  */
 const CALLOUT_CONFIG: Record<string, { icon: string; color: string; bgColor: string; borderColor: string }> = {
+  // GFM standard
   NOTE: { icon: "ℹ️", color: "#1f2937", bgColor: "#f3f4f6", borderColor: "#d1d5db" },
   TIP: { icon: "💡", color: "#166534", bgColor: "#dcfce7", borderColor: "#86efac" },
   IMPORTANT: { icon: "✨", color: "#4338ca", bgColor: "#e0e7ff", borderColor: "#a5b4fc" },
   WARNING: { icon: "⚠️", color: "#9a3412", bgColor: "#ffedd5", borderColor: "#fdba74" },
   CAUTION: { icon: "🛑", color: "#991b1b", bgColor: "#fee2e2", borderColor: "#fca5a5" },
+  // Obsidian-style: Summary/Abstract
+  ABSTRACT: { icon: "📋", color: "#0369a1", bgColor: "#e0f2fe", borderColor: "#7dd3fc" },
+  SUMMARY: { icon: "📋", color: "#0369a1", bgColor: "#e0f2fe", borderColor: "#7dd3fc" },
+  TLDR: { icon: "📋", color: "#0369a1", bgColor: "#e0f2fe", borderColor: "#7dd3fc" },
+  // Task
+  TODO: { icon: "☑️", color: "#0369a1", bgColor: "#e0f2fe", borderColor: "#7dd3fc" },
+  // Success
+  SUCCESS: { icon: "✅", color: "#166534", bgColor: "#dcfce7", borderColor: "#86efac" },
+  DONE: { icon: "✅", color: "#166534", bgColor: "#dcfce7", borderColor: "#86efac" },
+  // Question/Help
+  QUESTION: { icon: "❓", color: "#7c3aed", bgColor: "#ede9fe", borderColor: "#c4b5fd" },
+  HELP: { icon: "❓", color: "#7c3aed", bgColor: "#ede9fe", borderColor: "#c4b5fd" },
+  FAQ: { icon: "❓", color: "#7c3aed", bgColor: "#ede9fe", borderColor: "#c4b5fd" },
+  // Failure
+  FAILURE: { icon: "❌", color: "#991b1b", bgColor: "#fee2e2", borderColor: "#fca5a5" },
+  FAIL: { icon: "❌", color: "#991b1b", bgColor: "#fee2e2", borderColor: "#fca5a5" },
+  MISSING: { icon: "❌", color: "#991b1b", bgColor: "#fee2e2", borderColor: "#fca5a5" },
+  // Danger/Error
+  DANGER: { icon: "⚡", color: "#dc2626", bgColor: "#fef2f2", borderColor: "#fecaca" },
+  ERROR: { icon: "⚡", color: "#dc2626", bgColor: "#fef2f2", borderColor: "#fecaca" },
+  // Bug
+  BUG: { icon: "🐛", color: "#dc2626", bgColor: "#fef2f2", borderColor: "#fecaca" },
+  // Example
+  EXAMPLE: { icon: "📝", color: "#6b21a8", bgColor: "#faf5ff", borderColor: "#e9d5ff" },
+  // Quote
+  QUOTE: { icon: "💬", color: "#4b5563", bgColor: "#f9fafb", borderColor: "#e5e7eb" },
+  CITE: { icon: "💬", color: "#4b5563", bgColor: "#f9fafb", borderColor: "#e5e7eb" },
 }
 
 const CALLOUT_ALIASES: Record<string, string> = {
   INFO: "NOTE",
-  SUCCESS: "TIP",
-  DANGER: "CAUTION",
-  ERROR: "CAUTION",
 }
 
 // ==================== Functions ====================
