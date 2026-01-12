@@ -16,7 +16,7 @@ import type {
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
 import { buildStandardCardNode } from "@/lib/a2ui/article-card"
-import { assembleChapterMarkdown } from "@/lib/markdown"
+import { assembleChapterMarkdown, type MediaLike } from "@/lib/markdown"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
@@ -162,7 +162,7 @@ export default function TasksPage() {
       formattedContent: chapter.formattedContent ?? "",
     }))
     const markdown = chapters.length > 0
-      ? assembleChapterMarkdown(chapters, { media: execution.wechatMediaInfo, mediaStrategy: "latest" })
+      ? assembleChapterMarkdown(chapters, { media: execution.wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest" })
       : (execution.articleMarkdown ?? "")
 
     setArticleViewerState({

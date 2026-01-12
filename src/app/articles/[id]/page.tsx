@@ -13,7 +13,7 @@ import type {
   A2UIRowNode 
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
-import { assembleChapterMarkdown } from "@/lib/markdown"
+import { assembleChapterMarkdown, type MediaLike } from "@/lib/markdown"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -34,7 +34,7 @@ export default function ArticleDetailPage({ params }: Props) {
 
   const assembledMarkdown = useMemo(() => {
     if (chapters && chapters.length > 0) {
-      return assembleChapterMarkdown(chapters, { media: article?.wechatMediaInfo as any, mediaStrategy: "latest" })
+      return assembleChapterMarkdown(chapters, { media: article?.wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest" })
     }
     return article?.articleMarkdown ?? ""
   }, [chapters, article?.articleMarkdown, article?.wechatMediaInfo])
