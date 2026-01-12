@@ -23,6 +23,8 @@ export interface AssembleChaptersOptions {
   mediaStrategy?: "first" | "latest"
   /** Whether to include chapter markers for parsing */
   includeMarkers?: boolean
+  /** Which URL to prefer for images: "r2" for web preview, "wechat" for WeChat publish */
+  imageUrlPreference?: "r2" | "wechat"
 }
 
 export type ParsedChapter = {
@@ -63,7 +65,7 @@ export function assembleChapterMarkdown(
 ): string {
   if (!chapters || chapters.length === 0) return ""
 
-  const { includeActHeading = true, media, mediaStrategy = "first", includeMarkers = false } = options
+  const { includeActHeading = true, media, mediaStrategy = "first", includeMarkers = false, imageUrlPreference = "r2" } = options
 
   const sorted = [...chapters].sort((a, b) => (a.actNumber ?? 0) - (b.actNumber ?? 0))
 
@@ -119,7 +121,10 @@ export function assembleChapterMarkdown(
     }
 
     const mediaItem = pickMedia(chapter.actNumber)
-    const mediaUrl = mediaItem?.r2_url || mediaItem?.wechat_media_url
+    // Choose URL based on preference: r2 for web preview, wechat for WeChat publish
+    const mediaUrl = imageUrlPreference === "wechat"
+      ? (mediaItem?.wechat_media_url || mediaItem?.r2_url)
+      : (mediaItem?.r2_url || mediaItem?.wechat_media_url)
     if (mediaUrl) {
       const altText = chapter.actName ?? mediaItem?.media_id ?? ""
       const imageMarkdown = `![${altText}](${mediaUrl})`

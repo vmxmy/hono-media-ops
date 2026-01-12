@@ -123,17 +123,31 @@ export function ArticleViewerModal({
     return () => clearTimeout(timer)
   }, [dirtyChapterIds, chapterEdits, onUpdateChapter])
 
+  // Assembled markdown for web preview (uses R2 URLs)
   const assembledMarkdown = useMemo(() => {
     if (chapterEdits.length > 0) {
-      return assembleChapterMarkdown(chapterEdits, { media: wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest" })
+      return assembleChapterMarkdown(chapterEdits, { media: wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest", imageUrlPreference: "r2" })
     }
     return markdown
   }, [chapterEdits, markdown, wechatMediaInfo])
 
-  // Generate WeChat HTML
+  // Assembled markdown for WeChat publish (uses WeChat URLs)
+  const assembledMarkdownForWechat = useMemo(() => {
+    if (chapterEdits.length > 0) {
+      return assembleChapterMarkdown(chapterEdits, { media: wechatMediaInfo as MediaLike | MediaLike[] | null | undefined, mediaStrategy: "latest", imageUrlPreference: "wechat" })
+    }
+    return markdown
+  }, [chapterEdits, markdown, wechatMediaInfo])
+
+  // Generate WeChat HTML for preview (uses R2 URLs)
   const wechatResult = useMemo(() => {
     return markdownToWechatHtmlSync(assembledMarkdown, { stylePreset })
   }, [assembledMarkdown, stylePreset])
+
+  // Generate WeChat HTML for publish (uses WeChat URLs)
+  const wechatResultForPublish = useMemo(() => {
+    return markdownToWechatHtmlSync(assembledMarkdownForWechat, { stylePreset })
+  }, [assembledMarkdownForWechat, stylePreset])
 
   // Style preset options
   const stylePresetOptions = useMemo(() => {
@@ -251,7 +265,7 @@ export function ArticleViewerModal({
             setTimeout(() => setPublishStatus("idle"), 5000)
             return
           }
-          if (!wechatResult.html || wechatResult.html.trim().length === 0) {
+          if (!wechatResultForPublish.html || wechatResultForPublish.html.trim().length === 0) {
             setPublishStatus("error")
             setPublishMessage(locale === "zh-CN" ? "文章内容为空" : "Article content is empty")
             setTimeout(() => setPublishStatus("idle"), 5000)
@@ -272,7 +286,7 @@ export function ArticleViewerModal({
           setPublishStatus("publishing")
           publishMutation.mutate({
             title: title ?? "Untitled",
-            html: wechatResult.html,
+            html: wechatResultForPublish.html,
             thumbMediaId,
             author: "ziikoo",
             digest: cleanDigest,
@@ -281,7 +295,7 @@ export function ArticleViewerModal({
         }
       }
     },
-    [onClose, wechatMediaInfo, isEditing, onUpdateMediaInfo, assembledMarkdown, onUpdateMarkdown, chapters, chapterEdits, wechatResult.html, mediaDraft, normalizedMedia, publishStatus, publishMutation, title]
+    [onClose, wechatMediaInfo, isEditing, onUpdateMediaInfo, assembledMarkdown, onUpdateMarkdown, chapters, chapterEdits, wechatResult.html, wechatResultForPublish.html, mediaDraft, normalizedMedia, publishStatus, publishMutation, title, locale]
   )
 
   const tabs = useMemo(() => {
