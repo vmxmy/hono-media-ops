@@ -450,7 +450,7 @@ const handleAction = (action: string, args?: unknown[]) => {
 
 Copy `.env.example` to `.env.local`:
 - `DATABASE_URL`: PostgreSQL connection string
-- `N8N_WEBHOOK_URL`: Endpoint for task processing webhooks
+- `N8N_WRITING_WEBHOOK_URL`: Endpoint for task processing webhooks
 
 ## Database Schema
 

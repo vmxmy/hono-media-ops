@@ -490,10 +490,10 @@ export const taskService = {
   // ==================== Webhook Integration ====================
 
   async triggerWebhook(taskId: string, _callbackUrl: string, useSearch: boolean = true): Promise<boolean> {
-    const webhookUrl = env.N8N_WEBHOOK_URL;
+    const webhookUrl = env.N8N_WRITING_WEBHOOK_URL;
     console.log("[TaskService] triggerWebhook - webhookUrl:", webhookUrl, "useSearch:", useSearch);
     if (!webhookUrl) {
-      console.warn("[TaskService] N8N_WEBHOOK_URL not configured");
+      console.warn("[TaskService] N8N_WRITING_WEBHOOK_URL not configured");
       return false;
     }
 
