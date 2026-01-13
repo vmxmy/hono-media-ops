@@ -501,7 +501,7 @@ export default function ImagePromptsPage() {
   }
 
   // Build prompts list
-  const buildPromptsList = (): A2UIColumnNode => {
+  const buildPromptsList = (): A2UINode => {
     if (isLoading) {
       return { type: "column", children: [{ type: "text", text: t("common.loading"), color: "muted" }] }
     }
@@ -601,7 +601,11 @@ export default function ImagePromptsPage() {
       }
     })
 
-    return { type: "column", gap: "0.75rem", children: promptCards }
+    return {
+      type: "container",
+      className: "grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3",
+      children: promptCards,
+    }
   }
 
   // Build pagination
