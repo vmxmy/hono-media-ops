@@ -1,5 +1,5 @@
 DATABASE_URL=postgresql://media-ops:your-password@localhost:5432/media-ops
-N8N_WEBHOOK_URL=https://your-n8n-instance/webhook/task-webhook-id
+N8N_WEBHOOK_URL=https://n8n.ziikoo.com/webhook/write
 N8N_REVERSE_WEBHOOK_URL=https://your-n8n-instance/webhook/reverse-webhook-id
 N8N_XHS_IMAGE_WEBHOOK_URL=https://your-n8n-instance/webhook/redbook-images
 
