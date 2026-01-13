@@ -14,6 +14,7 @@ interface ImagePromptFormData {
   title: string
   prompt: string
   negativePrompt: string
+  previewUrl: string
   model: string
   ratio: string
   resolution: string
@@ -26,6 +27,7 @@ const DEFAULT_FORM: ImagePromptFormData = {
   title: "",
   prompt: "",
   negativePrompt: "",
+  previewUrl: "",
   model: "jimeng-4.5",
   ratio: "1:1",
   resolution: "2k",
@@ -76,6 +78,7 @@ export default function ImagePromptsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ImagePromptFormData>(DEFAULT_FORM)
   const [activePromptId, setActivePromptId] = useState<string | null>(null)
+  const [drawerMode, setDrawerMode] = useState<"detail" | "edit" | "create" | null>(null)
   const [page, setPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -101,6 +104,7 @@ export default function ImagePromptsPage() {
     onSuccess: () => {
       utils.imagePrompts.getAll.invalidate()
       resetForm()
+      setDrawerMode(null)
     },
   })
 
@@ -108,6 +112,7 @@ export default function ImagePromptsPage() {
     onSuccess: () => {
       utils.imagePrompts.getAll.invalidate()
       resetForm()
+      setDrawerMode(null)
     },
   })
 
@@ -143,6 +148,9 @@ export default function ImagePromptsPage() {
         case "setNegativePrompt":
           setFormData((prev) => ({ ...prev, negativePrompt: args?.[0] as string }))
           break
+        case "setPreviewUrl":
+          setFormData((prev) => ({ ...prev, previewUrl: args?.[0] as string }))
+          break
         case "setModel":
           setFormData((prev) => ({ ...prev, model: args?.[0] as string }))
           break
@@ -173,6 +181,7 @@ export default function ImagePromptsPage() {
               title: formData.title,
               prompt: formData.prompt,
               negativePrompt: formData.negativePrompt || undefined,
+              previewUrl: formData.previewUrl || undefined,
               model: formData.model,
               ratio: formData.ratio,
               resolution: formData.resolution,
@@ -185,6 +194,7 @@ export default function ImagePromptsPage() {
               title: formData.title,
               prompt: formData.prompt,
               negativePrompt: formData.negativePrompt || undefined,
+              previewUrl: formData.previewUrl || undefined,
               model: formData.model,
               ratio: formData.ratio,
               resolution: formData.resolution,
@@ -198,27 +208,39 @@ export default function ImagePromptsPage() {
         case "resetForm":
           setEditingId(null)
           setFormData(DEFAULT_FORM)
+          setDrawerMode(null)
           break
         case "openDetail": {
           const id = args?.[0] as string
           setActivePromptId(id)
+          setDrawerMode("detail")
           break
         }
         case "closeDetail":
           setActivePromptId(null)
+          setDrawerMode(null)
           break
         case "noop":
           break
+        case "openCreate": {
+          setEditingId(null)
+          setFormData(DEFAULT_FORM)
+          setActivePromptId(null)
+          setDrawerMode("create")
+          break
+        }
         case "edit": {
           const id = args?.[0] as string
           const prompt = promptsData?.items.find((p) => p.id === id)
           if (prompt) {
             setEditingId(prompt.id)
             setActivePromptId(prompt.id)
+            setDrawerMode("edit")
             setFormData({
               title: prompt.title,
               prompt: prompt.prompt,
               negativePrompt: prompt.negativePrompt ?? "",
+              previewUrl: prompt.previewUrl ?? "",
               model: prompt.model ?? "jimeng-4.5",
               ratio: prompt.ratio ?? "1:1",
               resolution: prompt.resolution ?? "2k",
@@ -292,6 +314,11 @@ export default function ImagePromptsPage() {
       type: "form-field",
       label: t("imagePrompts.negativePromptLabel"),
       children: [{ type: "textarea", id: "negativePrompt", value: formData.negativePrompt, rows: 2, placeholder: t("imagePrompts.negativePromptPlaceholder"), onChange: { action: "setNegativePrompt" } }],
+    },
+    {
+      type: "form-field",
+      label: "preview_url",
+      children: [{ type: "input", id: "previewUrl", name: "previewUrl", value: formData.previewUrl, inputType: "text", autocomplete: "off", placeholder: "https://", onChange: { action: "setPreviewUrl" } }],
     },
     {
       type: "row",
@@ -369,7 +396,6 @@ export default function ImagePromptsPage() {
             type: "column",
             gap: "1rem",
             children: [
-              { type: "text", text: editingId ? t("imagePrompts.editTitle") : t("imagePrompts.createTitle"), variant: "h3" },
               { type: "column", gap: "1rem", children: formChildren },
             ],
           },
@@ -407,15 +433,6 @@ export default function ImagePromptsPage() {
       children: [
         {
           type: "row",
-          justify: "between",
-          align: "center",
-          children: [
-            { type: "text", text: "详情", variant: "h4" },
-            { type: "button", text: "关闭", variant: "ghost", size: "sm", onClick: { action: "closeDetail" } },
-          ],
-        } as A2UIRowNode,
-        {
-          type: "row",
           gap: "0.5rem",
           wrap: true,
           children: [
@@ -430,18 +447,19 @@ export default function ImagePromptsPage() {
           text: prompt.title,
           variant: "h4",
         },
-        ...(prompt.previewUrl
-          ? [{
-              type: "container" as const,
-              className: "rounded-md overflow-hidden",
-              children: [{
-                type: "image" as const,
-                src: prompt.previewUrl,
-                alt: prompt.title,
-                className: "w-full max-h-[180px] object-cover",
-              }],
-            }]
-          : []),
+            ...(prompt.previewUrl
+              ? [{
+                  type: "container" as const,
+                  className: "rounded-md overflow-hidden",
+                  children: [{
+                    type: "image" as const,
+                    src: prompt.previewUrl,
+                    alt: prompt.title,
+                    width: "100%",
+                    style: { height: "auto", objectFit: "contain" as const },
+                  }],
+                }]
+              : []),
         { type: "text" as const, text: "正向提示词", variant: "caption" as const, color: "muted" as const },
         { type: "text" as const, text: prompt.prompt, variant: "body" as const },
         ...(prompt.negativePrompt
@@ -529,7 +547,8 @@ export default function ImagePromptsPage() {
                       type: "image" as const,
                       src: prompt.previewUrl,
                       alt: prompt.title,
-                      className: "h-14 w-20 rounded-md object-cover",
+                      width: "clamp(56px, 10vw, 88px)",
+                      style: { height: "auto", objectFit: "contain" as const },
                     }]
                   : []),
                 {
@@ -552,8 +571,8 @@ export default function ImagePromptsPage() {
               type: "row",
               gap: "0.25rem",
               children: [
-                { type: "button", text: "查看", variant: "ghost", size: "sm", onClick: { action: "openDetail", args: [prompt.id] } },
-                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
+                { type: "button", text: "查看", variant: "ghost", size: "sm", onClick: { action: "openDetail", args: [prompt.id], stopPropagation: true } },
+                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id], stopPropagation: true } },
               ],
             },
           ],
@@ -603,7 +622,14 @@ export default function ImagePromptsPage() {
       : null
 
   const detailPanel = buildDetailPanel()
-  const detailDrawer: A2UINode | null = detailPanel
+  const drawerContent: A2UINode | null =
+    drawerMode === "detail"
+      ? detailPanel
+      : drawerMode === "edit" || drawerMode === "create"
+        ? formCard
+        : null
+
+  const detailDrawer: A2UINode | null = drawerContent
     ? {
         type: "container",
         className: "fixed inset-0 z-50 flex justify-end",
@@ -619,7 +645,29 @@ export default function ImagePromptsPage() {
             hoverable: false,
             className: "relative h-full w-[360px] max-w-[90vw] bg-[var(--ds-surface)] shadow-2xl p-4 overflow-y-auto",
             onClick: { action: "noop", stopPropagation: true },
-            children: [detailPanel],
+            children: [
+              {
+                type: "row",
+                justify: "between",
+                align: "center",
+                children: [
+                  {
+                    type: "text",
+                    text: drawerMode === "create"
+                      ? t("imagePrompts.createTitle")
+                      : drawerMode === "edit"
+                        ? t("imagePrompts.editTitle")
+                        : "详情",
+                    variant: "h4",
+                  },
+                  { type: "button", text: "关闭", variant: "ghost", size: "sm", onClick: { action: "closeDetail" } },
+                ],
+              } as A2UIRowNode,
+              {
+                type: "divider",
+              },
+              drawerContent,
+            ],
           },
         ],
       }
@@ -629,17 +677,26 @@ export default function ImagePromptsPage() {
     type: "column",
     gap: "1.5rem",
     children: [
-      { type: "text", text: t("imagePrompts.title"), variant: "h2" },
+      {
+        type: "row",
+        justify: "between",
+        align: "center",
+        wrap: true,
+        gap: "0.75rem",
+        children: [
+          { type: "text", text: t("imagePrompts.title"), variant: "h2" },
+          { type: "button", text: t("imagePrompts.createTitle"), variant: "primary", size: "sm", onClick: { action: "openCreate" } },
+        ],
+      } as A2UIRowNode,
       {
         type: "row",
         gap: "1.5rem",
         responsive: true,
         children: [
-          { type: "column", gap: "0", className: "flex-1 min-w-0 max-w-[400px]", children: [formCard] },
           {
             type: "column",
             gap: "1rem",
-            className: "flex-[2] min-w-0",
+            className: "flex-1 min-w-0",
             children: [
               filterBar,
               buildPromptsList(),

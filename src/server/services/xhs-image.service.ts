@@ -233,6 +233,67 @@ export const xhsImageService = {
       return { success: false, jobId, message: error instanceof Error ? error.message : "Unknown error" };
     }
   },
+
+  // ==================== Publish to XHS ====================
+
+  async publishToXhs(jobId: string): Promise<{ success: boolean; message?: string }> {
+    const webhookUrl = env.N8N_XHS_PUBLISH_WEBHOOK_URL;
+    console.log("[XhsImageService] publishToXhs - webhookUrl:", webhookUrl);
+
+    if (!webhookUrl) {
+      console.warn("[XhsImageService] N8N_XHS_PUBLISH_WEBHOOK_URL not configured");
+      return { success: false, message: "Publish webhook URL not configured" };
+    }
+
+    // Get job with images
+    const job = await this.getJobById(jobId);
+    if (!job) {
+      return { success: false, message: "Job not found" };
+    }
+
+    if (job.status !== "completed") {
+      return { success: false, message: "Job is not completed yet" };
+    }
+
+    // Collect all r2Urls from images
+    const r2Urls = job.images
+      .filter(img => img.r2Url)
+      .map(img => img.r2Url as string);
+
+    if (r2Urls.length === 0) {
+      return { success: false, message: "No images available for publishing" };
+    }
+
+    // Build webhook payload
+    const payload = {
+      job_id: jobId,
+      source_url: job.sourceUrl,
+      source_title: job.sourceTitle,
+      images: r2Urls,
+    };
+
+    console.log("[XhsImageService] Sending publish webhook payload:", payload);
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("[XhsImageService] Publish webhook response status:", response.status);
+
+      if (!response.ok) {
+        console.error(`[XhsImageService] Publish webhook failed: ${response.status} ${response.statusText}`);
+        return { success: false, message: `Webhook failed: ${response.status}` };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("[XhsImageService] Publish webhook error:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  },
 };
 
 export type XhsImageService = typeof xhsImageService;

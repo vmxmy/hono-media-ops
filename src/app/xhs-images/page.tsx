@@ -109,10 +109,23 @@ export default function XhsImagesPage() {
     },
   })
 
+  const publishMutation = api.xhsImages.publish.useMutation({
+    onSuccess: () => {
+      a2uiToast.success(t("xhsImages.publishSuccess"))
+    },
+    onError: (error) => {
+      a2uiToast.error(error.message || t("xhsImages.publishFailed"))
+    },
+  })
+
   const handleDelete = (id: string) => {
     showConfirmToast(t("xhsImages.deleteConfirm"), () => deleteMutation.mutate({ id }), {
       label: t("common.confirm"),
     })
+  }
+
+  const handlePublish = (id: string) => {
+    publishMutation.mutate({ id })
   }
 
   const handleCopyUrl = async (url: string) => {
@@ -382,6 +395,14 @@ export default function XhsImagesPage() {
                           align: "center",
                           children: [
                             getStatusBadge(job.status),
+                            ...(job.status === "completed" ? [{
+                              type: "button" as const,
+                              text: publishMutation.isPending ? t("xhsImages.publishing") : t("xhsImages.publish"),
+                              variant: "primary" as const,
+                              size: "sm" as const,
+                              disabled: publishMutation.isPending,
+                              onClick: { action: "publish", args: [job.id] },
+                            }] : []),
                             {
                               type: "button",
                               text: t("common.delete"),
@@ -547,6 +568,9 @@ export default function XhsImagesPage() {
           break
         case "delete":
           handleDelete(args?.[0] as string)
+          break
+        case "publish":
+          handlePublish(args?.[0] as string)
           break
         case "copyUrl":
           handleCopyUrl(args?.[0] as string)

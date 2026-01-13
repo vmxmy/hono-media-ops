@@ -84,4 +84,11 @@ export const xhsImagesRouter = createTRPCRouter({
         promptId: input.promptId,
       });
     }),
+
+  // Publish job to XHS
+  publish: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.services.xhsImage.publishToXhs(input.id);
+    }),
 });

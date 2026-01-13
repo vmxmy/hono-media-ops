@@ -477,6 +477,10 @@ export type I18nKey =
     | "xhsImages.generateSuccess"
     | "xhsImages.generateFailed"
     | "xhsImages.noPromptsAvailable"
+    | "xhsImages.publish"
+    | "xhsImages.publishing"
+    | "xhsImages.publishSuccess"
+    | "xhsImages.publishFailed"
     | "createHub.generateXhsImages"
     | "createHub.generateXhsImagesDesc"
 
@@ -957,6 +961,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "xhsImages.generateSuccess": "Generation task submitted successfully!",
         "xhsImages.generateFailed": "Failed to submit generation task",
         "xhsImages.noPromptsAvailable": "No image style prompts available",
+        "xhsImages.publish": "Publish",
+        "xhsImages.publishing": "Publishing...",
+        "xhsImages.publishSuccess": "Published to Xiaohongshu successfully!",
+        "xhsImages.publishFailed": "Failed to publish",
         "createHub.generateXhsImages": "Generate XHS Images",
         "createHub.generateXhsImagesDesc": "Create Xiaohongshu style images",
     },
@@ -1426,6 +1434,10 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "xhsImages.generateSuccess": "生成任务已提交！",
         "xhsImages.generateFailed": "提交生成任务失败",
         "xhsImages.noPromptsAvailable": "暂无可用的图片风格提示词",
+        "xhsImages.publish": "发布",
+        "xhsImages.publishing": "发布中...",
+        "xhsImages.publishSuccess": "发布到小红书成功！",
+        "xhsImages.publishFailed": "发布失败",
         "createHub.generateXhsImages": "生成小红书图",
         "createHub.generateXhsImagesDesc": "一键生成小红书风格图片",
     },
