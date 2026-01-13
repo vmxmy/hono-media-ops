@@ -255,21 +255,27 @@ export const xhsImageService = {
       return { success: false, message: "Job is not completed yet" };
     }
 
-    // Collect all r2Urls from images
-    const r2Urls = job.images
+    // Collect images with their content info
+    const imagesWithContent = job.images
       .filter(img => img.r2Url)
-      .map(img => img.r2Url as string);
+      .map(img => ({
+        url: img.r2Url as string,
+        index: img.index,
+        type: img.type,
+        core_message: img.coreMessage ?? null,
+        text_content: img.textContent ?? null,
+      }));
 
-    if (r2Urls.length === 0) {
+    if (imagesWithContent.length === 0) {
       return { success: false, message: "No images available for publishing" };
     }
 
-    // Build webhook payload
+    // Build webhook payload with enhanced image data
     const payload = {
       job_id: jobId,
       source_url: job.sourceUrl,
       source_title: job.sourceTitle,
-      images: r2Urls,
+      images: imagesWithContent,
     };
 
     console.log("[XhsImageService] Sending publish webhook payload:", payload);
