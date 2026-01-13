@@ -94,11 +94,15 @@ export function CreateXhsImageModal({
           setShowAllPrompts(true)
           break
         case "submit":
-          handleSubmit()
+          if (!inputContent.trim() || !selectedPromptId) return
+          generateMutation.mutate({
+            inputContent: inputContent.trim(),
+            promptId: selectedPromptId,
+          })
           break
       }
     },
-    [handleClose]
+    [handleClose, inputContent, selectedPromptId, generateMutation]
   )
 
   const prompts = (promptsData?.items ?? []) as ImagePromptData[]

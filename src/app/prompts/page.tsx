@@ -402,89 +402,82 @@ export default function ImagePromptsPage() {
     })) ?? []
 
     return {
-      type: "card",
-      hoverable: false,
-      className: "border border-primary/40 bg-primary/5",
+      type: "column",
+      gap: "0.75rem",
       children: [
         {
-          type: "column",
-          gap: "0.75rem",
+          type: "row",
+          justify: "between",
+          align: "center",
           children: [
-            {
-              type: "row",
-              justify: "between",
-              align: "center",
-              children: [
-                { type: "text", text: "详情", variant: "h4" },
-                { type: "button", text: "关闭", variant: "ghost", size: "sm", onClick: { action: "closeDetail" } },
-              ],
-            } as A2UIRowNode,
-            {
-              type: "row",
-              gap: "0.5rem",
-              wrap: true,
-              children: [
-                { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" },
-                { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "default" },
-                { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "default" },
-                prompt.isPublic === 1 ? { type: "badge", text: t("imagePrompts.publicLabel"), color: "success" } : null,
-              ].filter(Boolean),
-            } as A2UIRowNode,
-            {
-              type: "text",
-              text: prompt.title,
-              variant: "h4",
-            },
-            ...(prompt.previewUrl
-              ? [{
-                  type: "container" as const,
-                  className: "rounded-md overflow-hidden",
-                  children: [{
-                    type: "image",
-                    src: prompt.previewUrl,
-                    alt: prompt.title,
-                    className: "w-full max-h-[180px] object-cover",
-                  }],
-                }]
-              : []),
-            { type: "text", text: "正向提示词", variant: "caption", color: "muted" },
-            { type: "text", text: prompt.prompt, variant: "body" },
-            ...(prompt.negativePrompt
-              ? [
-                  { type: "text", text: "负向提示词", variant: "caption", color: "muted" },
-                  { type: "text", text: prompt.negativePrompt, variant: "body" },
-                ]
-              : []),
-            ...(tagBadges.length > 0
-              ? [{
-                  type: "row" as const,
-                  gap: "0.25rem" as const,
-                  wrap: true,
-                  children: tagBadges,
-                }]
-              : []),
-            {
-              type: "row",
-              gap: "0.75rem",
-              wrap: true,
-              children: [
-                { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
-                ...(prompt.rating ? [{ type: "text", text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption", color: "primary" }] : []),
-              ],
-            },
-            {
-              type: "row",
-              gap: "0.5rem",
-              wrap: true,
-              children: [
-                { type: "button", text: copiedId === prompt.id ? `✓ ${t("common.copied")}` : t("imagePrompts.copyPrompt"), variant: copiedId === prompt.id ? "secondary" : "ghost", size: "sm", disabled: copiedId === prompt.id, onClick: { action: "copy", args: [prompt.id] } },
-                { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
-                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
-                { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
-              ],
-            },
+            { type: "text", text: "详情", variant: "h4" },
+            { type: "button", text: "关闭", variant: "ghost", size: "sm", onClick: { action: "closeDetail" } },
           ],
-        } as A2UIColumnNode,
+        } as A2UIRowNode,
+        {
+          type: "row",
+          gap: "0.5rem",
+          wrap: true,
+          children: [
+            { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" },
+            { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "default" },
+            { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "default" },
+            prompt.isPublic === 1 ? { type: "badge", text: t("imagePrompts.publicLabel"), color: "success" } : null,
+          ].filter(Boolean),
+        } as A2UIRowNode,
+        {
+          type: "text",
+          text: prompt.title,
+          variant: "h4",
+        },
+        ...(prompt.previewUrl
+          ? [{
+              type: "container" as const,
+              className: "rounded-md overflow-hidden",
+              children: [{
+                type: "image" as const,
+                src: prompt.previewUrl,
+                alt: prompt.title,
+                className: "w-full max-h-[180px] object-cover",
+              }],
+            }]
+          : []),
+        { type: "text" as const, text: "正向提示词", variant: "caption" as const, color: "muted" as const },
+        { type: "text" as const, text: prompt.prompt, variant: "body" as const },
+        ...(prompt.negativePrompt
+          ? [
+              { type: "text" as const, text: "负向提示词", variant: "caption" as const, color: "muted" as const },
+              { type: "text" as const, text: prompt.negativePrompt, variant: "body" as const },
+            ]
+          : []),
+        ...(tagBadges.length > 0
+          ? [{
+              type: "row" as const,
+              gap: "0.25rem" as const,
+              wrap: true,
+              children: tagBadges,
+            }]
+          : []),
+        {
+          type: "row" as const,
+          gap: "0.75rem",
+          wrap: true,
+          children: [
+            { type: "text" as const, text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption" as const, color: "muted" as const },
+            ...(prompt.rating ? [{ type: "text" as const, text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption" as const, color: "primary" as const }] : []),
+          ],
+        },
+        {
+          type: "row" as const,
+          gap: "0.5rem",
+          wrap: true,
+          children: [
+            { type: "button", text: copiedId === prompt.id ? `✓ ${t("common.copied")}` : t("imagePrompts.copyPrompt"), variant: copiedId === prompt.id ? "secondary" : "ghost", size: "sm", disabled: copiedId === prompt.id, onClick: { action: "copy", args: [prompt.id] } },
+            { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
+            { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
+            { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
+          ],
+        },
       ],
     }
   }
@@ -610,6 +603,27 @@ export default function ImagePromptsPage() {
       : null
 
   const detailPanel = buildDetailPanel()
+  const detailDrawer: A2UINode | null = detailPanel
+    ? {
+        type: "container",
+        className: "fixed inset-0 z-50 flex justify-end",
+        children: [
+          {
+            type: "card",
+            hoverable: false,
+            className: "absolute inset-0 bg-black/40",
+            onClick: { action: "closeDetail" },
+          },
+          {
+            type: "card",
+            hoverable: false,
+            className: "relative h-full w-[360px] max-w-[90vw] bg-[var(--ds-surface)] shadow-2xl p-4 overflow-y-auto",
+            onClick: { action: "noop", stopPropagation: true },
+            children: [detailPanel],
+          },
+        ],
+      }
+    : null
 
   const pageNode: A2UIColumnNode = {
     type: "column",
@@ -628,7 +642,6 @@ export default function ImagePromptsPage() {
             className: "flex-[2] min-w-0",
             children: [
               filterBar,
-              ...(detailPanel ? [detailPanel] : []),
               buildPromptsList(),
               ...(pagination ? [pagination] : []),
               { type: "text", text: t("imagePrompts.totalRecords", { count: promptsData?.total ?? 0 }), variant: "caption", color: "muted", className: "text-center" },
@@ -652,7 +665,7 @@ export default function ImagePromptsPage() {
     onLogout: { action: "logout" },
     logoutLabel: t("auth.logout"),
     headerActions: [{ type: "theme-switcher" }],
-    children: [pageNode],
+    children: detailDrawer ? [pageNode, detailDrawer] : [pageNode],
   }
 
   return <A2UIRenderer node={appShellNode} onAction={handleAction} />
