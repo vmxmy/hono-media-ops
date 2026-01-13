@@ -529,60 +529,57 @@ export default function ImagePromptsPage() {
         ...(prompt.isPublic === 1 ? [{ type: "badge" as const, text: t("imagePrompts.publicLabel"), color: "success" as const }] : []),
       ]
 
+      // Vertical card layout: image on top, content below
       const cardContent: A2UINode[] = [
+        // Preview image at top (if exists)
+        ...(prompt.previewUrl
+          ? [{
+              type: "container" as const,
+              className: "w-full aspect-square rounded-md overflow-hidden bg-muted/30",
+              children: [{
+                type: "image" as const,
+                src: prompt.previewUrl,
+                alt: prompt.title,
+                className: "w-full h-full object-cover",
+              }],
+            }]
+          : [{
+              type: "container" as const,
+              className: "w-full aspect-square rounded-md bg-muted/30 flex items-center justify-center",
+              children: [{
+                type: "text" as const,
+                text: "🖼️",
+                className: "text-4xl opacity-30",
+              }],
+            }]),
+        // Title and badges
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: prompt.title, variant: "h4", className: "line-clamp-2" },
+            {
+              type: "row",
+              gap: "0.25rem",
+              wrap: true,
+              children: metaBadges,
+            } as A2UIRowNode,
+          ],
+        },
+        // Usage stats and actions
         {
           type: "row",
           justify: "between",
           align: "center",
-          gap: "0.75rem",
           children: [
-            {
-              type: "row",
-              gap: "0.75rem",
-              align: "center",
-              className: "min-w-0 flex-1",
-              children: [
-                ...(prompt.previewUrl
-                  ? [{
-                      type: "image" as const,
-                      src: prompt.previewUrl,
-                      alt: prompt.title,
-                      width: "clamp(56px, 10vw, 88px)",
-                      style: { height: "auto", objectFit: "contain" as const },
-                    }]
-                  : []),
-                {
-                  type: "column",
-                  gap: "0.25rem",
-                  className: "min-w-0",
-                  children: [
-                    { type: "text", text: prompt.title, variant: "h4", className: "truncate" },
-                    {
-                      type: "row",
-                      gap: "0.25rem",
-                      wrap: true,
-                      children: metaBadges,
-                    } as A2UIRowNode,
-                  ],
-                },
-              ],
-            },
+            { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
             {
               type: "row",
               gap: "0.25rem",
               children: [
-                { type: "button", text: "查看", variant: "ghost", size: "sm", onClick: { action: "openDetail", args: [prompt.id], stopPropagation: true } },
                 { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id], stopPropagation: true } },
               ],
             },
-          ],
-        } as A2UIRowNode,
-        {
-          type: "row",
-          gap: "0.75rem",
-          children: [
-            { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
-            ...(prompt.rating ? [{ type: "text" as const, text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption" as const, color: "primary" as const }] : []),
           ],
         },
       ]
@@ -595,7 +592,7 @@ export default function ImagePromptsPage() {
         onClick: { action: "openDetail", args: [prompt.id] },
         children: [{
           type: "column",
-          gap: "0.5rem",
+          gap: "0.75rem",
           children: cardContent,
         } as A2UIColumnNode],
       }
@@ -603,7 +600,7 @@ export default function ImagePromptsPage() {
 
     return {
       type: "container",
-      className: "grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3",
+      className: "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
       children: promptCards,
     }
   }
