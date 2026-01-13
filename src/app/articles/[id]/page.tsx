@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useCallback, useMemo } from "react"
+import { use, useCallback, useEffect, useMemo } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
@@ -38,6 +38,17 @@ export default function ArticleDetailPage({ params }: Props) {
     }
     return article?.articleMarkdown ?? ""
   }, [chapters, article?.articleMarkdown, article?.wechatMediaInfo])
+
+  // Set document title to article title
+  useEffect(() => {
+    const displayTitle = article?.articleTitle || article?.topic
+    if (displayTitle) {
+      document.title = displayTitle
+    }
+    return () => {
+      document.title = t("app.title")
+    }
+  }, [article?.articleTitle, article?.topic, t])
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
