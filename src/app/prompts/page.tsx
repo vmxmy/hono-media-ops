@@ -75,6 +75,7 @@ export default function ImagePromptsPage() {
   const navItems = buildNavItems(t)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ImagePromptFormData>(DEFAULT_FORM)
+  const [activePromptId, setActivePromptId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -198,11 +199,22 @@ export default function ImagePromptsPage() {
           setEditingId(null)
           setFormData(DEFAULT_FORM)
           break
+        case "openDetail": {
+          const id = args?.[0] as string
+          setActivePromptId(id)
+          break
+        }
+        case "closeDetail":
+          setActivePromptId(null)
+          break
+        case "noop":
+          break
         case "edit": {
           const id = args?.[0] as string
           const prompt = promptsData?.items.find((p) => p.id === id)
           if (prompt) {
             setEditingId(prompt.id)
+            setActivePromptId(prompt.id)
             setFormData({
               title: prompt.title,
               prompt: prompt.prompt,
@@ -378,6 +390,105 @@ export default function ImagePromptsPage() {
     ],
   }
 
+  const buildDetailPanel = (): A2UINode | null => {
+    if (!activePromptId || !promptsData) return null
+    const prompt = promptsData.items.find((item) => item.id === activePromptId)
+    if (!prompt) return null
+
+    const tagBadges: A2UINode[] = prompt.tags?.map((tag) => ({
+      type: "badge" as const,
+      text: tag,
+      color: "info" as const,
+    })) ?? []
+
+    return {
+      type: "card",
+      hoverable: false,
+      className: "border border-primary/40 bg-primary/5",
+      children: [
+        {
+          type: "column",
+          gap: "0.75rem",
+          children: [
+            {
+              type: "row",
+              justify: "between",
+              align: "center",
+              children: [
+                { type: "text", text: "详情", variant: "h4" },
+                { type: "button", text: "关闭", variant: "ghost", size: "sm", onClick: { action: "closeDetail" } },
+              ],
+            } as A2UIRowNode,
+            {
+              type: "row",
+              gap: "0.5rem",
+              wrap: true,
+              children: [
+                { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" },
+                { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "default" },
+                { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "default" },
+                prompt.isPublic === 1 ? { type: "badge", text: t("imagePrompts.publicLabel"), color: "success" } : null,
+              ].filter(Boolean),
+            } as A2UIRowNode,
+            {
+              type: "text",
+              text: prompt.title,
+              variant: "h4",
+            },
+            ...(prompt.previewUrl
+              ? [{
+                  type: "container" as const,
+                  className: "rounded-md overflow-hidden",
+                  children: [{
+                    type: "image",
+                    src: prompt.previewUrl,
+                    alt: prompt.title,
+                    className: "w-full max-h-[180px] object-cover",
+                  }],
+                }]
+              : []),
+            { type: "text", text: "正向提示词", variant: "caption", color: "muted" },
+            { type: "text", text: prompt.prompt, variant: "body" },
+            ...(prompt.negativePrompt
+              ? [
+                  { type: "text", text: "负向提示词", variant: "caption", color: "muted" },
+                  { type: "text", text: prompt.negativePrompt, variant: "body" },
+                ]
+              : []),
+            ...(tagBadges.length > 0
+              ? [{
+                  type: "row" as const,
+                  gap: "0.25rem" as const,
+                  wrap: true,
+                  children: tagBadges,
+                }]
+              : []),
+            {
+              type: "row",
+              gap: "0.75rem",
+              wrap: true,
+              children: [
+                { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
+                ...(prompt.rating ? [{ type: "text", text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption", color: "primary" }] : []),
+              ],
+            },
+            {
+              type: "row",
+              gap: "0.5rem",
+              wrap: true,
+              children: [
+                { type: "button", text: copiedId === prompt.id ? `✓ ${t("common.copied")}` : t("imagePrompts.copyPrompt"), variant: copiedId === prompt.id ? "secondary" : "ghost", size: "sm", disabled: copiedId === prompt.id, onClick: { action: "copy", args: [prompt.id] } },
+                { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
+                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
+                { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
+              ],
+            },
+          ],
+        } as A2UIColumnNode,
+      ],
+    }
+  }
+
   // Build prompts list
   const buildPromptsList = (): A2UIColumnNode => {
     if (isLoading) {
@@ -399,38 +510,48 @@ export default function ImagePromptsPage() {
     }
 
     const promptCards: A2UINode[] = promptsData.items.map((prompt) => {
-      // Build tag badges
-      const tagBadges: A2UINode[] = prompt.tags?.slice(0, 3).map((tag) => ({
-        type: "badge" as const,
-        text: tag,
-        color: "info" as const,
-      })) ?? []
+      const isActive = activePromptId === prompt.id
+      const metaBadges: A2UINode[] = [
+        { type: "badge" as const, text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" as const },
+        { type: "badge" as const, text: prompt.model ?? "jimeng-4.5", color: "default" as const },
+        { type: "badge" as const, text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "default" as const },
+        ...(prompt.isPublic === 1 ? [{ type: "badge" as const, text: t("imagePrompts.publicLabel"), color: "success" as const }] : []),
+      ]
 
-      // Build card content
       const cardContent: A2UINode[] = [
-        // Header row
         {
           type: "row",
           justify: "between",
-          align: "start",
-          gap: "0.5rem",
+          align: "center",
+          gap: "0.75rem",
           children: [
             {
-              type: "column",
-              gap: "0.25rem",
-              className: "flex-1 min-w-0",
+              type: "row",
+              gap: "0.75rem",
+              align: "center",
+              className: "min-w-0 flex-1",
               children: [
-                { type: "text", text: prompt.title, variant: "h4" },
+                ...(prompt.previewUrl
+                  ? [{
+                      type: "image" as const,
+                      src: prompt.previewUrl,
+                      alt: prompt.title,
+                      className: "h-14 w-20 rounded-md object-cover",
+                    }]
+                  : []),
                 {
-                  type: "row",
-                  gap: "0.5rem",
-                  wrap: true,
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "min-w-0",
                   children: [
-                    { type: "badge", text: CATEGORY_OPTIONS.find((c) => c.value === prompt.category)?.label ?? prompt.category ?? t("imagePrompts.category.general"), color: "default" },
-                    { type: "badge", text: prompt.model ?? "jimeng-4.5", color: "secondary" },
-                    { type: "badge", text: `${prompt.ratio ?? "1:1"} / ${prompt.resolution ?? "2k"}`, color: "secondary" },
-                    prompt.isPublic === 1 ? { type: "badge", text: t("imagePrompts.publicLabel"), color: "success" } : null,
-                  ].filter(Boolean),
+                    { type: "text", text: prompt.title, variant: "h4", className: "truncate" },
+                    {
+                      type: "row",
+                      gap: "0.25rem",
+                      wrap: true,
+                      children: metaBadges,
+                    } as A2UIRowNode,
+                  ],
                 },
               ],
             },
@@ -438,69 +559,31 @@ export default function ImagePromptsPage() {
               type: "row",
               gap: "0.25rem",
               children: [
-                { type: "button", text: copiedId === prompt.id ? `✓ ${t("common.copied")}` : t("imagePrompts.copyPrompt"), variant: copiedId === prompt.id ? "secondary" : "ghost", size: "sm", disabled: copiedId === prompt.id, onClick: { action: "copy", args: [prompt.id] } },
-                { type: "button", text: prompt.isPublic === 1 ? t("imagePrompts.makePrivate") : t("imagePrompts.makePublic"), variant: "ghost", size: "sm", onClick: { action: "togglePublic", args: [prompt.id] } },
+                { type: "button", text: "查看", variant: "ghost", size: "sm", onClick: { action: "openDetail", args: [prompt.id] } },
                 { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id] } },
-                { type: "button", text: t("common.delete"), variant: "destructive", size: "sm", onClick: { action: "delete", args: [prompt.id] } },
               ],
             },
           ],
         } as A2UIRowNode,
-      ]
-
-      // Add preview image if available
-      if (prompt.previewUrl) {
-        cardContent.push({
-          type: "container",
-          className: "rounded-md overflow-hidden mt-2",
-          children: [{
-            type: "image",
-            src: prompt.previewUrl,
-            alt: prompt.title,
-            className: "w-full max-h-[150px] object-cover",
-          }],
-        } as A2UINode)
-      }
-
-      // Add prompt content
-      cardContent.push({
-        type: "text",
-        text: prompt.prompt.length > 120 ? prompt.prompt.slice(0, 120) + "..." : prompt.prompt,
-        variant: "body",
-        color: "muted",
-        className: "text-[0.875rem]",
-      })
-
-      // Add tags if available
-      if (tagBadges.length > 0) {
-        cardContent.push({
+        {
           type: "row",
-          gap: "0.25rem",
-          wrap: true,
-          children: tagBadges,
-        } as A2UIRowNode)
-      }
-
-      // Add stats row
-      const statsChildren: A2UINode[] = [
-        { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
+          gap: "0.75rem",
+          children: [
+            { type: "text", text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption", color: "muted" },
+            ...(prompt.rating ? [{ type: "text" as const, text: `${"★".repeat(prompt.rating)}${"☆".repeat(5 - prompt.rating)}`, variant: "caption" as const, color: "primary" as const }] : []),
+          ],
+        },
       ]
-      if ((prompt.rating ?? 0) > 0) {
-        statsChildren.push({ type: "text", text: `${"★".repeat(prompt.rating!)}${"☆".repeat(5 - prompt.rating!)}`, variant: "caption", color: "primary" })
-      }
-      cardContent.push({
-        type: "row",
-        gap: "1rem",
-        children: statsChildren,
-      })
 
       return {
         type: "card",
         id: `prompt-${prompt.id}`,
         hoverable: true,
+        className: isActive ? "border border-primary/40 bg-primary/5" : undefined,
+        onClick: { action: "openDetail", args: [prompt.id] },
         children: [{
           type: "column",
-          gap: "0.75rem",
+          gap: "0.5rem",
           children: cardContent,
         } as A2UIColumnNode],
       }
@@ -526,6 +609,8 @@ export default function ImagePromptsPage() {
         }
       : null
 
+  const detailPanel = buildDetailPanel()
+
   const pageNode: A2UIColumnNode = {
     type: "column",
     gap: "1.5rem",
@@ -543,6 +628,7 @@ export default function ImagePromptsPage() {
             className: "flex-[2] min-w-0",
             children: [
               filterBar,
+              ...(detailPanel ? [detailPanel] : []),
               buildPromptsList(),
               ...(pagination ? [pagination] : []),
               { type: "text", text: t("imagePrompts.totalRecords", { count: promptsData?.total ?? 0 }), variant: "caption", color: "muted", className: "text-center" },

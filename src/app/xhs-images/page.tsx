@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
+import { CreateXhsImageModal } from "@/components/create-xhs-image-modal"
 import type {
   A2UIAppShellNode,
   A2UIColumnNode,
@@ -55,6 +56,8 @@ export default function XhsImagesPage() {
 
   // Track which job is in zoomed (full-size) mode
   const [zoomedJobId, setZoomedJobId] = useState<string | null>(null)
+  // Modal state for generating new images
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
 
   // Get processing count for smart polling
   const { data: processingCountData = 0 } = api.xhsImages.getProcessingCount.useQuery(undefined, {
@@ -518,6 +521,13 @@ export default function XhsImagesPage() {
               }] : []),
             ],
           },
+          {
+            type: "button",
+            text: t("xhsImages.generate"),
+            variant: "primary",
+            icon: "plus",
+            onClick: { action: "openGenerateModal" },
+          },
         ],
       },
     ],
@@ -546,6 +556,9 @@ export default function XhsImagesPage() {
           setZoomedJobId(prev => prev === jobId ? null : jobId)
           break
         }
+        case "openGenerateModal":
+          setIsGenerateModalOpen(true)
+          break
       }
     },
     [router]
@@ -591,5 +604,16 @@ export default function XhsImagesPage() {
     children: [contentNode],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleA2UIAction} />
+  return (
+    <>
+      <A2UIRenderer node={appShellNode} onAction={handleA2UIAction} />
+      <CreateXhsImageModal
+        isOpen={isGenerateModalOpen}
+        onClose={() => {
+          setIsGenerateModalOpen(false)
+          invalidateJobs()
+        }}
+      />
+    </>
+  )
 }

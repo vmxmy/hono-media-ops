@@ -17,6 +17,7 @@ import { A2UIRenderer } from "@/components/a2ui/renderer"
 import { A2UIToaster } from "../toaster"
 import { CreateHubModal } from "@/components/create-hub-modal"
 import { CreateTaskModal } from "@/components/create-task-modal"
+import { CreateXhsImageModal } from "@/components/create-xhs-image-modal"
 import { useI18n } from "@/contexts/i18n-context"
 
 export function A2UIThemeSwitcher({
@@ -56,6 +57,7 @@ export function A2UIAppShell({
   // Create Hub modal state
   const [isCreateHubOpen, setIsCreateHubOpen] = useState(false)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [isCreateXhsImageOpen, setIsCreateXhsImageOpen] = useState(false)
   const [taskInitialData, setTaskInitialData] = useState<{ refMaterialId?: string } | undefined>()
 
   useEffect(() => {
@@ -109,6 +111,12 @@ export function A2UIAppShell({
     setIsCreateHubOpen(false)
     setTaskInitialData(materialId ? { refMaterialId: materialId } : undefined)
     setIsCreateTaskOpen(true)
+  }, [])
+
+  // Handle generating XHS images from Create Hub
+  const handleGenerateXhsImages = useCallback(() => {
+    setIsCreateHubOpen(false)
+    setIsCreateXhsImageOpen(true)
   }, [])
 
   // Handle task creation success
@@ -316,6 +324,7 @@ export function A2UIAppShell({
         isOpen={isCreateHubOpen}
         onClose={() => setIsCreateHubOpen(false)}
         onStartWriting={handleStartWriting}
+        onGenerateXhsImages={handleGenerateXhsImages}
       />
 
       {/* Create Task Modal */}
@@ -327,6 +336,12 @@ export function A2UIAppShell({
         }}
         onSuccess={handleTaskSuccess}
         initialData={taskInitialData}
+      />
+
+      {/* Create XHS Image Modal */}
+      <CreateXhsImageModal
+        isOpen={isCreateXhsImageOpen}
+        onClose={() => setIsCreateXhsImageOpen(false)}
       />
     </div>
   )

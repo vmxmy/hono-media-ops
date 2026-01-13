@@ -467,6 +467,18 @@ export type I18nKey =
     | "xhsImages.endingImage"
     | "xhsImages.sourceTitle"
     | "xhsImages.sourceUrl"
+    | "xhsImages.generate"
+    | "xhsImages.generateTitle"
+    | "xhsImages.inputContent"
+    | "xhsImages.inputContentPlaceholder"
+    | "xhsImages.selectStyle"
+    | "xhsImages.moreStyles"
+    | "xhsImages.generating"
+    | "xhsImages.generateSuccess"
+    | "xhsImages.generateFailed"
+    | "xhsImages.noPromptsAvailable"
+    | "createHub.generateXhsImages"
+    | "createHub.generateXhsImagesDesc"
 
 interface I18nContextValue {
     locale: Locale
@@ -935,6 +947,18 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "xhsImages.endingImage": "Ending",
         "xhsImages.sourceTitle": "Source Title",
         "xhsImages.sourceUrl": "Source URL",
+        "xhsImages.generate": "Generate Images",
+        "xhsImages.generateTitle": "Generate Xiaohongshu Images",
+        "xhsImages.inputContent": "Content",
+        "xhsImages.inputContentPlaceholder": "Enter the content for generating Xiaohongshu images...",
+        "xhsImages.selectStyle": "Select Image Style",
+        "xhsImages.moreStyles": "More styles...",
+        "xhsImages.generating": "Generating...",
+        "xhsImages.generateSuccess": "Generation task submitted successfully!",
+        "xhsImages.generateFailed": "Failed to submit generation task",
+        "xhsImages.noPromptsAvailable": "No image style prompts available",
+        "createHub.generateXhsImages": "Generate XHS Images",
+        "createHub.generateXhsImagesDesc": "Create Xiaohongshu style images",
     },
     "zh-CN": {
         // Common
@@ -1392,6 +1416,18 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "xhsImages.endingImage": "结尾",
         "xhsImages.sourceTitle": "来源标题",
         "xhsImages.sourceUrl": "来源链接",
+        "xhsImages.generate": "生成图片",
+        "xhsImages.generateTitle": "生成小红书图",
+        "xhsImages.inputContent": "内容输入",
+        "xhsImages.inputContentPlaceholder": "输入你想生成的小红书图片内容...",
+        "xhsImages.selectStyle": "选择图片风格",
+        "xhsImages.moreStyles": "查看更多风格...",
+        "xhsImages.generating": "生成中...",
+        "xhsImages.generateSuccess": "生成任务已提交！",
+        "xhsImages.generateFailed": "提交生成任务失败",
+        "xhsImages.noPromptsAvailable": "暂无可用的图片风格提示词",
+        "createHub.generateXhsImages": "生成小红书图",
+        "createHub.generateXhsImagesDesc": "一键生成小红书风格图片",
     },
 }
 

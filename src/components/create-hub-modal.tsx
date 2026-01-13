@@ -13,6 +13,7 @@ interface CreateHubModalProps {
   isOpen: boolean
   onClose: () => void
   onStartWriting: (materialId?: string) => void
+  onGenerateXhsImages?: () => void
 }
 
 interface StyleIdentityData {
@@ -24,6 +25,7 @@ export function CreateHubModal({
   isOpen,
   onClose,
   onStartWriting,
+  onGenerateXhsImages,
 }: CreateHubModalProps) {
   const { t } = useI18n()
   const [step, setStep] = useState<HubStep>("choose")
@@ -129,6 +131,10 @@ export function CreateHubModal({
           handleClose()
           onStartWriting(args?.[0] as string)
           break
+        case "generateXhsImages":
+          handleClose()
+          onGenerateXhsImages?.()
+          break
         case "useImportedMaterial":
           handleClose()
           onStartWriting(importedMaterialId ?? undefined)
@@ -151,7 +157,7 @@ export function CreateHubModal({
           break
       }
     },
-    [handleClose, onStartWriting, importedMaterialId, inputType, content]
+    [handleClose, onStartWriting, onGenerateXhsImages, importedMaterialId, inputType, content]
   )
 
   // Build choose step content
@@ -223,6 +229,42 @@ export function CreateHubModal({
           },
         ],
       },
+      // Generate XHS Images card
+      ...(onGenerateXhsImages
+        ? [
+            {
+              type: "card" as const,
+              hoverable: true,
+              onClick: { action: "generateXhsImages" },
+              className: "flex-1 min-w-[140px] cursor-pointer",
+              children: [
+                {
+                  type: "column" as const,
+                  gap: "0.5rem",
+                  className: "py-4 px-2 text-center items-center",
+                  children: [
+                    {
+                      type: "text" as const,
+                      text: "📷",
+                      className: "text-[2rem]",
+                    },
+                    {
+                      type: "text" as const,
+                      text: t("createHub.generateXhsImages"),
+                      weight: "semibold" as const,
+                    },
+                    {
+                      type: "text" as const,
+                      text: t("createHub.generateXhsImagesDesc"),
+                      variant: "caption" as const,
+                      color: "muted" as const,
+                    },
+                  ],
+                },
+              ],
+            },
+          ]
+        : []),
     ]
 
     const children: A2UINode[] = [

@@ -64,4 +64,24 @@ export const xhsImagesRouter = createTRPCRouter({
         input.errorMessage
       );
     }),
+
+  // Trigger XHS image generation
+  generate: protectedProcedure
+    .input(
+      z.object({
+        inputContent: z.string().min(1),
+        promptId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session?.user?.id;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+      return ctx.services.xhsImage.triggerGeneration({
+        userId,
+        inputContent: input.inputContent,
+        promptId: input.promptId,
+      });
+    }),
 });
