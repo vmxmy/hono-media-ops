@@ -6,116 +6,17 @@ import { api } from "@/trpc/react"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UINode, A2UIModalNode } from "@/lib/a2ui"
 import { buildMaterialCardNode, type MaterialCardMetric, type MaterialCardBadge } from "@/lib/a2ui"
-
-// v7.3 JSONB types for material card (full schema)
-interface StyleIdentityData {
-  persona_description?: string
-  persona_desc?: string
-  voice_traits?: {
-    formality?: string
-    energy?: string
-    warmth?: string
-    confidence?: string
-  }
-  style_name?: string
-  archetype?: string
-  implied_reader?: string
-  energy_level?: string
-  formality_score?: string
-  voice_distance?: string
-  tone_keywords?: string
-}
-
-interface LexicalLogicData {
-  vocabulary_tier?: string
-  preferred_terms?: string[]
-  banned_terms?: string[]
-  tone_keywords?: string[]
-  must_use?: string[]
-  must_avoid?: string[]
-  adj_style?: string
-  verb_style?: string
-}
-
-interface MetricsConstraintsData {
-  avg_sentence_length?: number
-  sentence_length_std?: number
-  sentence_length_target?: number
-  avg_paragraph_length?: number
-}
-
-interface RhetoricLogicData {
-  preferred_devices?: string[]
-  device_frequency?: Record<string, unknown>
-  sentence_templates?: Array<Record<string, unknown>>
-  dominant_device?: string
-  opening_pattern?: string
-  closing_pattern?: string
-  arg_style?: string
-  device_sample?: string
-}
-
-interface GoldenSampleData {
-  samples?: Array<{ text?: string; why?: string }>
-  paragraph?: string
-  reason?: string
-  tech_list?: string[]
-}
-
-interface TransferDemoData {
-  before_after_pairs?: Array<{ before?: string; after?: string; explanation?: string }>
-  new_text?: string
-  new_topic?: string
-  preserved_elements?: string
-}
-
-interface BlueprintItem {
-  p_id?: string
-  action?: string
-  strategy?: string
-  guidelines?: string
-  pattern_sample?: string
-  pattern_template?: string
-  section?: string
-  section_position?: string
-  position?: string
-  word_count_target?: string | number
-  word_percentage?: string
-  function?: string
-  internal_logic?: Record<string, unknown>
-  techniques?: string[]
-  sentence_patterns?: Record<string, unknown>
-  do_list?: string[]
-  dont_list?: string[]
-  [key: string]: unknown
-}
-
-interface CoreRuleItem {
-  rule_id?: string
-  rule_text?: string
-  importance?: string
-  examples?: string[]
-  priority?: number
-  feature?: string
-  rule?: string
-  impact?: string
-  example?: string
-  evidence?: string
-  test_method?: string
-  frequency?: string
-  replication_instruction?: string
-  [key: string]: unknown
-}
-
-interface AntiPatternItem {
-  pattern?: string
-  severity?: string
-  example?: string
-  fix_suggestion?: string
-  forbidden?: string
-  bad_case?: string
-  [key: string]: unknown
-}
+import type {
+  StyleIdentityData,
+  LexicalLogicData,
+  MetricsConstraintsData,
+  RhetoricLogicData,
+  GoldenSampleData,
+  TransferDemoData,
+  BlueprintItem,
+  CoreRuleItem,
+  AntiPatternItem,
+} from "@/types/style-analysis"
 
 interface CreateTaskModalProps {
   isOpen: boolean

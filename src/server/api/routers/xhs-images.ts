@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { idSchema, paginationSchema } from "../schemas/common";
 
 const xhsJobStatusSchema = z.enum(["pending", "processing", "completed", "failed"]);
 
@@ -7,9 +8,7 @@ export const xhsImagesRouter = createTRPCRouter({
   // Get all jobs with pagination
   getAll: protectedProcedure
     .input(
-      z.object({
-        page: z.number().int().positive().default(1),
-        pageSize: z.number().int().positive().max(100).default(20),
+      paginationSchema.extend({
         status: z.union([xhsJobStatusSchema, z.array(xhsJobStatusSchema)]).optional(),
       })
     )
@@ -24,7 +23,7 @@ export const xhsImagesRouter = createTRPCRouter({
 
   // Get single job with all images
   getById: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
+    .input(idSchema)
     .query(async ({ ctx, input }) => {
       return ctx.services.xhsImage.getJobById(input.id);
     }),
@@ -43,7 +42,7 @@ export const xhsImagesRouter = createTRPCRouter({
 
   // Delete a job (soft delete)
   delete: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
+    .input(idSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.services.xhsImage.deleteJob(input.id);
     }),
@@ -51,8 +50,7 @@ export const xhsImagesRouter = createTRPCRouter({
   // Update job status
   updateStatus: protectedProcedure
     .input(
-      z.object({
-        id: z.string().uuid(),
+      idSchema.extend({
         status: xhsJobStatusSchema,
         errorMessage: z.string().optional(),
       })
@@ -87,7 +85,7 @@ export const xhsImagesRouter = createTRPCRouter({
 
   // Publish job to XHS
   publish: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
+    .input(idSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.services.xhsImage.publishToXhs(input.id);
     }),

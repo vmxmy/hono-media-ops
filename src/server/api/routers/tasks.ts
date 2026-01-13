@@ -1,15 +1,18 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import type { WechatMediaInfo } from "@/server/db/schema";
+import type { TaskStatus } from "@/server/services/task.service";
+import {
+  idSchema,
+  idsSchema,
+  paginationSchema,
+  taskStatusSchema,
+} from "../schemas/common";
 
 // ==================== Input Schemas ====================
 
-const taskStatusEnum = z.enum(["pending", "processing", "completed", "failed", "cancelled"]);
-
-const getAllInputSchema = z.object({
-  page: z.number().min(1).default(1),
-  pageSize: z.number().min(1).max(100).default(10),
-  status: taskStatusEnum.or(z.array(taskStatusEnum)).optional(),
+const getAllInputSchema = paginationSchema.extend({
+  status: taskStatusSchema.or(z.array(taskStatusSchema)).optional(),
   search: z.string().optional(),
   userId: z.string().optional(),
   dateFrom: z.date().optional(),
@@ -41,23 +44,16 @@ const updateInputSchema = z.object({
 
 const updateStatusSchema = z.object({
   id: z.string(),
-  status: taskStatusEnum,
+  status: taskStatusSchema,
 });
 
-const idSchema = z.object({ id: z.string() });
-
-const idsSchema = z.object({
-  ids: z.array(z.string()).min(1),
-});
-
-const batchUpdateStatusSchema = z.object({
-  ids: z.array(z.string()).min(1),
-  status: taskStatusEnum,
+const batchUpdateStatusSchema = idsSchema.extend({
+  status: taskStatusSchema,
 });
 
 const exportSchema = z.object({
   ids: z.array(z.string()).optional(),
-  status: taskStatusEnum.optional(),
+  status: taskStatusSchema.optional(),
   format: z.enum(["json", "csv"]).default("json"),
 });
 
@@ -132,8 +128,8 @@ export const tasksRouter = createTRPCRouter({
     .query(({ ctx, input }) => ctx.services.task.getRecent(input.limit)),
 
   getByStatus: protectedProcedure
-    .input(z.object({ status: taskStatusEnum, limit: z.number().optional() }))
-    .query(({ ctx, input }) => ctx.services.task.getByStatus(input.status, input.limit)),
+    .input(z.object({ status: taskStatusSchema, limit: z.number().optional() }))
+    .query(({ ctx, input }) => ctx.services.task.getByStatus(input.status as TaskStatus, input.limit)),
 
   // ==================== Statistics ====================
 

@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import { idSchema, idsSchema, paginationSchema } from "../schemas/common";
 
 // Input validation schemas
-const getAllInputSchema = z.object({
+const getAllInputSchema = paginationSchema.extend({
   category: z.string().optional(),
   search: z.string().optional(),
   isPublic: z.boolean().optional(),
-  page: z.number().min(1).default(1),
-  pageSize: z.number().min(1).max(100).default(20),
 });
 
 const createInputSchema = z.object({
@@ -45,11 +44,7 @@ const updateInputSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
 });
 
-const idSchema = z.object({ id: z.string() });
-
-const batchDeleteSchema = z.object({
-  ids: z.array(z.string()).min(1),
-});
+const batchDeleteSchema = idsSchema;
 
 const ratingSchema = z.object({
   id: z.string(),

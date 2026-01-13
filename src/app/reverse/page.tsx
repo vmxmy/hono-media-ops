@@ -9,130 +9,20 @@ import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { buildMaterialCardNode, type MaterialCardBadge, type MaterialCardAction, type MaterialCardMetric } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import type {
+  StyleIdentityData,
+  MetricsConstraintsData,
+  LexicalLogicData,
+  RhetoricLogicData,
+  GoldenSampleData,
+  TransferDemoData,
+  BlueprintItem,
+  CoreRuleItem,
+  AntiPatternItem,
+} from "@/types/style-analysis"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
-
-// v7.3 Schema Types
-interface StyleIdentityData {
-  persona_description?: string
-  persona_desc?: string // 实际数据字段
-  voice_traits?: {
-    formality?: string
-    energy?: string
-    warmth?: string
-    confidence?: string
-  }
-  style_name?: string
-  archetype?: string
-  implied_reader?: string
-  // v7.0 实际数据字段
-  energy_level?: string
-  formality_score?: string
-  voice_distance?: string
-  tone_keywords?: string // 实际为字符串而非数组
-}
-
-interface MetricsConstraintsData {
-  avg_sentence_length?: number
-  sentence_length_std?: number
-  sentence_length_target?: number
-  avg_paragraph_length?: number
-}
-
-interface LexicalLogicData {
-  vocabulary_tier?: string
-  preferred_terms?: string[]
-  banned_terms?: string[]
-  tone_keywords?: string[]
-  // v7.0 实际数据字段
-  must_use?: string[]
-  must_avoid?: string[]
-  adj_style?: string
-  verb_style?: string
-}
-
-interface RhetoricLogicData {
-  preferred_devices?: string[]
-  device_frequency?: Record<string, unknown>
-  sentence_templates?: Array<Record<string, unknown>>
-  // v7.0 实际数据字段
-  dominant_device?: string
-  opening_pattern?: string
-  closing_pattern?: string
-  arg_style?: string
-  device_sample?: string
-}
-
-interface GoldenSampleData {
-  samples?: Array<{
-    text?: string
-    why?: string
-  }>
-  // v7.0 实际数据字段 (单个对象而非数组)
-  paragraph?: string
-  reason?: string
-  tech_list?: string[]
-}
-
-interface TransferDemoData {
-  before_after_pairs?: Array<{
-    before?: string
-    after?: string
-    explanation?: string
-  }>
-  // v7.0 实际数据字段
-  new_text?: string
-  new_topic?: string
-  preserved_elements?: string
-}
-
-interface BlueprintItem {
-  // 新版字段 (v7.3)
-  p_id?: string
-  action?: string
-  strategy?: string
-  guidelines?: string
-  pattern_sample?: string
-  pattern_template?: string
-  // 旧版字段 (兼容)
-  section?: string
-  section_position?: string
-  position?: string
-  word_count_target?: number
-  word_percentage?: string
-  function?: string
-  internal_logic?: Record<string, unknown>
-  techniques?: Array<Record<string, unknown>>
-  sentence_patterns?: Record<string, unknown>
-  do_list?: string[]
-  dont_list?: string[]
-}
-
-interface CoreRuleItem {
-  rule_id?: string
-  rule_text?: string
-  importance?: string
-  examples?: string[]
-  priority?: number
-  feature?: string
-  // v7.0 实际数据字段
-  rule?: string
-  impact?: string
-  example?: string
-  evidence?: string
-  test_method?: string
-}
-
-interface AntiPatternItem {
-  pattern?: string
-  severity?: string
-  example?: string
-  fix_suggestion?: string
-  // v7.0 实际数据字段
-  forbidden?: string
-  bad_case?: string
-}
 
 interface StyleAnalysis {
   id: string
@@ -593,7 +483,7 @@ export default function ReversePage() {
                         className: "flex-wrap",
                         children: techniques.map((tech) => ({
                           type: "badge" as const,
-                          text: (tech.name as string) || (tech.technique as string) || JSON.stringify(tech).slice(0, 30),
+                          text: typeof tech === "string" ? tech : ((tech as { name?: string; technique?: string }).name || (tech as { name?: string; technique?: string }).technique || JSON.stringify(tech).slice(0, 30)),
                           color: "success" as const,
                         })),
                       },
