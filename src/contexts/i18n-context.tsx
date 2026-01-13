@@ -97,6 +97,7 @@ export type I18nKey =
     | "nav.tasks"
     | "nav.articles"
     | "nav.settings"
+    | "nav.xhsImages"
     // Tasks
     | "tasks.title"
     | "tasks.newTask"
@@ -448,6 +449,24 @@ export type I18nKey =
     | "createHub.importSuccess"
     | "createHub.useThisMaterial"
     | "createHub.continueImport"
+    // XHS Images
+    | "xhsImages.title"
+    | "xhsImages.noJobs"
+    | "xhsImages.created"
+    | "xhsImages.completed"
+    | "xhsImages.imageCount"
+    | "xhsImages.progress"
+    | "xhsImages.viewImages"
+    | "xhsImages.deleteConfirm"
+    | "xhsImages.noImages"
+    | "xhsImages.downloadAll"
+    | "xhsImages.copyUrl"
+    | "xhsImages.urlCopied"
+    | "xhsImages.coverImage"
+    | "xhsImages.contentImage"
+    | "xhsImages.endingImage"
+    | "xhsImages.sourceTitle"
+    | "xhsImages.sourceUrl"
 
 interface I18nContextValue {
     locale: Locale
@@ -897,6 +916,25 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "createHub.importSuccess": "Material imported successfully!",
         "createHub.useThisMaterial": "Write with this style",
         "createHub.continueImport": "Import more",
+        // XHS Images
+        "nav.xhsImages": "XHS Images",
+        "xhsImages.title": "Xiaohongshu Images",
+        "xhsImages.noJobs": "No image jobs yet",
+        "xhsImages.created": "Created",
+        "xhsImages.completed": "Completed",
+        "xhsImages.imageCount": "{count} images",
+        "xhsImages.progress": "Progress",
+        "xhsImages.viewImages": "View Images",
+        "xhsImages.deleteConfirm": "Are you sure you want to delete this job?",
+        "xhsImages.noImages": "No images",
+        "xhsImages.downloadAll": "Download All",
+        "xhsImages.copyUrl": "Copy URL",
+        "xhsImages.urlCopied": "URL copied",
+        "xhsImages.coverImage": "Cover",
+        "xhsImages.contentImage": "Content",
+        "xhsImages.endingImage": "Ending",
+        "xhsImages.sourceTitle": "Source Title",
+        "xhsImages.sourceUrl": "Source URL",
     },
     "zh-CN": {
         // Common
@@ -1335,6 +1373,25 @@ const MESSAGES: Record<Locale, Record<I18nKey, string>> = {
         "createHub.importSuccess": "素材导入成功！",
         "createHub.useThisMaterial": "用这个风格写作",
         "createHub.continueImport": "继续导入",
+        // XHS Images
+        "nav.xhsImages": "小红书图片",
+        "xhsImages.title": "小红书图片管理",
+        "xhsImages.noJobs": "暂无图片任务",
+        "xhsImages.created": "创建时间",
+        "xhsImages.completed": "完成时间",
+        "xhsImages.imageCount": "{count} 张图片",
+        "xhsImages.progress": "进度",
+        "xhsImages.viewImages": "查看图片",
+        "xhsImages.deleteConfirm": "确定要删除这个任务吗？",
+        "xhsImages.noImages": "暂无图片",
+        "xhsImages.downloadAll": "下载全部",
+        "xhsImages.copyUrl": "复制链接",
+        "xhsImages.urlCopied": "链接已复制",
+        "xhsImages.coverImage": "封面",
+        "xhsImages.contentImage": "内容",
+        "xhsImages.endingImage": "结尾",
+        "xhsImages.sourceTitle": "来源标题",
+        "xhsImages.sourceUrl": "来源链接",
     },
 }
 

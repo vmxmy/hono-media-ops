@@ -41,6 +41,16 @@ export type { ExportService, WechatExportOptions, WechatExportResult, MarkdownEx
 export { chapterService } from "./chapter.service";
 export type { ChapterService, ChapterOutputItem } from "./chapter.service";
 
+export { xhsImageService } from "./xhs-image.service";
+export type {
+  XhsImageService,
+  XhsJobStatus,
+  XhsImageType,
+  GetAllXhsJobsOptions,
+  XhsJobWithImages,
+  XhsJobListItem,
+} from "./xhs-image.service";
+
 // Backwards compatibility alias
 export { styleAnalysisService as reverseLogService } from "./style-analysis.service";
 
@@ -56,6 +66,7 @@ import { storageService } from "./storage.service";
 import { userStorageConfigService } from "./user-storage-config.service";
 import { exportService } from "./export.service";
 import { chapterService } from "./chapter.service";
+import { xhsImageService } from "./xhs-image.service";
 
 export const services = {
   task: taskService,
@@ -67,6 +78,7 @@ export const services = {
   userStorageConfig: userStorageConfigService,
   export: exportService,
   chapter: chapterService,
+  xhsImage: xhsImageService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;
