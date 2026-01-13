@@ -1,0 +1,134 @@
+/**
+ * Style Analysis Service Types
+ * Shared type definitions used across style analysis services
+ */
+
+import type {
+  StyleIdentityData,
+  MetricsConstraintsData,
+  LexicalLogicData,
+  RhetoricLogicData,
+  GoldenSampleData,
+  TransferDemoData,
+  CoreRuleItem,
+  BlueprintItem,
+  AntiPatternItem,
+} from "@/server/db/schema";
+
+// ==================== Query Options ====================
+
+export interface GetAllStyleAnalysesOptions {
+  page: number;
+  pageSize: number;
+  search?: string;
+  primaryType?: string;
+  status?: string;
+  userId?: string;
+}
+
+// ==================== Input Types ====================
+
+export interface CreateStyleAnalysisInput {
+  userId: string;
+  // 基础识别
+  sourceUrl?: string;
+  sourceTitle?: string;
+  styleName?: string;
+  primaryType?: string;
+  analysisVersion?: string;
+  executionPrompt?: string;
+  wordCount?: number;
+  paraCount?: number;
+  // 数值指标
+  metricsBurstiness?: number;
+  metricsTtr?: number;
+  metricsAvgSentLen?: number;
+  // 策略层 JSONB
+  styleIdentity?: StyleIdentityData;
+  metricsConstraints?: MetricsConstraintsData;
+  lexicalLogic?: LexicalLogicData;
+  rhetoricLogic?: RhetoricLogicData;
+  goldenSample?: GoldenSampleData;
+  transferDemo?: TransferDemoData;
+  // 数组层 JSONB
+  coreRules?: CoreRuleItem[];
+  blueprint?: BlueprintItem[];
+  antiPatterns?: AntiPatternItem[];
+  // 备份
+  rawJsonFull?: Record<string, unknown>;
+  // 解析元数据
+  metadata?: Record<string, unknown>;
+  status?: "PENDING" | "SUCCESS" | "FAILED";
+}
+
+export interface UpdateStyleAnalysisInput {
+  id: string;
+  sourceTitle?: string;
+  styleName?: string;
+  primaryType?: string;
+  analysisVersion?: string;
+  executionPrompt?: string;
+  styleIdentity?: StyleIdentityData;
+  metricsConstraints?: MetricsConstraintsData;
+  lexicalLogic?: LexicalLogicData;
+  rhetoricLogic?: RhetoricLogicData;
+  goldenSample?: GoldenSampleData;
+  transferDemo?: TransferDemoData;
+  coreRules?: CoreRuleItem[];
+  blueprint?: BlueprintItem[];
+  antiPatterns?: AntiPatternItem[];
+  status?: "PENDING" | "SUCCESS" | "FAILED";
+}
+
+// ==================== Analytics Types ====================
+
+/** 用户写作风格画像 */
+export interface UserStyleProfile {
+  userId: string;
+  totalAnalyses: number;
+  /** 最常用的文章类型及占比 */
+  topPrimaryTypes: Array<{ primaryType: string; count: number; percentage: number }>;
+  /** 平均指标 */
+  averageMetrics: {
+    wordCount: number | null;
+    paraCount: number | null;
+    burstiness: number | null;
+    ttr: number | null;
+  };
+  /** 常用语气关键词 */
+  commonToneKeywords: string[];
+  /** 最近分析时间 */
+  lastAnalysisAt: Date | null;
+}
+
+/** 指标趋势数据点 */
+export interface MetricsTrendPoint {
+  date: string;
+  wordCount: number | null;
+  paraCount: number | null;
+  burstiness: number | null;
+  ttr: number | null;
+  count: number;
+}
+
+/** 类型洞察结果 */
+export interface PrimaryTypeInsights {
+  primaryType: string;
+  totalAnalyses: number;
+  metrics: {
+    wordCount: {
+      avg: number | null;
+      min: number | null;
+      max: number | null;
+    };
+    paraCount: {
+      avg: number | null;
+    };
+    burstiness: {
+      avg: number | null;
+    };
+    ttr: {
+      avg: number | null;
+    };
+  };
+}

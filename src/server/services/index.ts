@@ -7,7 +7,7 @@ export type { TaskService, GetAllTasksOptions, CreateTaskInput, UpdateTaskStatus
 export { imagePromptService } from "./image-prompt.service";
 export type { ImagePromptService, CreateImagePromptInput, UpdateImagePromptInput, GetAllInput as GetAllImagePromptsInput, ImagePromptListItem } from "./image-prompt.service";
 
-export { styleAnalysisService } from "./style-analysis.service";
+export { styleAnalysisService } from "./style-analysis";
 export type {
   StyleAnalysisService,
   GetAllStyleAnalysesOptions,
@@ -16,7 +16,10 @@ export type {
   // Domain types
   UserStyleProfile,
   MetricsTrendPoint,
-} from "./style-analysis.service";
+  PrimaryTypeInsights,
+} from "./style-analysis";
+// Sub-services for direct access
+export { styleAnalysisCrudService, styleAnalysisSearchService, styleAnalysisAnalyticsService } from "./style-analysis";
 
 export { articleService } from "./article.service";
 export type { ArticleService, PublishedArticle, ArticleListItem, GetPublishedInput } from "./article.service";
@@ -52,14 +55,14 @@ export type {
 } from "./xhs-image.service";
 
 // Backwards compatibility alias
-export { styleAnalysisService as reverseLogService } from "./style-analysis.service";
+export { styleAnalysisService as reverseLogService } from "./style-analysis";
 
 // ==================== Services Aggregate ====================
 // For injection into tRPC context
 
 import { taskService } from "./task.service";
 import { imagePromptService } from "./image-prompt.service";
-import { styleAnalysisService } from "./style-analysis.service";
+import { styleAnalysisService } from "./style-analysis";
 import { articleService } from "./article.service";
 import { embeddingService } from "./embedding.service";
 import { storageService } from "./storage.service";
