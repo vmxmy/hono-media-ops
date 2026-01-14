@@ -79,6 +79,7 @@ export const styleAnalyses = pgTable(
     metadata: jsonb("metadata"), // 解析元数据 (parse_success, parser_version, validation_*)
     debug: jsonb("_debug"), // n8n 调试信息
     status: reverseLogStatusEnum("status").default("PENDING").notNull(),
+    useCount: integer("use_count").default(0).notNull(), // 使用次数
 
     // ========== 向量搜索 ==========
     embedding: vector("embedding", { dimensions: 1024 }), // DashScope text-embedding-v3
