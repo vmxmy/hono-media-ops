@@ -55,6 +55,7 @@ export const styleAnalyses = pgTable(
     executionPrompt: text("execution_prompt"), // 执行提示词
     wordCount: integer("word_count"),
     paraCount: integer("para_count"),
+    useCount: integer("use_count").default(0).notNull(),
 
     // ========== 数值指标（策略层数据，非 jsonb）==========
     metricsBurstiness: real("metrics_burstiness"), // 句长突变度

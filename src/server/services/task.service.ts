@@ -4,6 +4,7 @@ import {
   tasks,
   taskExecutions,
   styleAnalyses,
+  imagePrompts,
   type Task,
   type TaskExecution,
   type ExecutionResult,
@@ -655,6 +656,39 @@ export const taskService = {
     // Sync task status based on execution result
     const taskStatus: TaskStatus = result.status === "completed" ? "completed" : "failed";
     await this.updateStatus({ id: execution.taskId, status: taskStatus });
+
+    const shouldCountUsage = execution.status !== "completed" && result.status === "completed";
+    if (shouldCountUsage) {
+      const [taskRow] = await db
+        .select({
+          refMaterialId: tasks.refMaterialId,
+          coverPromptId: tasks.coverPromptId,
+        })
+        .from(tasks)
+        .where(eq(tasks.id, execution.taskId))
+        .limit(1);
+
+      if (taskRow?.refMaterialId) {
+        await db
+          .update(styleAnalyses)
+          .set({
+            useCount: sql`${styleAnalyses.useCount} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(styleAnalyses.id, taskRow.refMaterialId));
+      }
+
+      if (taskRow?.coverPromptId) {
+        await db
+          .update(imagePrompts)
+          .set({
+            useCount: sql`${imagePrompts.useCount} + 1`,
+            lastUsedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(imagePrompts.id, taskRow.coverPromptId));
+      }
+    }
 
     return { success: true };
   },
