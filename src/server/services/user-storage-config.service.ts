@@ -12,6 +12,7 @@ import {
 } from "@/server/db/schema"
 import { createStorageProvider } from "@/lib/storage"
 import type { StorageProviderType } from "@/lib/storage"
+import { encrypt, decryptSafe } from "@/lib/crypto"
 
 // ==================== Types ====================
 
@@ -101,6 +102,7 @@ export const userStorageConfigService = {
 
   /**
    * Get full config including secret key (internal use only)
+   * Decrypts the secret access key before returning
    */
   async getFullConfigByUserId(userId: string): Promise<UserStorageConfig | null> {
     const [config] = await db
@@ -109,7 +111,13 @@ export const userStorageConfigService = {
       .where(eq(userStorageConfigs.userId, userId))
       .limit(1)
 
-    return config ?? null
+    if (!config) return null
+
+    // Decrypt the secret access key if present
+    return {
+      ...config,
+      secretAccessKey: decryptSafe(config.secretAccessKey),
+    }
   },
 
   /**
@@ -136,8 +144,9 @@ export const userStorageConfigService = {
       }
 
       // Only update secret key if provided (not empty)
+      // Encrypt the secret before storing
       if (input.secretAccessKey) {
-        updateData.secretAccessKey = input.secretAccessKey
+        updateData.secretAccessKey = encrypt(input.secretAccessKey)
       }
 
       const [updated] = await db
@@ -150,6 +159,7 @@ export const userStorageConfigService = {
     }
 
     // Create new config
+    // Encrypt the secret before storing
     const [created] = await db
       .insert(userStorageConfigs)
       .values({
@@ -157,7 +167,7 @@ export const userStorageConfigService = {
         provider: input.provider,
         bucket: input.bucket ?? null,
         accessKeyId: input.accessKeyId ?? null,
-        secretAccessKey: input.secretAccessKey ?? null,
+        secretAccessKey: input.secretAccessKey ? encrypt(input.secretAccessKey) : null,
         publicDomain: input.publicDomain ?? null,
         r2AccountId: input.r2AccountId ?? null,
         s3Region: input.s3Region ?? "us-east-1",

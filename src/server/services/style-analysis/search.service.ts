@@ -10,13 +10,14 @@ import { db } from "@/server/db";
 import { styleAnalyses, type StyleAnalysis } from "@/server/db/schema";
 import { styleAnalysisCrudService } from "./crud.service";
 import type { GetAllStyleAnalysesOptions } from "./types";
+import { env } from "@/env";
 
 // ==================== Embedding Config ====================
 
 const getEmbeddingConfig = () => ({
-  apiUrl: process.env.EMBEDDING_API_URL ?? "https://api.openai.com/v1",
-  apiKey: process.env.EMBEDDING_API_KEY ?? "",
-  model: process.env.EMBEDDING_MODEL ?? "text-embedding-3-small",
+  apiUrl: env.EMBEDDING_API_URL,
+  apiKey: env.EMBEDDING_API_KEY,
+  model: env.EMBEDDING_MODEL,
 });
 
 const EMBEDDING_DIMENSIONS = 1024;
@@ -193,7 +194,16 @@ export const styleAnalysisSearchService = {
     minSimilarity = 0.3
   ): Promise<Array<{ id: string; similarity: number }>> {
     const queryEmbedding = await this.generateEmbedding(queryText);
-    const vectorString = `[${queryEmbedding.join(",")}]`;
+
+    // Validate embedding vector to prevent injection
+    const validatedVector = queryEmbedding.map((value) => {
+      if (typeof value !== "number" || !isFinite(value)) {
+        throw new Error("Invalid embedding vector: contains non-numeric or infinite values");
+      }
+      return value;
+    });
+
+    const vectorString = `[${validatedVector.join(",")}]`;
 
     // Use cosine similarity: 1 - cosine_distance
     const results = await db.execute(sql`

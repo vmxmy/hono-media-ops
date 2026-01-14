@@ -157,11 +157,13 @@ export const tasksRouter = createTRPCRouter({
     .mutation(({ ctx, input }) => ctx.services.task.updateStatus(input)),
 
   // Public endpoint for n8n webhook callbacks
+  // TODO: Add signature verification when N8N is configured to send signatures
   updateStatusCallback: publicProcedure
     .input(updateStatusSchema)
     .mutation(({ ctx, input }) => ctx.services.task.updateStatus(input)),
 
   // Public endpoint for n8n to update writing progress
+  // TODO: Add signature verification when N8N is configured to send signatures
   updateProgress: publicProcedure
     .input(
       z.object({
@@ -298,6 +300,7 @@ export const tasksRouter = createTRPCRouter({
     .mutation(({ ctx, input }) => ctx.services.task.createExecution(input.taskId, input.n8nExecutionId)),
 
   // Public endpoint for n8n webhook to complete execution
+  // TODO: Add signature verification when N8N is configured to send signatures
   completeExecution: publicProcedure
     .input(completeExecutionSchema)
     .mutation(({ ctx, input }) => {

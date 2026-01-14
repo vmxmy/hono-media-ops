@@ -11,6 +11,14 @@ export const env = createEnv({
     N8N_XHS_PUBLISH_WEBHOOK_URL: z.string().url().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
+    // Encryption key for sensitive data (falls back to AUTH_SECRET)
+    ENCRYPTION_KEY: z.string().min(32).optional(),
+
+    // Embedding API configuration
+    EMBEDDING_API_URL: z.string().url().default("https://api.openai.com/v1"),
+    EMBEDDING_API_KEY: z.string().min(1).optional(),
+    EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
+
     // Storage configuration
     STORAGE_PROVIDER: z.enum(["r2", "s3", "local"]).default("local"),
     STORAGE_BUCKET: z.string().optional(),
@@ -28,7 +36,7 @@ export const env = createEnv({
     // Local storage
     LOCAL_UPLOAD_DIR: z.string().default("./public/uploads"),
     LOCAL_PUBLIC_PATH: z.string().default("/uploads"),
-    LOCAL_UPLOAD_SECRET: z.string().optional(),
+    LOCAL_UPLOAD_SECRET: z.string().min(32).optional(),
   },
   client: {},
   runtimeEnv: {
@@ -39,6 +47,14 @@ export const env = createEnv({
     N8N_XHS_IMAGE_WEBHOOK_URL: process.env.N8N_XHS_IMAGE_WEBHOOK_URL,
     N8N_XHS_PUBLISH_WEBHOOK_URL: process.env.N8N_XHS_PUBLISH_WEBHOOK_URL,
     NODE_ENV: process.env.NODE_ENV,
+
+    // Encryption
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+
+    // Embedding
+    EMBEDDING_API_URL: process.env.EMBEDDING_API_URL,
+    EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY,
+    EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
 
     // Storage
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,

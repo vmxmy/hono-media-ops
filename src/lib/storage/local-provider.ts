@@ -5,7 +5,7 @@
  * Uses a signed token approach to secure uploads via an API route.
  */
 
-import { createHmac } from "crypto"
+import { createHmac, randomBytes } from "crypto"
 import { promises as fs } from "fs"
 import path from "path"
 import type {
@@ -15,8 +15,36 @@ import type {
   LocalConfig,
 } from "./types"
 
-// Secret for signing upload tokens (use env in production)
-const UPLOAD_SECRET = process.env.LOCAL_UPLOAD_SECRET ?? "dev-upload-secret"
+/**
+ * Get the upload secret for signing tokens
+ * In production, requires LOCAL_UPLOAD_SECRET to be set (min 32 chars)
+ * In development, falls back to a randomly generated secret per process
+ */
+function getUploadSecret(): string {
+  const secret = process.env.LOCAL_UPLOAD_SECRET
+  if (secret) {
+    return secret
+  }
+
+  // In production, require explicit secret
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("LOCAL_UPLOAD_SECRET must be set in production (min 32 characters)")
+  }
+
+  // Development fallback: generate a random secret per process
+  // This means tokens won't persist across restarts, which is fine for dev
+  console.warn("[LocalProvider] Using random secret for development. Set LOCAL_UPLOAD_SECRET for persistence.")
+  return randomBytes(32).toString("hex")
+}
+
+// Lazy-initialized secret
+let uploadSecret: string | null = null
+function getSecret(): string {
+  if (!uploadSecret) {
+    uploadSecret = getUploadSecret()
+  }
+  return uploadSecret
+}
 
 export class LocalProvider implements StorageProvider {
   private uploadDir: string
@@ -99,7 +127,7 @@ export class LocalProvider implements StorageProvider {
     expiresAt: number
   }): string {
     const data = JSON.stringify(payload)
-    const signature = createHmac("sha256", UPLOAD_SECRET)
+    const signature = createHmac("sha256", getSecret())
       .update(data)
       .digest("hex")
     return Buffer.from(JSON.stringify({ data, signature })).toString("base64url")
@@ -117,8 +145,20 @@ export class LocalProvider implements StorageProvider {
       const decoded = JSON.parse(Buffer.from(token, "base64url").toString())
       const { data, signature } = decoded as { data: string; signature: string }
 
-      // Verify signature
-      const expectedSignature = createHmac("sha256", UPLOAD_SECRET)
+      // Verify signature using the same secret derivation
+      const secret = process.env.LOCAL_UPLOAD_SECRET
+      if (!secret && process.env.NODE_ENV === "production") {
+        console.error("[LocalProvider] LOCAL_UPLOAD_SECRET not set in production")
+        return null
+      }
+
+      // In development without secret, we can't verify tokens from previous sessions
+      if (!secret) {
+        console.warn("[LocalProvider] Cannot verify token without LOCAL_UPLOAD_SECRET")
+        return null
+      }
+
+      const expectedSignature = createHmac("sha256", secret)
         .update(data)
         .digest("hex")
 
