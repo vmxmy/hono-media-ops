@@ -478,6 +478,7 @@ export default function PipelinePage() {
                     text: "预览文章",
                     variant: "secondary",
                     size: "sm",
+                    disabled: true,
                     onClick: { action: "previewArticle" },
                   },
                   {
@@ -485,6 +486,7 @@ export default function PipelinePage() {
                     text: "复制全文",
                     variant: "secondary",
                     size: "sm",
+                    disabled: true,
                     onClick: { action: "copyArticle" },
                   },
                 ],
@@ -517,6 +519,7 @@ export default function PipelinePage() {
                     text: "预览大图",
                     variant: "secondary",
                     size: "sm",
+                    disabled: true,
                     onClick: { action: "previewImages" },
                   },
                   {
@@ -524,6 +527,7 @@ export default function PipelinePage() {
                     text: "下载全部",
                     variant: "secondary",
                     size: "sm",
+                    disabled: true,
                     onClick: { action: "downloadAll" },
                   },
                 ],
@@ -544,6 +548,7 @@ export default function PipelinePage() {
                 type: "button",
                 text: "📤 发布到小红书",
                 variant: "primary",
+                disabled: true,
                 onClick: { action: "publishToXhs" },
               },
               {

@@ -1,13 +1,19 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import Link from "next/link";
 
 export function GlobalPipelineStatus() {
-  // Query for active processing pipelines
+  const { status: sessionStatus } = useSession();
+
+  // Query for active processing pipelines (only when authenticated)
   const { data } = api.pipeline.getAll.useQuery(
     { page: 1, pageSize: 1, status: "processing" },
-    { refetchInterval: 5000 }
+    {
+      enabled: sessionStatus === "authenticated",
+      refetchInterval: 5000,
+    }
   );
 
   const activePipeline = data?.items?.[0];

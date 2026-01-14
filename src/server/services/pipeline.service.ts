@@ -1,7 +1,8 @@
-import { eq, desc, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, desc, and, isNull, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import { pipelines, styleAnalyses, imagePrompts, type Pipeline } from "@/server/db/schema";
-import { generateEmbedding, cosineSimilarity } from "@/lib/embedding";
+import { generateEmbedding } from "@/lib/embedding";
+import { env } from "@/env";
 
 // ==================== Constants ====================
 
@@ -228,33 +229,144 @@ export const pipelineService = {
 
     // 3. 生成风格摘要的 embedding
     const queryEmbedding = await generateEmbedding(summaryText);
+    if (!queryEmbedding) {
+      // OpenAI API key not configured, return prompts without similarity sorting
+      const prompts = await db
+        .select()
+        .from(imagePrompts)
+        .where(isNull(imagePrompts.deletedAt))
+        .limit(20);
 
-    // 4. 获取所有有 embedding 的图片提示词
-    const prompts = await db
-      .select()
-      .from(imagePrompts)
-      .where(and(
-        isNotNull(imagePrompts.embedding),
-        isNull(imagePrompts.deletedAt)
-      ));
-
-    // 5. Calculate similarity and filter out invalid embeddings
-    const scoredPrompts = prompts
-      .filter((p) => Array.isArray(p.embedding) && p.embedding.length === queryEmbedding.length)
-      .map((p) => ({
+      return prompts.map((p) => ({
         id: p.id,
         title: p.title,
         prompt: p.prompt,
         previewUrl: p.previewUrl,
-        similarity: cosineSimilarity(queryEmbedding, p.embedding as number[]),
-      }))
-      .sort((a, b) => b.similarity - a.similarity)
-      .map((p) => ({
-        ...p,
-        similarity: Math.round(p.similarity * 100),
+        similarity: 0,
       }));
+    }
 
-    return scoredPrompts;
+    // 4. 使用 pgvector 在数据库中计算相似度并排序
+    const vectorString = `[${queryEmbedding.join(",")}]`;
+    const results = await db.execute(sql`
+      SELECT
+        id,
+        title,
+        prompt,
+        preview_url,
+        ROUND((1 - (embedding <=> ${vectorString}::vector)) * 100)::integer as similarity
+      FROM image_prompts
+      WHERE deleted_at IS NULL
+        AND embedding IS NOT NULL
+      ORDER BY embedding <=> ${vectorString}::vector
+      LIMIT 20
+    `);
+
+    return (results as unknown as Array<{
+      id: string;
+      title: string;
+      prompt: string;
+      preview_url: string | null;
+      similarity: number;
+    }>).map((row) => ({
+      id: row.id,
+      title: row.title,
+      prompt: row.prompt,
+      previewUrl: row.preview_url,
+      similarity: Number(row.similarity),
+    }));
+  },
+
+  /**
+   * Trigger style analysis webhook
+   */
+  async triggerStyleAnalysis(pipelineId: string): Promise<{ triggered: boolean }> {
+    const webhookUrl = env.N8N_PIPELINE_WEBHOOK_URL;
+    if (!webhookUrl) {
+      console.log("[PipelineService] N8N_PIPELINE_WEBHOOK_URL not configured, skipping webhook");
+      return { triggered: false };
+    }
+
+    const pipeline = await this.getById(pipelineId);
+    if (!pipeline) {
+      throw new Error("Pipeline not found");
+    }
+
+    const payload = {
+      action: "analyze_style",
+      pipelineId: pipeline.id,
+      sourceUrl: pipeline.sourceUrl,
+      topic: pipeline.topic,
+      keywords: pipeline.keywords,
+      targetWordCount: pipeline.targetWordCount,
+    };
+
+    console.log("[PipelineService] Sending style analysis webhook:", payload);
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        console.error("[PipelineService] Webhook failed:", response.status, await response.text());
+        return { triggered: false };
+      }
+
+      return { triggered: true };
+    } catch (error) {
+      console.error("[PipelineService] Webhook error:", error);
+      return { triggered: false };
+    }
+  },
+
+  /**
+   * Trigger content generation webhook
+   */
+  async triggerContentGeneration(pipelineId: string): Promise<{ triggered: boolean }> {
+    const webhookUrl = env.N8N_PIPELINE_WEBHOOK_URL;
+    if (!webhookUrl) {
+      console.log("[PipelineService] N8N_PIPELINE_WEBHOOK_URL not configured, skipping webhook");
+      return { triggered: false };
+    }
+
+    const pipeline = await this.getById(pipelineId);
+    if (!pipeline) {
+      throw new Error("Pipeline not found");
+    }
+
+    const payload = {
+      action: "generate_content",
+      pipelineId: pipeline.id,
+      sourceUrl: pipeline.sourceUrl,
+      topic: pipeline.topic,
+      keywords: pipeline.keywords,
+      targetWordCount: pipeline.targetWordCount,
+      styleAnalysisId: pipeline.styleAnalysisId,
+      imagePromptId: pipeline.imagePromptId,
+    };
+
+    console.log("[PipelineService] Sending content generation webhook:", payload);
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        console.error("[PipelineService] Webhook failed:", response.status, await response.text());
+        return { triggered: false };
+      }
+
+      return { triggered: true };
+    } catch (error) {
+      console.error("[PipelineService] Webhook error:", error);
+      return { triggered: false };
+    }
   },
 };
 

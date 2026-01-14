@@ -5,10 +5,10 @@ import OpenAI from "openai";
 
 // ==================== OpenAI Client ====================
 
-function getOpenAIClient(): OpenAI {
+function getOpenAIClient(): OpenAI | null {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not set");
+    return null;
   }
   return new OpenAI({ apiKey });
 }
@@ -16,10 +16,21 @@ function getOpenAIClient(): OpenAI {
 // ==================== Embedding Functions ====================
 
 /**
- * Generate embedding vector using OpenAI text-embedding-3-small
+ * Check if embedding functionality is available
  */
-export async function generateEmbedding(text: string): Promise<number[]> {
+export function isEmbeddingAvailable(): boolean {
+  return !!process.env.OPENAI_API_KEY;
+}
+
+/**
+ * Generate embedding vector using OpenAI text-embedding-3-small
+ * Returns null if OPENAI_API_KEY is not configured
+ */
+export async function generateEmbedding(text: string): Promise<number[] | null> {
   const openai = getOpenAIClient();
+  if (!openai) {
+    return null;
+  }
 
   const response = await openai.embeddings.create({
     model: "text-embedding-3-small",
@@ -28,7 +39,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   const embedding = response.data[0]?.embedding;
   if (!embedding) {
-    throw new Error("Failed to generate embedding");
+    return null;
   }
 
   return embedding;

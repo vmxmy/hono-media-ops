@@ -73,7 +73,8 @@ export const pipelineRouter = createTRPCRouter({
         userId: ctx.user.id,
         ...input,
       });
-      // TODO: 触发风格分析 webhook
+      // 触发风格分析 webhook
+      await ctx.services.pipeline.triggerStyleAnalysis(result.id);
       return result;
     }),
 
@@ -160,7 +161,8 @@ export const pipelineRouter = createTRPCRouter({
         },
         ctx.user.id
       );
-      // TODO: 触发文章生成 webhook
+      // 触发文章生成 webhook
+      await ctx.services.pipeline.triggerContentGeneration(input.pipelineId);
       return { success: true };
     }),
 
