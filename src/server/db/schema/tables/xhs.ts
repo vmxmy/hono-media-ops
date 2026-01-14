@@ -39,7 +39,6 @@ export const xhsImageJobs = pgTable(
 
     // n8n 关联
     n8nExecutionId: text("n8n_execution_id"),
-    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 
     // 扩展元数据
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
