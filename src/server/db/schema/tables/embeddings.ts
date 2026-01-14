@@ -27,12 +27,12 @@ export const articleEmbeddings = pgTable(
     taskId: uuid("task_id")
       .notNull()
       .references(() => tasks.id, { onDelete: "cascade" }),
-    // 向量嵌入 (OpenAI text-embedding-3-small = 1536 dimensions)
-    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+    // 向量嵌入 (DashScope text-embedding-v3 = 1024 dimensions)
+    embedding: vector("embedding", { dimensions: 1024 }).notNull(),
     // 用于生成嵌入的文本内容摘要 (用于调试和重新生成)
     contentHash: text("content_hash").notNull(),
     // 嵌入模型版本
-    modelVersion: text("model_version").default("text-embedding-3-small").notNull(),
+    modelVersion: text("model_version").default("text-embedding-v3").notNull(),
     // 时间戳
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
