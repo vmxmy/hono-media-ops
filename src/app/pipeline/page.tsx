@@ -79,6 +79,15 @@ export default function PipelinePage() {
     { enabled: !!pipelineId && step === "selection" }
   )
 
+  // Query for progress (when processing)
+  const { data: progress } = api.pipeline.getProgress.useQuery(
+    { id: pipelineId ?? "" },
+    {
+      enabled: !!pipelineId && step === "processing",
+      refetchInterval: 3000,
+    }
+  )
+
   // Create mutation
   const createMutation = api.pipeline.create.useMutation({
     onSuccess: (data) => {
@@ -118,6 +127,16 @@ export default function PipelinePage() {
       }
     }
   }, [currentPipeline])
+
+  // Monitor completion status
+  useEffect(() => {
+    if (progress?.status === "completed") {
+      setStep("completed")
+    } else if (progress?.status === "failed") {
+      setStep("input")
+      setPipelineId(null)
+    }
+  }, [progress?.status])
 
   // Auto-select first prompt when analysis completes
   useEffect(() => {
@@ -354,11 +373,53 @@ export default function PipelinePage() {
       {
         type: "column",
         gap: "1rem",
-        className: "items-center text-center",
         children: [
-          { type: "text", text: "正在生成内容...", variant: "h3" },
-          { type: "progress", value: 30, status: "processing" },
-          { type: "text", text: "生成中", variant: "caption", color: "muted" },
+          { type: "text", text: "⚡ 正在生成...", variant: "h3" },
+          {
+            type: "progress",
+            value: progress?.totalProgress ?? 0,
+            status: "processing",
+          },
+          {
+            type: "row",
+            gap: "1rem",
+            children: [
+              {
+                type: "text",
+                text: `📄 文章 ${progress?.article.completed ?? 0}/${progress?.article.total ?? 0} 章节`,
+                variant: "body",
+              },
+              {
+                type: "badge",
+                text: (progress?.article.total ?? 0) > 0 &&
+                      progress?.article.completed === progress?.article.total ? "✅" : "✍️",
+                color: "default",
+              },
+            ],
+          },
+          {
+            type: "row",
+            gap: "1rem",
+            children: [
+              {
+                type: "text",
+                text: `📱 小红书 ${progress?.xhs.completed ?? 0}/${progress?.xhs.total ?? 0} 张`,
+                variant: "body",
+              },
+              {
+                type: "badge",
+                text: (progress?.xhs.total ?? 0) > 0 &&
+                      progress?.xhs.completed === progress?.xhs.total ? "✅" : "🖼️",
+                color: "default",
+              },
+            ],
+          },
+          {
+            type: "text",
+            text: "💡 可随时离开，完成后通知你",
+            variant: "caption",
+            color: "muted",
+          },
         ],
       },
     ],
