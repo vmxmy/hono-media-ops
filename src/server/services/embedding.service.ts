@@ -1,6 +1,7 @@
 import { eq, sql, and, isNull, desc } from "drizzle-orm";
 import { createHash } from "crypto";
 import OpenAI from "openai";
+import { env } from "@/env";
 import { db } from "@/server/db";
 import { articleEmbeddings, taskExecutions, tasks } from "@/server/db/schema";
 
@@ -20,8 +21,8 @@ export interface VectorSearchResult {
 
 // ==================== Constants ====================
 
-const EMBEDDING_MODEL = "text-embedding-3-small";
-const EMBEDDING_DIMENSIONS = 1536;
+const EMBEDDING_MODEL = env.EMBEDDING_MODEL;
+const EMBEDDING_DIMENSIONS = EMBEDDING_MODEL === "text-embedding-v3" ? 1024 : 1536;
 const MAX_CONTENT_LENGTH = 8000; // ~2000 tokens for Chinese
 
 // ==================== Helper Functions ====================
@@ -81,11 +82,11 @@ export const embeddingService = {
    * Get OpenAI client (lazy initialization)
    */
   getOpenAIClient(): OpenAI {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = env.EMBEDDING_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is not set");
+      throw new Error("EMBEDDING_API_KEY environment variable is not set");
     }
-    return new OpenAI({ apiKey });
+    return new OpenAI({ apiKey, baseURL: env.EMBEDDING_API_URL });
   },
 
   /**
