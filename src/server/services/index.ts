@@ -54,6 +54,16 @@ export type {
   XhsJobListItem,
 } from "./xhs-image.service";
 
+export { pipelineService } from "./pipeline.service";
+export type {
+  PipelineService,
+  PipelineStatus,
+  CreatePipelineInput,
+  UpdatePipelineInput,
+  GetPipelinesOptions,
+  PipelineProgress,
+} from "./pipeline.service";
+
 // Backwards compatibility alias
 export { styleAnalysisService as reverseLogService } from "./style-analysis";
 
@@ -70,6 +80,7 @@ import { userStorageConfigService } from "./user-storage-config.service";
 import { exportService } from "./export.service";
 import { chapterService } from "./chapter.service";
 import { xhsImageService } from "./xhs-image.service";
+import { pipelineService } from "./pipeline.service";
 
 export const services = {
   task: taskService,
@@ -82,6 +93,7 @@ export const services = {
   export: exportService,
   chapter: chapterService,
   xhsImage: xhsImageService,
+  pipeline: pipelineService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;
