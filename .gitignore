@@ -23,6 +23,7 @@ drizzle/
 
 # Claude
 .claude/
+.worktrees/
 
 # Development files
 e2e_test.py
