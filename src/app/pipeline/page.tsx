@@ -13,6 +13,7 @@ import type {
   A2UIRowNode,
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import { SwipeSelector } from "@/components/swipe-selector"
 
 // Pipeline step type
 type PipelineStep = "input" | "analyzing" | "selection" | "processing" | "completed"
@@ -32,6 +33,11 @@ interface PipelineItem {
   imagePromptId: string | null
 }
 
+// Extended pipeline type with style name
+interface PipelineWithStyle extends PipelineItem {
+  styleName?: string | null
+}
+
 export default function PipelinePage() {
   const { t } = useI18n()
   const { status } = useSession()
@@ -43,6 +49,7 @@ export default function PipelinePage() {
 
   const [step, setStep] = useState<PipelineStep>("input")
   const [pipelineId, setPipelineId] = useState<string | null>(null)
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     sourceUrl: "",
     topic: "",
@@ -57,14 +64,44 @@ export default function PipelinePage() {
     { enabled: mounted }
   )
 
-  // Query for current pipeline progress (when analyzing)
+  // Query for current pipeline progress (when analyzing or selection)
   const { data: currentPipeline } = api.pipeline.getById.useQuery(
     { id: pipelineId! },
     {
-      enabled: !!pipelineId && step === "analyzing",
+      enabled: !!pipelineId && (step === "analyzing" || step === "selection"),
       refetchInterval: step === "analyzing" ? 3000 : false,
     }
   )
+
+  // Query for sorted image prompts (when selection)
+  const { data: sortedPrompts } = api.pipeline.getSortedImagePrompts.useQuery(
+    { pipelineId: pipelineId! },
+    { enabled: !!pipelineId && step === "selection" }
+  )
+
+  // Create mutation
+  const createMutation = api.pipeline.create.useMutation({
+    onSuccess: (data) => {
+      setPipelineId(data.id)
+      setStep("analyzing")
+      refetchHistory()
+    },
+  })
+
+  // Select style mutation
+  const selectStyleMutation = api.pipeline.selectStyle.useMutation({
+    onError: (error) => {
+      console.error("Failed to select style:", error)
+    },
+  })
+
+  // Start generation mutation
+  const startMutation = api.pipeline.start.useMutation({
+    onSuccess: () => setStep("processing"),
+    onError: (error) => {
+      console.error("Failed to start generation:", error)
+    },
+  })
 
   // Watch for pipeline status changes
   useEffect(() => {
@@ -82,14 +119,26 @@ export default function PipelinePage() {
     }
   }, [currentPipeline])
 
-  // Create mutation
-  const createMutation = api.pipeline.create.useMutation({
-    onSuccess: (data) => {
-      setPipelineId(data.id)
-      setStep("analyzing")
-      refetchHistory()
-    },
-  })
+  // Auto-select first prompt when analysis completes
+  useEffect(() => {
+    if (
+      currentPipeline?.status === "pending_selection" &&
+      step === "selection" &&
+      sortedPrompts &&
+      sortedPrompts.length > 0 &&
+      !selectedPromptId &&
+      pipelineId
+    ) {
+      const firstPrompt = sortedPrompts[0]
+      if (firstPrompt) {
+        setSelectedPromptId(firstPrompt.id)
+        selectStyleMutation.mutate({
+          pipelineId,
+          imagePromptId: firstPrompt.id,
+        })
+      }
+    }
+  }, [currentPipeline?.status, step, sortedPrompts, selectedPromptId, pipelineId, selectStyleMutation])
 
   // Build the action handler
   const handleAction = useCallback(
@@ -113,6 +162,20 @@ export default function PipelinePage() {
           if (formData.sourceUrl && formData.topic) {
             createMutation.mutate(formData)
           }
+          break
+        case "selectPrompt": {
+          const promptId = args?.[0]
+          if (typeof promptId !== "string" || !pipelineId) return
+          setSelectedPromptId(promptId)
+          selectStyleMutation.mutate({
+            pipelineId,
+            imagePromptId: promptId,
+          })
+          break
+        }
+        case "startGeneration":
+          if (!pipelineId || !selectedPromptId) return
+          startMutation.mutate({ pipelineId })
           break
         case "viewPipeline": {
           const id = args?.[0] as string
@@ -143,11 +206,12 @@ export default function PipelinePage() {
         case "newPipeline":
           setStep("input")
           setPipelineId(null)
+          setSelectedPromptId(null)
           setFormData({ sourceUrl: "", topic: "" })
           break
       }
     },
-    [formData, createMutation, history, router]
+    [formData, createMutation, selectStyleMutation, startMutation, history, router, pipelineId]
   )
 
   // Build input form node
@@ -228,27 +292,59 @@ export default function PipelinePage() {
     ],
   })
 
-  // Build selection state node (placeholder for now)
-  const buildSelectionNode = (): A2UICardNode => ({
-    type: "card",
-    className: "p-6",
-    children: [
-      {
-        type: "column",
-        gap: "1rem",
-        children: [
-          { type: "text", text: "选择封面风格", variant: "h3" },
-          { type: "text", text: "风格分析完成，请选择封面风格", color: "muted" },
-          {
-            type: "button",
-            text: "新建创作",
-            variant: "secondary",
-            onClick: { action: "newPipeline" },
-          },
-        ],
-      },
-    ],
-  })
+  // Build selection state node
+  const buildSelectionNode = (): A2UINode => {
+    const styleName = (currentPipeline as PipelineWithStyle | null)?.styleName ?? "未知风格"
+
+    return {
+      type: "column",
+      gap: "1.5rem",
+      children: [
+        {
+          type: "card",
+          className: "p-6",
+          children: [
+            {
+              type: "column",
+              gap: "0.5rem",
+              children: [
+                { type: "text", text: "✅ 风格分析完成", variant: "h3" },
+                { type: "text", text: `风格: ${styleName}`, variant: "body", color: "muted" },
+              ],
+            },
+          ],
+        },
+        {
+          type: "card",
+          className: "p-6",
+          children: [
+            {
+              type: "column",
+              gap: "1rem",
+              children: [
+                { type: "text", text: "🎨 选择视觉风格", variant: "h3" },
+                { type: "text", text: "💡 此风格同时用于封面和小红书图文", variant: "caption", color: "muted" },
+                {
+                  type: "button",
+                  text: startMutation.isPending ? "生成中..." : "🚀 开始生成",
+                  variant: "primary",
+                  disabled: !selectedPromptId || startMutation.isPending,
+                  onClick: { action: "startGeneration" },
+                },
+                {
+                  type: "text",
+                  text: "将生成：文章 + 封面 + 9张图文",
+                  variant: "caption",
+                  color: "muted",
+                  className: "text-center",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  }
 
   // Build processing state node
   const buildProcessingNode = (): A2UICardNode => ({
@@ -434,7 +530,28 @@ export default function PipelinePage() {
     children: [pageNode],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <>
+      <A2UIRenderer node={appShellNode} onAction={handleAction} />
+      {step === "selection" && sortedPrompts && sortedPrompts.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background border rounded-lg shadow-lg p-6 max-w-lg w-full">
+            <SwipeSelector
+              items={sortedPrompts.map((p) => ({
+                id: p.id,
+                name: p.title,
+                previewUrl: p.previewUrl ?? undefined,
+                similarity: p.similarity,
+              }))}
+              selectedId={selectedPromptId ?? sortedPrompts[0]?.id ?? ""}
+              onSelect={(id) => handleAction("selectPrompt", [id])}
+              title="选择封面风格"
+            />
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 // Helper functions
