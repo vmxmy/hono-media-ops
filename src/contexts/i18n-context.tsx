@@ -95,6 +95,7 @@ export type I18nKey =
     | "profile.storageDeactivate"
     // Navigation
     | "nav.dashboard"
+    | "nav.pipeline"
     | "nav.prompts"
     | "nav.tasks"
     | "nav.articles"
