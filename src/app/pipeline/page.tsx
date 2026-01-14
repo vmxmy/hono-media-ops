@@ -68,7 +68,7 @@ export default function PipelinePage() {
   const { data: currentPipeline } = api.pipeline.getById.useQuery(
     { id: pipelineId! },
     {
-      enabled: !!pipelineId && (step === "analyzing" || step === "selection"),
+      enabled: !!pipelineId && (step === "analyzing" || step === "selection" || step === "completed"),
       refetchInterval: step === "analyzing" ? 3000 : false,
     }
   )
@@ -79,12 +79,12 @@ export default function PipelinePage() {
     { enabled: !!pipelineId && step === "selection" }
   )
 
-  // Query for progress (when processing)
+  // Query for progress (when processing or completed)
   const { data: progress } = api.pipeline.getProgress.useQuery(
     { id: pipelineId ?? "" },
     {
-      enabled: !!pipelineId && step === "processing",
-      refetchInterval: 3000,
+      enabled: !!pipelineId && (step === "processing" || step === "completed"),
+      refetchInterval: step === "processing" ? 3000 : false,
     }
   )
 
@@ -228,9 +228,24 @@ export default function PipelinePage() {
           setSelectedPromptId(null)
           setFormData({ sourceUrl: "", topic: "" })
           break
+        case "previewArticle":
+          // TODO: Open article preview modal
+          break
+        case "copyArticle":
+          // TODO: Copy article content to clipboard
+          break
+        case "previewImages":
+          // TODO: Open image gallery preview
+          break
+        case "downloadAll":
+          // TODO: Download all XHS images
+          break
+        case "publishToXhs":
+          // TODO: Trigger XHS publishing flow
+          break
       }
     },
-    [formData, createMutation, selectStyleMutation, startMutation, history, router, pipelineId]
+    [formData, createMutation, selectStyleMutation, startMutation, history, router, pipelineId, selectedPromptId]
   )
 
   // Build input form node
@@ -426,21 +441,118 @@ export default function PipelinePage() {
   })
 
   // Build completed state node
-  const buildCompletedNode = (): A2UICardNode => ({
-    type: "card",
-    className: "p-6",
+  const buildCompletedNode = (): A2UINode => ({
+    type: "column",
+    gap: "1.5rem",
     children: [
       {
-        type: "column",
-        gap: "1rem",
+        type: "card",
+        className: "p-6",
         children: [
-          { type: "text", text: "创作完成", variant: "h3" },
-          { type: "badge", text: "已完成", color: "success" },
           {
-            type: "button",
-            text: "新建创作",
-            variant: "primary",
-            onClick: { action: "newPipeline" },
+            type: "column",
+            gap: "1rem",
+            children: [
+              { type: "text", text: "✅ 全部完成！", variant: "h2" },
+              { type: "text", text: currentPipeline?.topic ?? "", variant: "body", color: "muted" },
+            ],
+          },
+        ],
+      },
+      {
+        type: "card",
+        className: "p-6",
+        children: [
+          {
+            type: "column",
+            gap: "1rem",
+            children: [
+              { type: "text", text: "📄 文章", variant: "h3" },
+              { type: "text", text: "文章已生成完成", variant: "body", color: "muted" },
+              {
+                type: "row",
+                gap: "0.5rem",
+                children: [
+                  {
+                    type: "button",
+                    text: "预览文章",
+                    variant: "secondary",
+                    size: "sm",
+                    onClick: { action: "previewArticle" },
+                  },
+                  {
+                    type: "button",
+                    text: "复制全文",
+                    variant: "secondary",
+                    size: "sm",
+                    onClick: { action: "copyArticle" },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "card",
+        className: "p-6",
+        children: [
+          {
+            type: "column",
+            gap: "1rem",
+            children: [
+              { type: "text", text: "📱 小红书图文", variant: "h3" },
+              {
+                type: "text",
+                text: `${progress?.xhs.total ?? 0} 张图片已生成`,
+                variant: "body",
+                color: "muted"
+              },
+              {
+                type: "row",
+                gap: "0.5rem",
+                children: [
+                  {
+                    type: "button",
+                    text: "预览大图",
+                    variant: "secondary",
+                    size: "sm",
+                    onClick: { action: "previewImages" },
+                  },
+                  {
+                    type: "button",
+                    text: "下载全部",
+                    variant: "secondary",
+                    size: "sm",
+                    onClick: { action: "downloadAll" },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "card",
+        className: "p-6",
+        children: [
+          {
+            type: "column",
+            gap: "0.75rem",
+            children: [
+              {
+                type: "button",
+                text: "📤 发布到小红书",
+                variant: "primary",
+                onClick: { action: "publishToXhs" },
+              },
+              {
+                type: "button",
+                text: "➕ 开始新创作",
+                variant: "secondary",
+                onClick: { action: "newPipeline" },
+              },
+            ],
           },
         ],
       },
