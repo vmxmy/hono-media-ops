@@ -9,6 +9,7 @@ import { userStorageConfigRouter } from "./routers/user-storage-config";
 import { exportRouter } from "./routers/export";
 import { chaptersRouter } from "./routers/chapters";
 import { xhsImagesRouter } from "./routers/xhs-images";
+import { pipelineRouter } from "./routers/pipeline";
 
 export const appRouter = createTRPCRouter({
   tasks: tasksRouter,
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   export: exportRouter,
   chapters: chaptersRouter,
   xhsImages: xhsImagesRouter,
+  pipeline: pipelineRouter,
   // Backwards compatibility
   reverseLogs: styleAnalysesRouter,
 });
