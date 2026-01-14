@@ -12,6 +12,7 @@ import {
 } from "@/server/db/schema";
 import { env } from "@/env";
 import { countArticleWords } from "./article.service";
+import { embeddingService, prepareArticleEmbeddingContent } from "./embedding.service";
 
 // ==================== Types ====================
 
@@ -657,36 +658,60 @@ export const taskService = {
     const taskStatus: TaskStatus = result.status === "completed" ? "completed" : "failed";
     await this.updateStatus({ id: execution.taskId, status: taskStatus });
 
-    const shouldCountUsage = execution.status !== "completed" && result.status === "completed";
-    if (shouldCountUsage) {
+    const isFirstCompletion = execution.status !== "completed" && result.status === "completed";
+    const articleMarkdown = result.articleMarkdown ?? execution.articleMarkdown;
+    const shouldGenerateEmbedding = isFirstCompletion && Boolean(articleMarkdown);
+
+    if (isFirstCompletion || shouldGenerateEmbedding) {
       const [taskRow] = await db
         .select({
           refMaterialId: tasks.refMaterialId,
           coverPromptId: tasks.coverPromptId,
+          topic: tasks.topic,
+          keywords: tasks.keywords,
         })
         .from(tasks)
         .where(eq(tasks.id, execution.taskId))
         .limit(1);
 
-      if (taskRow?.refMaterialId) {
-        await db
-          .update(styleAnalyses)
-          .set({
-            useCount: sql`${styleAnalyses.useCount} + 1`,
-            updatedAt: new Date(),
-          })
-          .where(eq(styleAnalyses.id, taskRow.refMaterialId));
+      if (isFirstCompletion) {
+        if (taskRow?.refMaterialId) {
+          await db
+            .update(styleAnalyses)
+            .set({
+              useCount: sql`${styleAnalyses.useCount} + 1`,
+              updatedAt: new Date(),
+            })
+            .where(eq(styleAnalyses.id, taskRow.refMaterialId));
+        }
+
+        if (taskRow?.coverPromptId) {
+          await db
+            .update(imagePrompts)
+            .set({
+              useCount: sql`${imagePrompts.useCount} + 1`,
+              lastUsedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(imagePrompts.id, taskRow.coverPromptId));
+        }
       }
 
-      if (taskRow?.coverPromptId) {
-        await db
-          .update(imagePrompts)
-          .set({
-            useCount: sql`${imagePrompts.useCount} + 1`,
-            lastUsedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(imagePrompts.id, taskRow.coverPromptId));
+      if (shouldGenerateEmbedding && taskRow && articleMarkdown) {
+        try {
+          const content = prepareArticleEmbeddingContent(
+            articleMarkdown,
+            taskRow.topic,
+            taskRow.keywords ?? null
+          );
+          await embeddingService.generateAndStoreEmbedding({
+            executionId: execution.id,
+            taskId: execution.taskId,
+            content,
+          });
+        } catch (error) {
+          console.error("[Task] Failed to generate article embedding", error);
+        }
       }
     }
 
