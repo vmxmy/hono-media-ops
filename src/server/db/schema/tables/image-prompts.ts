@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { imagePromptSourceEnum } from "../enums";
+import { vector } from "../custom-types";
 
 // ==================== Image Prompts Table ====================
 
@@ -46,6 +47,8 @@ export const imagePrompts = pgTable(
     rating: integer("rating").default(0).notNull(), // 0-5 星评分
     // 扩展
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    // 向量嵌入 (用于语义相似度搜索)
+    embedding: vector("embedding", { dimensions: 1536 }), // OpenAI text-embedding-3-small
     // 时间戳
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -67,6 +70,8 @@ export const imagePrompts = pgTable(
       table.useCount,
       table.createdAt
     ),
+    // 向量索引需要在数据库层面使用 SQL 创建
+    // CREATE INDEX idx_image_prompts_embedding ON image_prompts USING hnsw (embedding vector_cosine_ops);
   })
 );
 
