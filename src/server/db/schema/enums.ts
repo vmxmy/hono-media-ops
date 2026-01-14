@@ -58,3 +58,13 @@ export const imagePromptSourceEnum = pgEnum("image_prompt_source", [
   "ai",        // AI 生成
   "imported",  // 导入
 ]);
+
+// ==================== Pipeline Enums ====================
+
+export const pipelineStatusEnum = pgEnum("pipeline_status", [
+  "analyzing",         // 正在分析风格
+  "pending_selection", // 等待用户选择封面
+  "processing",        // 正在生成
+  "completed",         // 完成
+  "failed",            // 失败
+]);

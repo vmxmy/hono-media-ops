@@ -8,3 +8,4 @@ export * from "./image-prompts";
 export * from "./style-analyses";
 export * from "./embeddings";
 export * from "./xhs";
+export * from "./pipelines";
