@@ -1,6 +1,7 @@
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { pipelines, type Pipeline } from "@/server/db/schema";
+import { pipelines, styleAnalyses, imagePrompts, type Pipeline } from "@/server/db/schema";
+import { generateEmbedding, cosineSimilarity } from "@/lib/embedding";
 
 // ==================== Constants ====================
 
@@ -52,6 +53,14 @@ export interface PipelineProgress {
     completed: number;
     total: number;
   };
+}
+
+export interface SortedImagePrompt {
+  id: string;
+  title: string;
+  prompt: string;
+  previewUrl: string | null;
+  similarity: number;
 }
 
 // ==================== Service ====================
@@ -186,6 +195,66 @@ export const pipelineService = {
         total: xhsTotal,
       },
     };
+  },
+
+  /**
+   * Get image prompts sorted by similarity to a style analysis
+   * Uses embedding-based semantic search to recommend cover image prompts
+   */
+  async getSortedImagePrompts(styleAnalysisId: string): Promise<SortedImagePrompt[]> {
+    // 1. 获取风格分析记录
+    const [styleAnalysis] = await db
+      .select()
+      .from(styleAnalyses)
+      .where(eq(styleAnalyses.id, styleAnalysisId))
+      .limit(1);
+
+    if (!styleAnalysis) return [];
+
+    // 2. 构建风格摘要文本
+    const styleIdentity = styleAnalysis.styleIdentity;
+    const coreTraits = [
+      styleIdentity?.archetype,
+      styleIdentity?.tone_keywords,
+      styleIdentity?.voice_distance,
+    ].filter(Boolean).join(" ");
+
+    const summaryText = [
+      styleAnalysis.styleName,
+      coreTraits,
+    ].filter(Boolean).join(" ");
+
+    if (!summaryText.trim()) return [];
+
+    // 3. 生成风格摘要的 embedding
+    const queryEmbedding = await generateEmbedding(summaryText);
+
+    // 4. 获取所有有 embedding 的图片提示词
+    const prompts = await db
+      .select()
+      .from(imagePrompts)
+      .where(and(
+        isNotNull(imagePrompts.embedding),
+        isNull(imagePrompts.deletedAt)
+      ));
+
+    // 5. Calculate similarity and filter out invalid embeddings
+    const scoredPrompts = prompts
+      .filter((p) => Array.isArray(p.embedding) && p.embedding.length === queryEmbedding.length)
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        prompt: p.prompt,
+        previewUrl: p.previewUrl,
+        similarity: cosineSimilarity(queryEmbedding, p.embedding as number[]),
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .map((p) => ({
+        ...p,
+        similarity: Math.round(p.similarity * 100),
+      }));
+
+    return scoredPrompts;
   },
 };
 

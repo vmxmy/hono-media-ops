@@ -4,6 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url(),
+    OPENAI_API_KEY: z.string().optional(),
     N8N_WRITING_WEBHOOK_URL: z.string().url().optional(),
     N8N_REVERSE_WEBHOOK_URL: z.string().url().optional(),
     N8N_WECHAT_PUBLISH_URL: z.string().url().optional(),
@@ -33,6 +34,7 @@ export const env = createEnv({
   client: {},
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     N8N_WRITING_WEBHOOK_URL: process.env.N8N_WRITING_WEBHOOK_URL,
     N8N_REVERSE_WEBHOOK_URL: process.env.N8N_REVERSE_WEBHOOK_URL,
     N8N_WECHAT_PUBLISH_URL: process.env.N8N_WECHAT_PUBLISH_URL,
