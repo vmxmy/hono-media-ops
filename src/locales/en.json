@@ -77,6 +77,7 @@
   "profile.storageActivate": "Activate",
   "profile.storageDeactivate": "Deactivate",
   "nav.dashboard": "Dashboard",
+  "nav.pipeline": "Quick Create",
   "nav.prompts": "Prompts",
   "nav.tasks": "Write",
   "nav.articles": "Articles",

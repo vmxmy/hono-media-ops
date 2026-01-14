@@ -41,6 +41,9 @@ export const xhsImageJobs = pgTable(
     n8nExecutionId: text("n8n_execution_id"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 
+    // 扩展元数据
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+
     // 时间戳
     startedAt: timestamp("started_at"),
     completedAt: timestamp("completed_at"),
