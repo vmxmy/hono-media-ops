@@ -13,10 +13,21 @@ export type {
   PrimaryTypeInsights,
 } from "./types";
 
+import type { CreateStyleAnalysisInput, UpdateStyleAnalysisInput } from "./types";
+
 // Import sub-services
 import { styleAnalysisCrudService } from "./crud.service";
 import { styleAnalysisSearchService } from "./search.service";
 import { styleAnalysisAnalyticsService } from "./analytics.service";
+
+const triggerEmbeddingIfEligible = async (id: string, status?: string) => {
+  if (status !== "SUCCESS") return;
+  try {
+    await styleAnalysisSearchService.generateAndStoreEmbedding(id);
+  } catch (error) {
+    console.error("[StyleAnalysis] Failed to generate embedding", error);
+  }
+};
 
 // Re-export sub-services for direct access if needed
 export { styleAnalysisCrudService } from "./crud.service";
@@ -35,9 +46,26 @@ export const styleAnalysisService = {
   getById: styleAnalysisCrudService.getById.bind(styleAnalysisCrudService),
   getBySourceUrl: styleAnalysisCrudService.getBySourceUrl.bind(styleAnalysisCrudService),
   getByUserId: styleAnalysisCrudService.getByUserId.bind(styleAnalysisCrudService),
-  create: styleAnalysisCrudService.create.bind(styleAnalysisCrudService),
-  upsert: styleAnalysisCrudService.upsert.bind(styleAnalysisCrudService),
-  update: styleAnalysisCrudService.update.bind(styleAnalysisCrudService),
+  create: async (input: CreateStyleAnalysisInput) => {
+    const result = await styleAnalysisCrudService.create(input);
+    await triggerEmbeddingIfEligible(result.id, result.analysis.status);
+    return result;
+  },
+  upsert: async (input: CreateStyleAnalysisInput) => {
+    const result = await styleAnalysisCrudService.upsert(input);
+    await triggerEmbeddingIfEligible(result.id, result.analysis.status);
+    return result;
+  },
+  update: async (input: UpdateStyleAnalysisInput) => {
+    const result = await styleAnalysisCrudService.update(input);
+    let status = input.status;
+    if (!status) {
+      const analysis = await styleAnalysisCrudService.getById(input.id);
+      status = analysis?.status;
+    }
+    await triggerEmbeddingIfEligible(input.id, status);
+    return result;
+  },
   delete: styleAnalysisCrudService.delete.bind(styleAnalysisCrudService),
   batchDelete: styleAnalysisCrudService.batchDelete.bind(styleAnalysisCrudService),
   getPrimaryTypes: styleAnalysisCrudService.getPrimaryTypes.bind(styleAnalysisCrudService),

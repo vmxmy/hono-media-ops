@@ -36,7 +36,11 @@ function createContentHash(content: string): string {
 /**
  * Prepare content for embedding (clean and truncate)
  */
-function prepareContent(markdown: string | null, topic: string, keywords: string | null): string {
+export function prepareArticleEmbeddingContent(
+  markdown: string | null,
+  topic: string,
+  keywords: string | null
+): string {
   if (!markdown) return topic;
 
   // Remove markdown syntax for cleaner embedding
@@ -177,7 +181,7 @@ export const embeddingService = {
 
     for (const execution of executionsWithoutEmbeddings) {
       try {
-        const content = prepareContent(
+        const content = prepareArticleEmbeddingContent(
           execution.articleMarkdown,
           execution.topic,
           execution.keywords
