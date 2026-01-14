@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import {
   xhsImageJobs,
   xhsImages,
+  imagePrompts,
   type XhsImageJob,
   type XhsImage,
 } from "@/server/db/schema";
@@ -148,6 +149,15 @@ export const xhsImageService = {
     status: XhsJobStatus,
     errorMessage?: string
   ): Promise<{ success: boolean }> {
+    const [current] = await db
+      .select({
+        status: xhsImageJobs.status,
+        metadata: xhsImageJobs.metadata,
+      })
+      .from(xhsImageJobs)
+      .where(eq(xhsImageJobs.id, id))
+      .limit(1);
+
     const updates: Partial<XhsImageJob> = {
       status,
       updatedAt: new Date(),
@@ -165,6 +175,22 @@ export const xhsImageService = {
       .update(xhsImageJobs)
       .set(updates)
       .where(eq(xhsImageJobs.id, id));
+
+    const shouldCountUsage = current?.status !== "completed" && status === "completed";
+    if (shouldCountUsage) {
+      const metadata = current?.metadata as Record<string, unknown> | null | undefined;
+      const promptId = metadata?.image_prompt_id;
+      if (typeof promptId === "string") {
+        await db
+          .update(imagePrompts)
+          .set({
+            useCount: sql`${imagePrompts.useCount} + 1`,
+            lastUsedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(imagePrompts.id, promptId));
+      }
+    }
 
     return { success: true };
   },
@@ -196,6 +222,7 @@ export const xhsImageService = {
       status: "pending",
       ratio: "3:4",
       resolution: "2k",
+      metadata: { image_prompt_id: input.promptId },
     });
 
     // Build webhook payload
