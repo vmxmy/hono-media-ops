@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
 import Image from "next/image";
 
@@ -9,6 +9,7 @@ interface SwipeSelectorItem {
   name: string;
   subtitle?: string;
   meta?: string;
+  linkUrl?: string;
   previewUrl?: string;
   similarity?: number;
 }
@@ -44,12 +45,15 @@ export function SwipeSelector({
   const [displayIndex, setDisplayIndex] = useState(
     currentIndex >= 0 ? currentIndex : 0
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const goTo = useCallback(
     (index: number) => {
       if (items.length === 0) return;
       const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
       setDisplayIndex(clampedIndex);
+      setIsDetailsOpen(false);
       const item = items[clampedIndex];
       if (item) {
         onSelect(item.id);
@@ -76,10 +80,25 @@ export function SwipeSelector({
   );
 
   const currentItem = items[displayIndex];
+  const isRecord = variant === "record";
+  const showMobileDetails = isRecord && isMobile && isDetailsOpen;
+  const hasMobileDetails = Boolean(currentItem?.subtitle || currentItem?.meta);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 640px)");
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(event.matches);
+    };
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    setIsDetailsOpen(false);
+  }, [displayIndex, items.length]);
 
   if (!currentItem) return null;
-
-  const isRecord = variant === "record";
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -126,17 +145,58 @@ export function SwipeSelector({
       </div>
 
       <div className="text-center">
-        <p className="font-medium">{currentItem.name}</p>
-        {currentItem.subtitle && (
-          <p className="text-sm text-gray-500">{currentItem.subtitle}</p>
+        {isRecord && isMobile ? (
+          currentItem.linkUrl ? (
+            <a
+              className="font-medium text-blue-600 hover:text-blue-700"
+              href={currentItem.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {currentItem.name}
+            </a>
+          ) : (
+            <p className="font-medium">{currentItem.name}</p>
+          )
+        ) : (
+          <p className="font-medium">{currentItem.name}</p>
         )}
-        {currentItem.meta && (
-          <p className="text-xs text-gray-400">{currentItem.meta}</p>
-        )}
-        {currentItem.similarity !== undefined && (
-          <p className="text-sm text-gray-500">{currentItem.similarity}{matchSuffix}</p>
+        {!isRecord || !isMobile ? (
+          <>
+            {currentItem.subtitle && (
+              <p className="text-sm text-gray-500">{currentItem.subtitle}</p>
+            )}
+            {currentItem.meta && (
+              <p className="text-xs text-gray-400">{currentItem.meta}</p>
+            )}
+          </>
+        ) : null}
+        {!isRecord || !isMobile ? (
+          currentItem.similarity !== undefined && (
+            <p className="text-sm text-gray-500">{currentItem.similarity}{matchSuffix}</p>
+          )
+        ) : null}
+        {isRecord && isMobile && hasMobileDetails && (
+          <button
+            type="button"
+            onClick={() => setIsDetailsOpen((prev) => !prev)}
+            className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+          >
+            {isDetailsOpen ? "收起" : "更多信息"}
+          </button>
         )}
       </div>
+
+      {showMobileDetails && (
+        <div className="text-center text-xs text-gray-500 transition-opacity">
+          {currentItem.subtitle && (
+            <p>{currentItem.subtitle}</p>
+          )}
+          {currentItem.meta && (
+            <p className="text-gray-400">{currentItem.meta}</p>
+          )}
+        </div>
+      )}
 
       {/* 圆点指示器 */}
       <div className="flex gap-1">
