@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-12T14:58:51.917Z
+// Generated at: 2026-01-15T04:57:46.295Z
 
 import type { CSSProperties } from "react"
 
@@ -58,6 +58,7 @@ export type A2UINode =
   | A2UIAppShellNode
   | A2UIThemeSwitcherNode
   | A2UIMaterialsTableNode
+  | A2UIMaterialSwipeSelectorNode
   | A2UIArticleViewerModalNode
   | A2UICreateTaskModalNode
   | A2UIReverseSubmitModalNode
@@ -414,6 +415,17 @@ export interface A2UIMaterialsTableNode extends A2UIBaseNode {
   onClone?: A2UIAction // Clone action
   onDelete?: A2UIAction // Delete action
   onViewDetail?: A2UIAction // View detail action
+}
+
+// Material swipe selector
+export interface A2UIMaterialSwipeSelectorNode extends A2UIBaseNode {
+  type: "material-swipe-selector"
+  items: Array<{ id: string; name: string; subtitle: string; meta: string; previewUrl: string }> // Selector items
+  selectedId: string // Selected item id
+  title: string // Selector title
+  action: A2UIAction // Select action
+  emptyState?: A2UINode // Empty state node
+  labels?: { swipeHint?: string; noPreview?: string } // Label overrides
 }
 
 // Article viewer modal

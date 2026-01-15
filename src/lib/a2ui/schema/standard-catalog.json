@@ -1011,6 +1011,54 @@
         }
       }
     },
+    "material-swipe-selector": {
+      "description": "Material swipe selector",
+      "category": "custom",
+      "properties": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "description": "Selector items",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "subtitle": { "type": "string" },
+              "meta": { "type": "string" },
+              "previewUrl": { "type": "string" }
+            }
+          }
+        },
+        "selectedId": {
+          "type": "string",
+          "required": true,
+          "description": "Selected item id"
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Selector title"
+        },
+        "action": {
+          "type": "action",
+          "required": true,
+          "description": "Select action"
+        },
+        "emptyState": {
+          "type": "node",
+          "description": "Empty state node"
+        },
+        "labels": {
+          "type": "object",
+          "description": "Label overrides",
+          "properties": {
+            "swipeHint": { "type": "string" },
+            "noPreview": { "type": "string" }
+          }
+        }
+      }
+    },
     "article-viewer-modal": {
       "description": "Article viewer modal",
       "category": "custom",

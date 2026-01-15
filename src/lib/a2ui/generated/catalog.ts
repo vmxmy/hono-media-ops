@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-12T14:58:51.919Z
+// Generated at: 2026-01-15T04:57:46.297Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -977,6 +977,41 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
     },
   },
   {
+    type: "material-swipe-selector",
+    description: "Material swipe selector",
+    category: "custom",
+    properties: {
+      items: {
+        type: "array",
+        required: true,
+        description: "Selector items",
+      },
+      selectedId: {
+        type: "string",
+        required: true,
+        description: "Selected item id",
+      },
+      title: {
+        type: "string",
+        required: true,
+        description: "Selector title",
+      },
+      action: {
+        type: "action",
+        required: true,
+        description: "Select action",
+      },
+      emptyState: {
+        type: "node",
+        description: "Empty state node",
+      },
+      labels: {
+        type: "object",
+        description: "Label overrides",
+      },
+    },
+  },
+  {
     type: "article-viewer-modal",
     description: "Article viewer modal",
     category: "custom",
@@ -1215,5 +1250,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown","html","stat-card","empty-state","task-status-card"] as const
+export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","material-swipe-selector","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown","html","stat-card","empty-state","task-status-card"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

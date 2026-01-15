@@ -50,8 +50,9 @@ export default function PipelinePage() {
   const [step, setStep] = useState<PipelineStep>("input")
   const [pipelineId, setPipelineId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null)
+  const [materialSearchQuery, setMaterialSearchQuery] = useState("")
   const [formData, setFormData] = useState({
-    sourceUrl: "",
     topic: "",
   })
 
@@ -63,6 +64,18 @@ export default function PipelinePage() {
     },
     { enabled: mounted }
   )
+
+  const { data: materialsData, isLoading: materialsLoading } = api.reverseLogs.getAll.useQuery(
+    {
+      page: 1,
+      pageSize: 50,
+      search: materialSearchQuery || undefined,
+    },
+    { enabled: mounted }
+  )
+
+  const materials = materialsData?.logs ?? []
+  const resolvedMaterialId = selectedMaterialId ?? materials[0]?.id ?? null
 
   // Query for current pipeline progress (when analyzing or selection)
   const { data: currentPipeline } = api.pipeline.getById.useQuery(
@@ -159,6 +172,16 @@ export default function PipelinePage() {
     }
   }, [currentPipeline?.status, step, sortedPrompts, selectedPromptId, pipelineId, selectStyleMutation])
 
+  useEffect(() => {
+    if (!materials.length) {
+      if (selectedMaterialId) setSelectedMaterialId(null)
+      return
+    }
+    if (!selectedMaterialId || !materials.some((material) => material.id === selectedMaterialId)) {
+      setSelectedMaterialId(materials[0]?.id ?? null)
+    }
+  }, [materials, selectedMaterialId])
+
   // Build the action handler
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
@@ -171,16 +194,24 @@ export default function PipelinePage() {
         case "logout":
           logout()
           break
-        case "setSourceUrl":
-          setFormData((prev) => ({ ...prev, sourceUrl: args?.[0] as string }))
-          break
         case "setTopic":
           setFormData((prev) => ({ ...prev, topic: args?.[0] as string }))
           break
+        case "setMaterialSearch":
+          setMaterialSearchQuery((args?.[0] as string) ?? "")
+          break
+        case "selectMaterial":
+          setSelectedMaterialId((args?.[0] as string) ?? null)
+          break
         case "analyze":
-          if (formData.sourceUrl && formData.topic) {
-            createMutation.mutate(formData)
-          }
+          if (!formData.topic || !resolvedMaterialId) return
+          const selectedMaterial = materials.find((material) => material.id === resolvedMaterialId)
+          const sourceUrl = selectedMaterial?.sourceUrl
+          if (!sourceUrl) return
+          createMutation.mutate({
+            sourceUrl,
+            topic: formData.topic,
+          })
           break
         case "selectPrompt": {
           const promptId = args?.[0]
@@ -226,7 +257,9 @@ export default function PipelinePage() {
           setStep("input")
           setPipelineId(null)
           setSelectedPromptId(null)
-          setFormData({ sourceUrl: "", topic: "" })
+          setSelectedMaterialId(null)
+          setMaterialSearchQuery("")
+          setFormData({ topic: "" })
           break
         case "previewArticle":
           // TODO: Open article preview modal
@@ -245,7 +278,18 @@ export default function PipelinePage() {
           break
       }
     },
-    [formData, createMutation, selectStyleMutation, startMutation, history, router, pipelineId, selectedPromptId]
+    [
+      formData,
+      createMutation,
+      selectStyleMutation,
+      startMutation,
+      history,
+      router,
+      pipelineId,
+      selectedPromptId,
+      materials,
+      resolvedMaterialId,
+    ]
   )
 
   // Build input form node
@@ -266,16 +310,47 @@ export default function PipelinePage() {
                 type: "column",
                 gap: "0.25rem",
                 children: [
-                  { type: "text", text: "参考文章 URL", variant: "caption", color: "muted" },
+                  { type: "text", text: "当前素材", variant: "caption", color: "muted" },
                   {
                     type: "input",
-                    id: "source-url",
-                    name: "source-url",
-                    placeholder: "粘贴微信公众号或其他文章链接...",
-                    value: formData.sourceUrl,
+                    id: "material-search",
+                    name: "material-search",
+                    placeholder: "搜索素材标题或风格...",
+                    value: materialSearchQuery,
                     inputType: "text",
-                    onChange: { action: "setSourceUrl" },
+                    onChange: { action: "setMaterialSearch" },
                   },
+                  materialsLoading
+                    ? { type: "text", text: "素材加载中...", variant: "caption", color: "muted" }
+                    : materials.length
+                      ? {
+                          type: "material-swipe-selector",
+                          title: "滑动选择素材",
+                          items: materials.map((material) => {
+                            const styleName = material.styleName ?? material.sourceTitle ?? ""
+                            const metaParts: string[] = []
+                            if (material.wordCount) metaParts.push(`约${material.wordCount}字`)
+                            if (material.primaryType) metaParts.push(material.primaryType)
+                            return {
+                              id: material.id,
+                              name: styleName || "未命名素材",
+                              subtitle: material.sourceTitle && material.sourceTitle !== styleName
+                                ? material.sourceTitle
+                                : undefined,
+                              meta: metaParts.length ? metaParts.join(" · ") : undefined,
+                            }
+                          }),
+                          selectedId: resolvedMaterialId ?? "",
+                          action: { action: "selectMaterial" },
+                        }
+                      : {
+                          type: "text",
+                          text: materialSearchQuery.trim()
+                            ? "没有匹配的素材"
+                            : "暂无素材。请先在素材仓库中添加一些素材。",
+                          variant: "caption",
+                          color: "muted",
+                        },
                 ],
               },
               {
@@ -300,7 +375,7 @@ export default function PipelinePage() {
             type: "button",
             text: createMutation.isPending ? "分析中..." : "分析风格",
             variant: "primary",
-            disabled: !formData.sourceUrl || !formData.topic || createMutation.isPending,
+            disabled: !resolvedMaterialId || !formData.topic || createMutation.isPending,
             onClick: { action: "analyze" },
           },
         ],
