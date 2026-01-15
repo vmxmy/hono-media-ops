@@ -9,6 +9,7 @@ interface MaterialSwipeSelectorItem {
   name: string
   subtitle?: string
   meta?: string
+  linkUrl?: string
   previewUrl?: string
 }
 

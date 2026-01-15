@@ -339,6 +339,7 @@ export default function PipelinePage() {
                                 : "",
                               meta: metaParts.length ? metaParts.join(" · ") : "",
                               previewUrl: "",
+                              linkUrl: material.sourceUrl ?? "",
                             }
                           }),
                           selectedId: resolvedMaterialId ?? "",

@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-15T04:57:46.297Z
+// Generated at: 2026-01-15T06:46:25.959Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 

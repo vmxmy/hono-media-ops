@@ -1026,7 +1026,8 @@
               "name": { "type": "string" },
               "subtitle": { "type": "string" },
               "meta": { "type": "string" },
-              "previewUrl": { "type": "string" }
+              "previewUrl": { "type": "string" },
+              "linkUrl": { "type": "string" }
             }
           }
         },

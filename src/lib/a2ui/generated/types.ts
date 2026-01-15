@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-15T04:57:46.295Z
+// Generated at: 2026-01-15T06:46:25.957Z
 
 import type { CSSProperties } from "react"
 
@@ -420,7 +420,7 @@ export interface A2UIMaterialsTableNode extends A2UIBaseNode {
 // Material swipe selector
 export interface A2UIMaterialSwipeSelectorNode extends A2UIBaseNode {
   type: "material-swipe-selector"
-  items: Array<{ id: string; name: string; subtitle: string; meta: string; previewUrl: string }> // Selector items
+  items: Array<{ id: string; name: string; subtitle: string; meta: string; previewUrl: string; linkUrl: string }> // Selector items
   selectedId: string // Selected item id
   title: string // Selector title
   action: A2UIAction // Select action
