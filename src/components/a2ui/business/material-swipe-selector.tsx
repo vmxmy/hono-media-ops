@@ -1,9 +1,8 @@
 "use client"
 
-import type { A2UIAction } from "@/lib/a2ui"
+import type { A2UIAction, A2UIBaseNode, A2UINode } from "@/lib/a2ui"
 import type { A2UIComponentProps } from "@/lib/a2ui/registry"
 import { SwipeSelector } from "@/components/swipe-selector"
-import type { ReactNode } from "react"
 
 interface MaterialSwipeSelectorItem {
   id: string
@@ -13,13 +12,13 @@ interface MaterialSwipeSelectorItem {
   previewUrl?: string
 }
 
-interface MaterialSwipeSelectorNode {
+interface MaterialSwipeSelectorNode extends A2UIBaseNode {
   type: "material-swipe-selector"
   items: MaterialSwipeSelectorItem[]
   selectedId: string
   title: string
   action: A2UIAction
-  emptyState?: ReactNode
+  emptyState?: A2UINode
   labels?: {
     swipeHint?: string
     noPreview?: string
@@ -29,9 +28,10 @@ interface MaterialSwipeSelectorNode {
 export function A2UIMaterialSwipeSelector({
   node,
   onAction,
+  renderChildren,
 }: A2UIComponentProps<MaterialSwipeSelectorNode>) {
   if (!node.items.length) {
-    return node.emptyState ? <>{node.emptyState}</> : null
+    return node.emptyState ? <>{renderChildren?.(node.emptyState)}</> : null
   }
 
   return (

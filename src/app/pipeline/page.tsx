@@ -336,8 +336,9 @@ export default function PipelinePage() {
                               name: styleName || "未命名素材",
                               subtitle: material.sourceTitle && material.sourceTitle !== styleName
                                 ? material.sourceTitle
-                                : undefined,
-                              meta: metaParts.length ? metaParts.join(" · ") : undefined,
+                                : "",
+                              meta: metaParts.length ? metaParts.join(" · ") : "",
+                              previewUrl: "",
                             }
                           }),
                           selectedId: resolvedMaterialId ?? "",
