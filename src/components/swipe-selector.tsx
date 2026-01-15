@@ -7,6 +7,8 @@ import Image from "next/image";
 interface SwipeSelectorItem {
   id: string;
   name: string;
+  subtitle?: string;
+  meta?: string;
   previewUrl?: string;
   similarity?: number;
 }
@@ -16,6 +18,7 @@ interface SwipeSelectorProps {
   selectedId: string;
   onSelect: (id: string) => void;
   title: string;
+  variant?: "default" | "record";
   labels?: {
     swipeHint?: string;
     noPreview?: string;
@@ -28,6 +31,7 @@ export function SwipeSelector({
   selectedId,
   onSelect,
   title,
+  variant = "default",
   labels,
 }: SwipeSelectorProps) {
   const {
@@ -75,6 +79,8 @@ export function SwipeSelector({
 
   if (!currentItem) return null;
 
+  const isRecord = variant === "record";
+
   return (
     <div className="flex flex-col items-center gap-4">
       <p className="text-sm text-gray-500">
@@ -87,24 +93,46 @@ export function SwipeSelector({
         tabIndex={0}
         role="listbox"
         aria-label={title}
-        className="relative w-full max-w-sm aspect-square bg-gray-100 rounded-lg overflow-hidden touch-pan-y"
+        className={
+          isRecord
+            ? "relative w-full max-w-sm aspect-square rounded-full overflow-hidden touch-pan-y bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 shadow-[0_20px_50px_rgba(0,0,0,0.18)]"
+            : "relative w-full max-w-sm aspect-square bg-gray-100 rounded-lg overflow-hidden touch-pan-y"
+        }
       >
+        {isRecord && (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.7),rgba(255,255,255,0)_45%)]" />
+            <div className="absolute inset-6 rounded-full border border-white/50" />
+            <div className="absolute inset-10 rounded-full border border-white/30" />
+          </>
+        )}
         {currentItem.previewUrl ? (
           <Image
             src={currentItem.previewUrl}
             alt={currentItem.name}
             fill
-            className="object-cover"
+            className={isRecord ? "object-cover rounded-full" : "object-cover"}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             {noPreview}
           </div>
         )}
+        {isRecord && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full bg-white/80 shadow-inner" />
+          </div>
+        )}
       </div>
 
       <div className="text-center">
         <p className="font-medium">{currentItem.name}</p>
+        {currentItem.subtitle && (
+          <p className="text-sm text-gray-500">{currentItem.subtitle}</p>
+        )}
+        {currentItem.meta && (
+          <p className="text-xs text-gray-400">{currentItem.meta}</p>
+        )}
         {currentItem.similarity !== undefined && (
           <p className="text-sm text-gray-500">{currentItem.similarity}{matchSuffix}</p>
         )}
