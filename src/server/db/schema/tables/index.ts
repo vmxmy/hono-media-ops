@@ -9,3 +9,4 @@ export * from "./style-analyses";
 export * from "./embeddings";
 export * from "./xhs";
 export * from "./pipelines";
+export * from "./wechat-articles";

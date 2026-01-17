@@ -85,6 +85,7 @@
   "nav.insights": "风格洞察",
   "nav.reverse": "素材仓库",
   "nav.xhsImages": "小红书图片",
+  "nav.wechatArticles": "微信文章库",
   "tasks.title": "写点东西",
   "tasks.newTask": "写点啥",
   "tasks.noTasks": "暂无任务",
@@ -377,6 +378,7 @@
   "reverse.colTtr": "词汇丰富度",
   "reverse.colUpdated": "更新时间",
   "reverse.colActions": "操作",
+  "reverse.useCount": "使用次数",
   "reverse.noLogs": "暂无素材",
   "app.title": "抄手",
   "app.description": "AI 驱动的文章生成平台",
@@ -450,5 +452,14 @@
   "xhsImages.publish": "发布",
   "xhsImages.publishing": "发布中...",
   "xhsImages.publishSuccess": "发布到小红书成功！",
-  "xhsImages.publishFailed": "发布失败"
+  "xhsImages.publishFailed": "发布失败",
+  "wechatArticles.title": "微信文章库",
+  "wechatArticles.subtitle": "浏览从微信公众号提取的文章素材",
+  "wechatArticles.searchPlaceholder": "搜索文章标题、作者或摘要...",
+  "wechatArticles.noArticles": "暂无微信文章",
+  "wechatArticles.prevPage": "上一页",
+  "wechatArticles.nextPage": "下一页",
+  "wechatArticles.viewOriginal": "阅读原文",
+  "wechatArticles.author": "作者",
+  "wechatArticles.publishTime": "发布时间"
 }

@@ -99,6 +99,7 @@ export type I18nKey =
     | "nav.prompts"
     | "nav.tasks"
     | "nav.articles"
+    | "nav.wechatArticles"
     | "nav.settings"
     | "nav.xhsImages"
     // Tasks
@@ -406,6 +407,7 @@ export type I18nKey =
     | "reverse.colTtr"
     | "reverse.colUpdated"
     | "reverse.colActions"
+    | "reverse.useCount"
     | "reverse.noLogs"
     // App
     | "app.title"
@@ -486,6 +488,15 @@ export type I18nKey =
     | "xhsImages.publishFailed"
     | "createHub.generateXhsImages"
     | "createHub.generateXhsImagesDesc"
+    | "wechatArticles.title"
+    | "wechatArticles.subtitle"
+    | "wechatArticles.searchPlaceholder"
+    | "wechatArticles.noArticles"
+    | "wechatArticles.prevPage"
+    | "wechatArticles.nextPage"
+    | "wechatArticles.viewOriginal"
+    | "wechatArticles.author"
+    | "wechatArticles.publishTime"
 
 interface I18nContextValue {
     locale: Locale

@@ -3,14 +3,16 @@
  * Handles create, read, update, delete operations for style analyses
  */
 
-import { eq, desc, like, and, or, sql, inArray } from "drizzle-orm";
+import { eq, desc, like, and, or, sql, inArray, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { styleAnalyses, type StyleAnalysis } from "@/server/db/schema";
+import { styleAnalyses, tasks, type StyleAnalysis } from "@/server/db/schema";
 import { generateExecutionPrompt, generateExecutionPromptPreview } from "@/lib/style-analysis";
 import type {
   GetAllStyleAnalysesOptions,
   CreateStyleAnalysisInput,
   UpdateStyleAnalysisInput,
+  StyleAnalysisListItem,
+  GetAllStyleAnalysesResult,
 } from "./types";
 
 // ==================== CRUD Service ====================
@@ -20,7 +22,7 @@ export const styleAnalysisCrudService = {
    * Get all style analyses with pagination and filtering
    * Only selects fields needed for list display to optimize performance
    */
-  async getAll(options: GetAllStyleAnalysesOptions) {
+  async getAll(options: GetAllStyleAnalysesOptions): Promise<GetAllStyleAnalysesResult> {
     const { page, pageSize, search, primaryType, status, userId } = options;
     const offset = (page - 1) * pageSize;
 
@@ -80,11 +82,16 @@ export const styleAnalysisCrudService = {
           goldenSample: styleAnalyses.goldenSample,
           transferDemo: styleAnalyses.transferDemo,
           executionPrompt: styleAnalyses.executionPrompt,
-          // Excluded: rawJsonFull (too large, rarely needed)
+          useCount: sql<number>`(
+            SELECT count(*) 
+            FROM ${tasks} 
+            WHERE ${tasks.refMaterialId} = "style_analyses"."id" 
+              AND ${tasks.deletedAt} IS NULL
+          )::int`.as("use_count"),
         })
         .from(styleAnalyses)
         .where(whereClause)
-        .orderBy(desc(styleAnalyses.updatedAt))
+        .orderBy(desc(sql`use_count`), desc(styleAnalyses.updatedAt))
         .limit(pageSize)
         .offset(offset),
       db
@@ -96,7 +103,7 @@ export const styleAnalysisCrudService = {
     const total = countResult[0]?.count ?? 0;
 
     return {
-      logs: data,
+      logs: data as StyleAnalysisListItem[],
       pagination: {
         page,
         pageSize,

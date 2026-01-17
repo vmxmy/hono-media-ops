@@ -22,6 +22,15 @@ export interface CreatePipelineInput {
   targetWordCount?: number;
 }
 
+export interface CreateQuickPipelineInput {
+  userId: string;
+  styleAnalysisId: string;
+  imagePromptId: string;
+  topic: string;
+  keywords?: string;
+  targetWordCount?: number;
+}
+
 export interface UpdatePipelineInput {
   id: string;
   styleAnalysisId?: string;
@@ -122,6 +131,53 @@ export const pipelineService = {
         keywords: input.keywords,
         targetWordCount: input.targetWordCount ?? 2000,
         status: "analyzing",
+      })
+      .returning();
+
+    if (!item) {
+      throw new Error("Failed to create pipeline");
+    }
+    return { id: item.id };
+  },
+
+  async createQuick(input: CreateQuickPipelineInput): Promise<{ id: string }> {
+    const [style] = await db
+      .select({ id: styleAnalyses.id, sourceUrl: styleAnalyses.sourceUrl })
+      .from(styleAnalyses)
+      .where(and(
+        eq(styleAnalyses.id, input.styleAnalysisId),
+        eq(styleAnalyses.userId, input.userId)
+      ))
+      .limit(1);
+
+    if (!style) {
+      throw new Error("Style analysis not found or access denied");
+    }
+
+    const [prompt] = await db
+      .select({ id: imagePrompts.id })
+      .from(imagePrompts)
+      .where(and(
+        eq(imagePrompts.id, input.imagePromptId),
+        isNull(imagePrompts.deletedAt)
+      ))
+      .limit(1);
+
+    if (!prompt) {
+      throw new Error("Image prompt not found");
+    }
+
+    const [item] = await db
+      .insert(pipelines)
+      .values({
+        userId: input.userId,
+        sourceUrl: style.sourceUrl ?? "",
+        topic: input.topic,
+        keywords: input.keywords,
+        targetWordCount: input.targetWordCount ?? 2000,
+        styleAnalysisId: input.styleAnalysisId,
+        imagePromptId: input.imagePromptId,
+        status: "processing",
       })
       .returning();
 

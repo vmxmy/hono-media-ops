@@ -19,6 +19,14 @@ const createInputSchema = z.object({
   targetWordCount: z.number().int().min(500).max(10000).optional(),
 });
 
+const createQuickInputSchema = z.object({
+  styleAnalysisId: z.string().uuid(),
+  imagePromptId: z.string().uuid(),
+  topic: z.string().min(1),
+  keywords: z.string().optional(),
+  targetWordCount: z.number().int().min(500).max(10000).optional(),
+});
+
 const selectStyleInputSchema = z.object({
   pipelineId: z.string().uuid(),
   imagePromptId: z.string().uuid(),
@@ -75,6 +83,18 @@ export const pipelineRouter = createTRPCRouter({
       });
       // 触发风格分析 webhook
       await ctx.services.pipeline.triggerStyleAnalysis(result.id);
+      return result;
+    }),
+
+  // 快速创建并直接开始生成
+  createQuick: protectedProcedure
+    .input(createQuickInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.services.pipeline.createQuick({
+        userId: ctx.user.id,
+        ...input,
+      });
+      await ctx.services.pipeline.triggerContentGeneration(result.id);
       return result;
     }),
 

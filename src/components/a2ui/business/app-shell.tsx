@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Pencil, BookOpen, Newspaper, BarChart3, Image, Images, User, Zap } from "lucide-react"
+import { Pencil, BookOpen, Newspaper, BarChart3, Image, Images, User, Zap, Library } from "lucide-react"
 import type {
   A2UIAppShellNode,
   A2UINode,
@@ -34,6 +34,7 @@ const NavIcons: Record<string, React.ReactNode> = {
   pipeline: <Zap className="h-5 w-5 flex-shrink-0" />,
   tasks: <Pencil className="h-5 w-5 flex-shrink-0" />,
   articles: <BookOpen className="h-5 w-5 flex-shrink-0" />,
+  wechatArticles: <Library className="h-5 w-5 flex-shrink-0" />,
   reverse: <Newspaper className="h-5 w-5 flex-shrink-0" />,
   xhsImages: <Images className="h-5 w-5 flex-shrink-0" />,
   insights: <BarChart3 className="h-5 w-5 flex-shrink-0" />,

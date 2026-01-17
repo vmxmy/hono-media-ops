@@ -3,11 +3,11 @@
  * Handles vector search and hybrid search operations
  */
 
-import { eq, and, sql, inArray, isNull, desc } from "drizzle-orm";
+import { eq, and, sql, inArray, isNull, desc, getTableColumns } from "drizzle-orm";
 import { createHash } from "crypto";
 import OpenAI from "openai";
 import { db } from "@/server/db";
-import { styleAnalyses, type StyleAnalysis } from "@/server/db/schema";
+import { styleAnalyses, tasks, type StyleAnalysis } from "@/server/db/schema";
 import { styleAnalysisCrudService } from "./crud.service";
 import type { GetAllStyleAnalysesOptions } from "./types";
 import { env } from "@/env";
@@ -260,7 +260,15 @@ export const styleAnalysisSearchService = {
     const similarityMap = new Map(vectorResults.map((r) => [r.id, r.similarity]));
 
     const vectorRecords = await db
-      .select()
+      .select({
+        ...getTableColumns(styleAnalyses),
+        useCount: sql<number>`(
+          SELECT count(*) 
+          FROM ${tasks} 
+          WHERE ${tasks.refMaterialId} = "style_analyses"."id" 
+            AND ${tasks.deletedAt} IS NULL
+        )::int`.as("use_count"),
+      })
       .from(styleAnalyses)
       .where(
         and(

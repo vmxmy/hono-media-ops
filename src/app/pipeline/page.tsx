@@ -33,11 +33,6 @@ interface PipelineItem {
   imagePromptId: string | null
 }
 
-// Extended pipeline type with style name
-interface PipelineWithStyle extends PipelineItem {
-  styleName?: string | null
-}
-
 export default function PipelinePage() {
   const { t } = useI18n()
   const { status } = useSession()
@@ -52,6 +47,7 @@ export default function PipelinePage() {
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null)
   const [materialSearchQuery, setMaterialSearchQuery] = useState("")
+  const [promptSearchQuery, setPromptSearchQuery] = useState("")
   const [formData, setFormData] = useState({
     topic: "",
   })
@@ -77,19 +73,28 @@ export default function PipelinePage() {
   const materials = materialsData?.logs ?? []
   const resolvedMaterialId = selectedMaterialId ?? materials[0]?.id ?? null
 
-  // Query for current pipeline progress (when analyzing or selection)
+  const { data: promptsData, isLoading: promptsLoading } = api.imagePrompts.getAll.useQuery(
+    {
+      page: 1,
+      pageSize: 50,
+      search: promptSearchQuery || undefined,
+    },
+    { enabled: mounted }
+  )
+
+  const prompts = promptsData?.items ?? []
+  const resolvedPromptId = selectedPromptId ?? prompts[0]?.id ?? null
+  const resolvedMaterial = resolvedMaterialId
+    ? materials.find((material) => material.id === resolvedMaterialId) ?? null
+    : null
+  const resolvedSourceUrl = resolvedMaterial?.sourceUrl ?? ""
+
+  // Query for current pipeline data
   const { data: currentPipeline } = api.pipeline.getById.useQuery(
     { id: pipelineId! },
     {
-      enabled: !!pipelineId && (step === "analyzing" || step === "selection" || step === "completed"),
-      refetchInterval: step === "analyzing" ? 3000 : false,
+      enabled: !!pipelineId && step !== "input",
     }
-  )
-
-  // Query for sorted image prompts (when selection)
-  const { data: sortedPrompts } = api.pipeline.getSortedImagePrompts.useQuery(
-    { pipelineId: pipelineId! },
-    { enabled: !!pipelineId && step === "selection" }
   )
 
   // Query for progress (when processing or completed)
@@ -101,7 +106,15 @@ export default function PipelinePage() {
     }
   )
 
-  // Create mutation
+  // Query for sorted image prompts (when in selection step)
+  const { data: sortedPrompts } = api.pipeline.getSortedImagePrompts.useQuery(
+    { pipelineId: pipelineId ?? "" },
+    {
+      enabled: !!pipelineId && step === "selection",
+    }
+  )
+
+  // Create mutation (triggers style analysis)
   const createMutation = api.pipeline.create.useMutation({
     onSuccess: (data) => {
       setPipelineId(data.id)
@@ -110,27 +123,33 @@ export default function PipelinePage() {
     },
   })
 
+  // Create quick mutation
+  const createQuickMutation = api.pipeline.createQuick.useMutation({
+    onSuccess: (data) => {
+      setPipelineId(data.id)
+      setStep("processing")
+      refetchHistory()
+    },
+  })
+
   // Select style mutation
   const selectStyleMutation = api.pipeline.selectStyle.useMutation({
-    onError: (error) => {
-      console.error("Failed to select style:", error)
+    onSuccess: () => {
+      // Style selected, ready to start generation
     },
   })
 
   // Start generation mutation
   const startMutation = api.pipeline.start.useMutation({
-    onSuccess: () => setStep("processing"),
-    onError: (error) => {
-      console.error("Failed to start generation:", error)
+    onSuccess: () => {
+      setStep("processing")
     },
   })
 
   // Watch for pipeline status changes
   useEffect(() => {
     if (currentPipeline) {
-      if (currentPipeline.status === "pending_selection") {
-        setStep("selection")
-      } else if (currentPipeline.status === "processing") {
+      if (currentPipeline.status === "processing") {
         setStep("processing")
       } else if (currentPipeline.status === "completed") {
         setStep("completed")
@@ -151,27 +170,6 @@ export default function PipelinePage() {
     }
   }, [progress?.status])
 
-  // Auto-select first prompt when analysis completes
-  useEffect(() => {
-    if (
-      currentPipeline?.status === "pending_selection" &&
-      step === "selection" &&
-      sortedPrompts &&
-      sortedPrompts.length > 0 &&
-      !selectedPromptId &&
-      pipelineId
-    ) {
-      const firstPrompt = sortedPrompts[0]
-      if (firstPrompt) {
-        setSelectedPromptId(firstPrompt.id)
-        selectStyleMutation.mutate({
-          pipelineId,
-          imagePromptId: firstPrompt.id,
-        })
-      }
-    }
-  }, [currentPipeline?.status, step, sortedPrompts, selectedPromptId, pipelineId, selectStyleMutation])
-
   useEffect(() => {
     if (!materials.length) {
       if (selectedMaterialId) setSelectedMaterialId(null)
@@ -181,6 +179,16 @@ export default function PipelinePage() {
       setSelectedMaterialId(materials[0]?.id ?? null)
     }
   }, [materials, selectedMaterialId])
+
+  useEffect(() => {
+    if (!prompts.length) {
+      if (selectedPromptId) setSelectedPromptId(null)
+      return
+    }
+    if (!selectedPromptId || !prompts.some((prompt) => prompt.id === selectedPromptId)) {
+      setSelectedPromptId(prompts[0]?.id ?? null)
+    }
+  }, [prompts, selectedPromptId])
 
   // Build the action handler
   const handleAction = useCallback(
@@ -200,16 +208,16 @@ export default function PipelinePage() {
         case "setMaterialSearch":
           setMaterialSearchQuery((args?.[0] as string) ?? "")
           break
+        case "setPromptSearch":
+          setPromptSearchQuery((args?.[0] as string) ?? "")
+          break
         case "selectMaterial":
           setSelectedMaterialId((args?.[0] as string) ?? null)
           break
         case "analyze":
-          if (!formData.topic || !resolvedMaterialId) return
-          const selectedMaterial = materials.find((material) => material.id === resolvedMaterialId)
-          const sourceUrl = selectedMaterial?.sourceUrl
-          if (!sourceUrl) return
+          if (!formData.topic || !resolvedMaterialId || !resolvedSourceUrl) return
           createMutation.mutate({
-            sourceUrl,
+            sourceUrl: resolvedSourceUrl,
             topic: formData.topic,
           })
           break
@@ -377,9 +385,17 @@ export default function PipelinePage() {
             type: "button",
             text: createMutation.isPending ? "分析中..." : "分析风格",
             variant: "primary",
-            disabled: !resolvedMaterialId || !formData.topic || createMutation.isPending,
+            disabled: !resolvedMaterialId || !resolvedSourceUrl || !formData.topic || createMutation.isPending,
             onClick: { action: "analyze" },
           },
+          ...(!resolvedSourceUrl && resolvedMaterialId
+            ? [{
+                type: "text" as const,
+                text: "该素材缺少原文链接，无法用于快速创作。",
+                variant: "caption" as const,
+                color: "muted" as const,
+              }]
+            : []),
         ],
       },
     ],
@@ -405,8 +421,6 @@ export default function PipelinePage() {
 
   // Build selection state node
   const buildSelectionNode = (): A2UINode => {
-    const styleName = (currentPipeline as PipelineWithStyle | null)?.styleName ?? "未知风格"
-
     return {
       type: "column",
       gap: "1.5rem",
@@ -420,7 +434,7 @@ export default function PipelinePage() {
               gap: "0.5rem",
               children: [
                 { type: "text", text: "✅ 风格分析完成", variant: "h3" },
-                { type: "text", text: `风格: ${styleName}`, variant: "body", color: "muted" },
+                { type: "text", text: currentPipeline?.topic ?? "", variant: "body", color: "muted" },
               ],
             },
           ],

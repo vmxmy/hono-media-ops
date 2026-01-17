@@ -42,6 +42,7 @@ export const xhsImageTypeEnum = pgEnum("xhs_image_type", [
   "cover",    // 封面
   "content",  // 正文
   "ending",   // 结尾
+  "single",   // 单图
 ]);
 
 export const xhsJobStatusEnum = pgEnum("xhs_job_status", [

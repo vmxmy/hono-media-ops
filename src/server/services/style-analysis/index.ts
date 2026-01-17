@@ -11,6 +11,8 @@ export type {
   UserStyleProfile,
   MetricsTrendPoint,
   PrimaryTypeInsights,
+  StyleAnalysisListItem,
+  GetAllStyleAnalysesResult,
 } from "./types";
 
 import type { CreateStyleAnalysisInput, UpdateStyleAnalysisInput } from "./types";

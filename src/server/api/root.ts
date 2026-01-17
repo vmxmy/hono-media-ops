@@ -10,6 +10,7 @@ import { exportRouter } from "./routers/export";
 import { chaptersRouter } from "./routers/chapters";
 import { xhsImagesRouter } from "./routers/xhs-images";
 import { pipelineRouter } from "./routers/pipeline";
+import { wechatArticleRouter } from "./routers/wechat-articles";
 
 export const appRouter = createTRPCRouter({
   tasks: tasksRouter,
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   chapters: chaptersRouter,
   xhsImages: xhsImagesRouter,
   pipeline: pipelineRouter,
+  wechatArticles: wechatArticleRouter,
   // Backwards compatibility
   reverseLogs: styleAnalysesRouter,
 });

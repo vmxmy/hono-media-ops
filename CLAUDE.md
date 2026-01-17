@@ -472,7 +472,7 @@ npm run db:studio     # Open Drizzle Studio
 | `tasks` | id, user_id (FK), topic, status (enum), article_config (jsonb), cover_config (jsonb) | JSONB for structured configs |
 | `task_executions` | id, task_id (FK), status (enum), result (jsonb), input_snapshot (jsonb) | Cascade delete with task |
 | `prompts` | id, name, content, category, metadata (jsonb) | Soft delete support |
-| `wechat_articles` | id, url (unique), title, images (jsonb) | Soft delete support |
+| `wechat_articles` | id, aid (unique), title, link, update_time, create_time, author_name, cover, digest, appmsgid, itemidx, album_id | Soft delete support |
 | `reverse_engineering_logs` | id, user_id (FK), reverse_result (jsonb), metrics (jsonb), status (enum) | JSONB for structured results |
 
 ### Enum Types

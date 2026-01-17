@@ -187,6 +187,7 @@ export interface StyleAnalysisMaterial {
   metricsBurstiness?: number | null;
   metricsTtr?: number | null;
   metricsAvgSentLen?: number | null;
+  useCount?: number | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 }

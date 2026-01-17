@@ -337,6 +337,7 @@ export function CreateTaskModal({
     coreRules: CoreRuleItem[] | null
     blueprint: BlueprintItem[] | null
     antiPatterns: AntiPatternItem[] | null
+    useCount: number
   }): A2UINode => {
     const styleIdentity = material.styleIdentity
     const lexicalLogic = material.lexicalLogic
@@ -371,6 +372,7 @@ export function CreateTaskModal({
     const burstiness = material.metricsBurstiness
     const ttr = material.metricsTtr
     const avgSentLen = metricsConstraints?.avg_sentence_length
+    const useCount = material.useCount
 
     // Extended lexical logic
     const vocabularyTier = lexicalLogic?.vocabulary_tier
@@ -778,11 +780,16 @@ export function CreateTaskModal({
                     { type: "text" as const, text: paraCount.toString(), variant: "h4" as const },
                     { type: "text" as const, text: "段", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
-                  ...(ttr != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
-                    { type: "text" as const, text: (ttr * 100).toFixed(0) + "%", variant: "h4" as const },
-                    { type: "text" as const, text: "TTR", variant: "caption" as const, color: "muted" as const },
-                  ]}] : []),
-                  ...(burstiness != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
+                      ...(ttr != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
+                        { type: "text" as const, text: (ttr * 100).toFixed(0) + "%", variant: "h4" as const },
+                        { type: "text" as const, text: "TTR", variant: "caption" as const, color: "muted" as const },
+                      ]}] : []),
+                      ...(material.useCount != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
+                        { type: "text" as const, text: material.useCount.toString(), variant: "h4" as const },
+                        { type: "text" as const, text: t("reverse.useCount"), variant: "caption" as const, color: "muted" as const },
+                      ]}] : []),
+                      ...(burstiness != null ? [{ type: "column" as const, gap: "0.125rem", className: "text-center min-w-[50px]", children: [
+
                     { type: "text" as const, text: (burstiness * 100).toFixed(0) + "%", variant: "h4" as const },
                     { type: "text" as const, text: "突变度", variant: "caption" as const, color: "muted" as const },
                   ]}] : []),
@@ -900,6 +907,7 @@ export function CreateTaskModal({
     resolution: string | null
     category: string | null
     previewUrl: string | null
+    useCount: number
   }): A2UINode => {
     const isSelected = formData.selectedCoverPromptId === prompt.id
     const badges: A2UINode[] = []
@@ -922,7 +930,15 @@ export function CreateTaskModal({
               ...(badges.length > 0
                 ? [{ type: "row" as const, gap: "0.25rem", wrap: true, children: badges }]
                 : []),
-              { type: "text" as const, text: prompt.prompt, variant: "caption" as const, color: "muted" as const },
+              {
+                type: "row",
+                gap: "0.5rem",
+                align: "center",
+                children: [
+                  { type: "text" as const, text: t("imagePrompts.usageCount", { count: prompt.useCount }), variant: "caption" as const, color: "muted" as const },
+                  { type: "text" as const, text: prompt.prompt, variant: "caption" as const, color: "muted" as const, className: "truncate" },
+                ]
+              },
             ],
           },
           ...(prompt.previewUrl

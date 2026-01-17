@@ -37,6 +37,7 @@ interface StyleAnalysis {
   paraCount: number | null
   metricsBurstiness: number | null
   metricsTtr: number | null
+  useCount: number | null
   styleIdentity: StyleIdentityData | null
   metricsConstraints: MetricsConstraintsData | null
   lexicalLogic: LexicalLogicData | null
@@ -1103,6 +1104,9 @@ export default function ReversePage() {
       }
       if (ttr != null) {
         metrics.push({ value: ttr, label: "TTR", format: "percent" })
+      }
+      if (analysis.useCount != null) {
+        metrics.push({ value: analysis.useCount, label: t("reverse.useCount") })
       }
 
       // Build actions

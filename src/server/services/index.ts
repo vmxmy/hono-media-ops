@@ -17,6 +17,8 @@ export type {
   UserStyleProfile,
   MetricsTrendPoint,
   PrimaryTypeInsights,
+  StyleAnalysisListItem,
+  GetAllStyleAnalysesResult,
 } from "./style-analysis";
 // Sub-services for direct access
 export { styleAnalysisCrudService, styleAnalysisSearchService, styleAnalysisAnalyticsService } from "./style-analysis";
@@ -70,6 +72,9 @@ export { styleAnalysisService as reverseLogService } from "./style-analysis";
 // ==================== Services Aggregate ====================
 // For injection into tRPC context
 
+export { wechatArticleService } from "./wechat-article.service";
+export type { WechatArticleService, GetWechatArticlesInput } from "./wechat-article.service";
+
 import { taskService } from "./task.service";
 import { imagePromptService } from "./image-prompt.service";
 import { styleAnalysisService } from "./style-analysis";
@@ -81,6 +86,7 @@ import { exportService } from "./export.service";
 import { chapterService } from "./chapter.service";
 import { xhsImageService } from "./xhs-image.service";
 import { pipelineService } from "./pipeline.service";
+import { wechatArticleService } from "./wechat-article.service";
 
 export const services = {
   task: taskService,
@@ -94,6 +100,7 @@ export const services = {
   chapter: chapterService,
   xhsImage: xhsImageService,
   pipeline: pipelineService,
+  wechatArticle: wechatArticleService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;

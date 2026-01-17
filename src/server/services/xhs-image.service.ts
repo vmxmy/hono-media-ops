@@ -178,18 +178,6 @@ export const xhsImageService = {
 
     const shouldCountUsage = current?.status !== "completed" && status === "completed";
     if (shouldCountUsage) {
-      const metadata = current?.metadata as Record<string, unknown> | null | undefined;
-      const promptId = metadata?.image_prompt_id;
-      if (typeof promptId === "string") {
-        await db
-          .update(imagePrompts)
-          .set({
-            useCount: sql`${imagePrompts.useCount} + 1`,
-            lastUsedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(imagePrompts.id, promptId));
-      }
     }
 
     return { success: true };

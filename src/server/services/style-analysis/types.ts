@@ -14,6 +14,7 @@ import type {
   BlueprintItem,
   AntiPatternItem,
 } from "@/server/db/schema";
+import { z } from "zod";
 
 // ==================== Query Options ====================
 
@@ -131,4 +132,47 @@ export interface PrimaryTypeInsights {
       avg: number | null;
     };
   };
+}
+
+/** Style analysis list item with computed use count */
+export interface StyleAnalysisListItem {
+  id: string;
+  userId: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
+  styleName: string | null;
+  primaryType: string | null;
+  analysisVersion: string | null;
+  wordCount: number | null;
+  paraCount: number | null;
+  metricsBurstiness: number | null;
+  metricsTtr: number | null;
+  status: "PENDING" | "SUCCESS" | "FAILED";
+  styleIdentity: Record<string, unknown> | null;
+  lexicalLogic: Record<string, unknown> | null;
+  metricsConstraints: Record<string, unknown> | null;
+  rhetoricLogic: Record<string, unknown> | null;
+  coreRules: Array<Record<string, unknown>> | null;
+  blueprint: Array<Record<string, unknown>> | null;
+  antiPatterns: Array<Record<string, unknown>> | null;
+  goldenSample: Record<string, unknown> | null;
+  transferDemo: Record<string, unknown> | null;
+  executionPrompt: string | null;
+  useCount: number;
+}
+
+/** Pagination metadata */
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+/** Paginated style analysis list result */
+export interface GetAllStyleAnalysesResult {
+  logs: StyleAnalysisListItem[];
+  pagination: PaginationMeta;
 }

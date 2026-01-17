@@ -1,6 +1,6 @@
-import { eq, desc, like, and, isNull, or, sql } from "drizzle-orm";
+import { eq, desc, like, and, isNull, or, sql, getTableColumns } from "drizzle-orm";
 import { db } from "@/server/db";
-import { imagePrompts, type ImagePrompt } from "@/server/db/schema";
+import { imagePrompts, tasks, xhsImageJobs, type ImagePrompt } from "@/server/db/schema";
 
 // ==================== Types ====================
 
@@ -134,7 +134,10 @@ export const imagePromptService = {
         category: imagePrompts.category,
         tags: imagePrompts.tags,
         previewUrl: imagePrompts.previewUrl,
-        useCount: imagePrompts.useCount,
+        useCount: sql<number>`(
+          (SELECT count(*) FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*) FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )::int`.as("use_count"),
         isPublic: imagePrompts.isPublic,
         rating: imagePrompts.rating,
         createdAt: imagePrompts.createdAt,
@@ -143,7 +146,7 @@ export const imagePromptService = {
       })
       .from(imagePrompts)
       .where(whereClause)
-      .orderBy(desc(imagePrompts.useCount), desc(imagePrompts.createdAt))
+      .orderBy(desc(sql`use_count`), desc(imagePrompts.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
@@ -172,6 +175,7 @@ export const imagePromptService = {
    * Get prompts by category
    */
   async getByCategory(category: string, userId?: string): Promise<ImagePrompt[]> {
+    const columns = getTableColumns(imagePrompts);
     const conditions = [
       eq(imagePrompts.category, category),
       isNull(imagePrompts.deletedAt),
@@ -186,17 +190,26 @@ export const imagePromptService = {
       );
     }
 
-    return db
-      .select()
+    const results = await db
+      .select({
+        ...columns,
+        useCount: sql<number>`(
+          (SELECT count(*) FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*) FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )::int`.as("use_count"),
+      })
       .from(imagePrompts)
       .where(and(...conditions))
-      .orderBy(desc(imagePrompts.useCount), desc(imagePrompts.createdAt));
+      .orderBy(desc(sql`use_count`), desc(imagePrompts.createdAt));
+
+    return results as unknown as ImagePrompt[];
   },
 
   /**
    * Search prompts by title or content
    */
   async search(query: string, userId?: string): Promise<ImagePrompt[]> {
+    const columns = getTableColumns(imagePrompts);
     const conditions = [
       isNull(imagePrompts.deletedAt),
       or(
@@ -214,11 +227,19 @@ export const imagePromptService = {
       );
     }
 
-    return db
-      .select()
+    const results = await db
+      .select({
+        ...columns,
+        useCount: sql<number>`(
+          (SELECT count(*) FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*) FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )::int`.as("use_count"),
+      })
       .from(imagePrompts)
       .where(and(...conditions))
-      .orderBy(desc(imagePrompts.useCount), desc(imagePrompts.createdAt));
+      .orderBy(desc(sql`use_count`), desc(imagePrompts.createdAt));
+
+    return results as unknown as ImagePrompt[];
   },
 
   /**
@@ -273,22 +294,6 @@ export const imagePromptService = {
       .update(imagePrompts)
       .set(updateData)
       .where(eq(imagePrompts.id, input.id));
-
-    return { success: true };
-  },
-
-  /**
-   * Increment use count
-   */
-  async incrementUseCount(id: string): Promise<{ success: boolean }> {
-    await db
-      .update(imagePrompts)
-      .set({
-        useCount: sql`${imagePrompts.useCount} + 1`,
-        lastUsedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(imagePrompts.id, id));
 
     return { success: true };
   },
@@ -380,15 +385,24 @@ export const imagePromptService = {
    * Get top prompts by use count
    */
   async getTopPrompts(limit: number = 10): Promise<ImagePrompt[]> {
-    return db
-      .select()
+    const columns = getTableColumns(imagePrompts);
+    const results = await db
+      .select({
+        ...columns,
+        useCount: sql<number>`(
+          (SELECT count(*) FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*) FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )::int`.as("use_count"),
+      })
       .from(imagePrompts)
       .where(and(
         isNull(imagePrompts.deletedAt),
         eq(imagePrompts.isPublic, 1)
       ))
-      .orderBy(desc(imagePrompts.useCount))
+      .orderBy(desc(sql`use_count`))
       .limit(limit);
+
+    return results as unknown as ImagePrompt[];
   },
 
   /**

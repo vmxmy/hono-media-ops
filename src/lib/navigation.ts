@@ -3,6 +3,7 @@ import type { I18nKey } from "@/contexts/i18n-context"
 export const NAV_ITEMS = [
   { key: "pipeline", path: "/pipeline", labelKey: "nav.pipeline" as I18nKey },
   { key: "articles", path: "/articles", labelKey: "nav.articles" as I18nKey },
+  { key: "wechatArticles", path: "/wechat-articles", labelKey: "nav.wechatArticles" as I18nKey },
   { key: "tasks", path: "/tasks", labelKey: "nav.tasks" as I18nKey },
   { key: "reverse", path: "/reverse", labelKey: "nav.reverse" as I18nKey },
   { key: "xhsImages", path: "/xhs-images", labelKey: "nav.xhsImages" as I18nKey },

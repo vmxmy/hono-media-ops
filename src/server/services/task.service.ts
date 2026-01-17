@@ -675,26 +675,6 @@ export const taskService = {
         .limit(1);
 
       if (isFirstCompletion) {
-        if (taskRow?.refMaterialId) {
-          await db
-            .update(styleAnalyses)
-            .set({
-              useCount: sql`${styleAnalyses.useCount} + 1`,
-              updatedAt: new Date(),
-            })
-            .where(eq(styleAnalyses.id, taskRow.refMaterialId));
-        }
-
-        if (taskRow?.coverPromptId) {
-          await db
-            .update(imagePrompts)
-            .set({
-              useCount: sql`${imagePrompts.useCount} + 1`,
-              lastUsedAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(imagePrompts.id, taskRow.coverPromptId));
-        }
       }
 
       if (shouldGenerateEmbedding && taskRow && articleMarkdown) {

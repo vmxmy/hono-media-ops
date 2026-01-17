@@ -115,11 +115,6 @@ export const imagePromptsRouter = createTRPCRouter({
     .input(batchDeleteSchema)
     .mutation(({ ctx, input }) => ctx.services.imagePrompt.batchDelete(input.ids)),
 
-  // Increment use count
-  incrementUseCount: protectedProcedure
-    .input(idSchema)
-    .mutation(({ ctx, input }) => ctx.services.imagePrompt.incrementUseCount(input.id)),
-
   // Update rating
   updateRating: protectedProcedure
     .input(ratingSchema)

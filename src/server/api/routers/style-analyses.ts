@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import type { GetAllStyleAnalysesResult } from "@/server/services/style-analysis/types";
 
 // ==================== n8n 输入转换 (snake_case -> camelCase) ====================
 
@@ -263,10 +264,13 @@ const statisticsSchema = z.object({
 export const styleAnalysesRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(getAllInputSchema)
-    .query(({ ctx, input }) => ctx.services.styleAnalysis.getAll({
-      ...input,
-      userId: ctx.user.id, // Filter by current user
-    })),
+    .query(async ({ ctx, input }): Promise<GetAllStyleAnalysesResult> => {
+      const result = await ctx.services.styleAnalysis.getAll({
+        ...input,
+        userId: ctx.user.id, // Filter by current user
+      });
+      return result as GetAllStyleAnalysesResult;
+    }),
 
   getById: protectedProcedure
     .input(idSchema)

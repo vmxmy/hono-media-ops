@@ -85,6 +85,7 @@
   "nav.insights": "Insights",
   "nav.reverse": "Materials",
   "nav.xhsImages": "XHS Images",
+  "nav.wechatArticles": "WeChat Articles",
   "tasks.title": "Write Something",
   "tasks.newTask": "New Task",
   "tasks.noTasks": "No tasks yet",
@@ -377,6 +378,7 @@
   "reverse.colTtr": "Vocab Richness",
   "reverse.colUpdated": "Updated",
   "reverse.colActions": "Actions",
+  "reverse.useCount": "Use Count",
   "reverse.noLogs": "No materials yet",
   "app.title": "Ghostwriter",
   "app.description": "AI-powered article generation platform",
@@ -450,5 +452,14 @@
   "xhsImages.publish": "Publish",
   "xhsImages.publishing": "Publishing...",
   "xhsImages.publishSuccess": "Published to Xiaohongshu successfully!",
-  "xhsImages.publishFailed": "Failed to publish"
+  "xhsImages.publishFailed": "Failed to publish",
+  "wechatArticles.title": "WeChat Article Library",
+  "wechatArticles.subtitle": "Browse articles extracted from WeChat Official Accounts",
+  "wechatArticles.searchPlaceholder": "Search title, author, or digest...",
+  "wechatArticles.noArticles": "No WeChat articles found",
+  "wechatArticles.prevPage": "Previous",
+  "wechatArticles.nextPage": "Next",
+  "wechatArticles.viewOriginal": "View Original",
+  "wechatArticles.author": "Author",
+  "wechatArticles.publishTime": "Publish Time"
 }
