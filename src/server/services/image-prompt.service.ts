@@ -430,6 +430,74 @@ export const imagePromptService = {
       metadata: original.metadata ?? undefined,
     });
   },
+
+  /**
+   * Get top used image prompts
+   */
+  async getTopUsedImagePrompts(
+    userId?: string,
+    limit: number = 10,
+    timeRange?: { start: Date; end: Date }
+  ) {
+    const conditions = [isNull(imagePrompts.deletedAt)];
+
+    if (userId) {
+      conditions.push(
+        or(
+          eq(imagePrompts.userId, userId),
+          eq(imagePrompts.isPublic, 1)
+        )!
+      );
+    }
+
+    if (timeRange) {
+      conditions.push(
+        and(
+          sql`${imagePrompts.createdAt} >= ${timeRange.start}`,
+          sql`${imagePrompts.createdAt} <= ${timeRange.end}`
+        )!
+      );
+    }
+
+    const whereClause = and(...conditions);
+
+    const results = await db
+      .select({
+        id: imagePrompts.id,
+        title: imagePrompts.title,
+        prompt: imagePrompts.prompt,
+        model: imagePrompts.model,
+        ratio: imagePrompts.ratio,
+        resolution: imagePrompts.resolution,
+        category: imagePrompts.category,
+        previewUrl: imagePrompts.previewUrl,
+        isPublic: imagePrompts.isPublic,
+        rating: imagePrompts.rating,
+        createdAt: imagePrompts.createdAt,
+        useCount: sql<number>`(
+          (SELECT count(*)::int FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*)::int FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )`.as("use_count"),
+        lastUsedAt: sql<Date | null>`
+          GREATEST(
+            (SELECT max(${tasks.createdAt}) FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL),
+            (SELECT max(${xhsImageJobs.createdAt}) FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+          )
+        `.as("last_used_at"),
+      })
+      .from(imagePrompts)
+      .where(whereClause)
+      .orderBy(
+        desc(sql<number>`(
+          (SELECT count(*)::int FROM ${tasks} WHERE ${tasks.coverPromptId} = "image_prompts"."id" AND ${tasks.deletedAt} IS NULL) +
+          (SELECT count(*)::int FROM ${xhsImageJobs} WHERE (${xhsImageJobs.metadata}->>'image_prompt_id') = "image_prompts"."id"::text AND ${xhsImageJobs.deletedAt} IS NULL)
+        )`),
+        desc(imagePrompts.createdAt)
+      )
+      .limit(limit);
+
+    return results;
+  },
 };
 
 export type ImagePromptService = typeof imagePromptService;

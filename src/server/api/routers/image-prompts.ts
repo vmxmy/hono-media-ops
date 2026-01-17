@@ -142,4 +142,21 @@ export const imagePromptsRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.services.imagePrompt.duplicate(input.id, ctx.user.id)
     ),
+
+  // ==================== Usage Analytics ====================
+
+  /** 获取最常用的图片提示词 */
+  getTopUsedImagePrompts: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(50).default(10),
+      timeRange: z.object({
+        start: z.date(),
+        end: z.date(),
+      }).optional(),
+    }))
+    .query(({ ctx, input }) => ctx.services.imagePrompt.getTopUsedImagePrompts(
+      ctx.user.id,
+      input.limit,
+      input.timeRange
+    )),
 });

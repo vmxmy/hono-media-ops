@@ -379,6 +379,96 @@ export const pipelineService = {
   },
 
   /**
+   * Get pipeline statistics
+   */
+  async getStatistics(
+    userId?: string,
+    timeRange?: { start: Date; end: Date }
+  ) {
+    const conditions = [isNull(pipelines.deletedAt)];
+
+    if (userId) {
+      conditions.push(eq(pipelines.userId, userId));
+    }
+
+    if (timeRange) {
+      conditions.push(
+        and(
+          sql`${pipelines.createdAt} >= ${timeRange.start}`,
+          sql`${pipelines.createdAt} <= ${timeRange.end}`
+        )!
+      );
+    }
+
+    const whereClause = and(...conditions);
+
+    // 获取总数和状态分布
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(pipelines)
+      .where(whereClause);
+
+    const statusCounts = await db
+      .select({
+        status: pipelines.status,
+        count: sql<number>`count(*)`,
+      })
+      .from(pipelines)
+      .where(whereClause)
+      .groupBy(pipelines.status);
+
+    const total = totalResult?.count ?? 0;
+    const completedCount = statusCounts.find((s) => s.status === "completed")?.count ?? 0;
+    const successRate = total > 0 ? (completedCount / total) * 100 : 0;
+
+    // 获取最常用的风格分析（Top 5）
+    const topStyles = await db
+      .select({
+        id: styleAnalyses.id,
+        title: styleAnalyses.sourceTitle,
+        useCount: sql<number>`count(*)`,
+      })
+      .from(pipelines)
+      .innerJoin(styleAnalyses, eq(pipelines.styleAnalysisId, styleAnalyses.id))
+      .where(and(whereClause, isNotNull(pipelines.styleAnalysisId)))
+      .groupBy(styleAnalyses.id, styleAnalyses.sourceTitle)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+
+    // 获取最常用的图片提示词（Top 5）
+    const topPrompts = await db
+      .select({
+        id: imagePrompts.id,
+        title: imagePrompts.title,
+        useCount: sql<number>`count(*)`,
+      })
+      .from(pipelines)
+      .innerJoin(imagePrompts, eq(pipelines.imagePromptId, imagePrompts.id))
+      .where(and(whereClause, isNotNull(pipelines.imagePromptId)))
+      .groupBy(imagePrompts.id, imagePrompts.title)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+
+    return {
+      total,
+      byStatus: Object.fromEntries(
+        statusCounts.map((s) => [s.status, s.count])
+      ),
+      successRate: Math.round(successRate * 100) / 100,
+      topStyleAnalyses: topStyles.map((s) => ({
+        id: s.id,
+        title: s.title ?? "Untitled",
+        useCount: s.useCount,
+      })),
+      topImagePrompts: topPrompts.map((p) => ({
+        id: p.id,
+        title: p.title,
+        useCount: p.useCount,
+      })),
+    };
+  },
+
+  /**
    * Trigger content generation webhook
    */
   async triggerContentGeneration(pipelineId: string): Promise<{ triggered: boolean }> {

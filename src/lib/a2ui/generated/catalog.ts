@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-15T06:46:25.959Z
+// Generated at: 2026-01-17T15:16:33.171Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -901,6 +901,170 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
     },
   },
   {
+    type: "chart-scatter",
+    description: "Scatter plot for correlation analysis",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Scatter data points with x, y coordinates and optional metadata",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      xAxisLabel: {
+        type: "string",
+        description: "X axis label",
+      },
+      yAxisLabel: {
+        type: "string",
+        description: "Y axis label",
+      },
+      pointSize: {
+        type: "number",
+        description: "Point size in pixels",
+        default: 8,
+      },
+    },
+  },
+  {
+    type: "chart-heatmap",
+    description: "Heatmap for multi-dimensional data visualization",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Heatmap data with x, y coordinates and value for color intensity",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      xAxisLabel: {
+        type: "string",
+        description: "X axis label",
+      },
+      yAxisLabel: {
+        type: "string",
+        description: "Y axis label",
+      },
+    },
+  },
+  {
+    type: "chart-histogram",
+    description: "Histogram for frequency distribution",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Histogram bins with range label and count",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 250,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      xAxisLabel: {
+        type: "string",
+        description: "X axis label",
+      },
+      yAxisLabel: {
+        type: "string",
+        description: "Y axis label",
+      },
+      color: {
+        type: "string",
+        description: "Bar color",
+      },
+    },
+  },
+  {
+    type: "chart-gauge",
+    description: "Gauge/Dial chart for single metric display",
+    category: "chart",
+    properties: {
+      value: {
+        type: "number",
+        required: true,
+        description: "Current value to display",
+      },
+      min: {
+        type: "number",
+        description: "Minimum value on scale",
+        default: 0,
+      },
+      max: {
+        type: "number",
+        description: "Maximum value on scale",
+        default: 100,
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 200,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      label: {
+        type: "string",
+        description: "Label for the metric",
+      },
+      unit: {
+        type: "string",
+        description: "Unit to display with value",
+      },
+      thresholds: {
+        type: "array",
+        description: "Threshold colors",
+      },
+    },
+  },
+  {
+    type: "chart-treemap",
+    description: "Treemap for hierarchical proportional data",
+    category: "chart",
+    properties: {
+      data: {
+        type: "array",
+        required: true,
+        description: "Treemap items with label and value for sizing",
+      },
+      height: {
+        type: "number",
+        description: "Chart height in pixels",
+        default: 300,
+      },
+      title: {
+        type: "string",
+        description: "Chart title",
+      },
+      colors: {
+        type: "array",
+        description: "Custom color scheme",
+      },
+    },
+  },
+  {
     type: "app-shell",
     description: "Application shell layout with sidebar navigation and header",
     category: "custom",
@@ -1250,5 +1414,5 @@ export function createGeneratedCatalog(): A2UICatalog {
 }
 
 // All component types
-export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","app-shell","theme-switcher","materials-table","material-swipe-selector","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown","html","stat-card","empty-state","task-status-card"] as const
+export const COMPONENT_TYPES = ["column","row","container","scroll-area","card","text","image","icon","divider","button","input","editable-text","textarea","markdown-editor","select","checkbox","tabs","badge","progress","modal","page","nav","nav-link","form","form-field","alert","link","spacer","collapsible","chart-pie","chart-radar","chart-line","chart-bar","chart-radial-bar","chart-word-cloud","chart-scatter","chart-heatmap","chart-histogram","chart-gauge","chart-treemap","app-shell","theme-switcher","materials-table","material-swipe-selector","article-viewer-modal","create-task-modal","reverse-submit-modal","markdown","html","stat-card","empty-state","task-status-card"] as const
 export type ComponentType = typeof COMPONENT_TYPES[number]

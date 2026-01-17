@@ -96,6 +96,12 @@ export const styleAnalysisService = {
   getUserStyleProfile: styleAnalysisAnalyticsService.getUserStyleProfile.bind(styleAnalysisAnalyticsService),
   getMetricsTrend: styleAnalysisAnalyticsService.getMetricsTrend.bind(styleAnalysisAnalyticsService),
   getPrimaryTypeInsights: styleAnalysisAnalyticsService.getPrimaryTypeInsights.bind(styleAnalysisAnalyticsService),
+  getDetailedMetrics: styleAnalysisAnalyticsService.getDetailedMetrics.bind(styleAnalysisAnalyticsService),
+  getTopUsedStyles: styleAnalysisAnalyticsService.getTopUsedStyles.bind(styleAnalysisAnalyticsService),
+  getMetricsByTimeRange: styleAnalysisAnalyticsService.getMetricsByTimeRange.bind(styleAnalysisAnalyticsService),
+  getUserUsagePattern: styleAnalysisAnalyticsService.getUserUsagePattern.bind(styleAnalysisAnalyticsService),
+  getStylePromptCombinations: styleAnalysisAnalyticsService.getStylePromptCombinations.bind(styleAnalysisAnalyticsService),
+  compareMetricsWithAverage: styleAnalysisAnalyticsService.compareMetricsWithAverage.bind(styleAnalysisAnalyticsService),
 };
 
 export type StyleAnalysisService = typeof styleAnalysisService;

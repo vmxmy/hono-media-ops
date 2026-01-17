@@ -5,7 +5,7 @@
 
 import { eq, desc, like, and, or, sql, inArray, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { styleAnalyses, tasks, type StyleAnalysis } from "@/server/db/schema";
+import { styleAnalyses, pipelines, type StyleAnalysis } from "@/server/db/schema";
 import { generateExecutionPrompt, generateExecutionPromptPreview } from "@/lib/style-analysis";
 import type {
   GetAllStyleAnalysesOptions,
@@ -83,10 +83,10 @@ export const styleAnalysisCrudService = {
           transferDemo: styleAnalyses.transferDemo,
           executionPrompt: styleAnalyses.executionPrompt,
           useCount: sql<number>`(
-            SELECT count(*) 
-            FROM ${tasks} 
-            WHERE ${tasks.refMaterialId} = "style_analyses"."id" 
-              AND ${tasks.deletedAt} IS NULL
+            SELECT count(*)
+            FROM ${pipelines}
+            WHERE ${pipelines.styleAnalysisId} = "style_analyses"."id"
+              AND ${pipelines.deletedAt} IS NULL
           )::int`.as("use_count"),
         })
         .from(styleAnalyses)

@@ -1,7 +1,8 @@
 import type { A2UINode } from "@/lib/a2ui"
+import type { I18nKey } from "@/contexts/i18n-context"
 
 export function buildPromptCardActionButtons(
-  t: (key: string) => string,
+  t: (key: I18nKey, vars?: Record<string, string | number>) => string,
   promptId: string
 ): A2UINode[] {
   return [

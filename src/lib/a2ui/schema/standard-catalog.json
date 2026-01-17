@@ -931,6 +931,206 @@
         }
       }
     },
+    "chart-scatter": {
+      "description": "Scatter plot for correlation analysis",
+      "category": "chart",
+      "properties": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "description": "Scatter data points with x, y coordinates and optional metadata"
+        },
+        "height": {
+          "type": "number",
+          "default": 300,
+          "description": "Chart height in pixels"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chart title"
+        },
+        "xAxisLabel": {
+          "type": "string",
+          "description": "X axis label"
+        },
+        "yAxisLabel": {
+          "type": "string",
+          "description": "Y axis label"
+        },
+        "pointSize": {
+          "type": "number",
+          "default": 8,
+          "description": "Point size in pixels"
+        }
+      }
+    },
+    "chart-heatmap": {
+      "description": "Heatmap for multi-dimensional data visualization",
+      "category": "chart",
+      "properties": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "string" },
+              "y": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          },
+          "description": "Heatmap data with x, y coordinates and value for color intensity"
+        },
+        "height": {
+          "type": "number",
+          "default": 300,
+          "description": "Chart height in pixels"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chart title"
+        },
+        "xAxisLabel": {
+          "type": "string",
+          "description": "X axis label"
+        },
+        "yAxisLabel": {
+          "type": "string",
+          "description": "Y axis label"
+        }
+      }
+    },
+    "chart-histogram": {
+      "description": "Histogram for frequency distribution",
+      "category": "chart",
+      "properties": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "range": { "type": "string" },
+              "count": { "type": "number" }
+            }
+          },
+          "description": "Histogram bins with range label and count"
+        },
+        "height": {
+          "type": "number",
+          "default": 250,
+          "description": "Chart height in pixels"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chart title"
+        },
+        "xAxisLabel": {
+          "type": "string",
+          "description": "X axis label"
+        },
+        "yAxisLabel": {
+          "type": "string",
+          "description": "Y axis label"
+        },
+        "color": {
+          "type": "string",
+          "description": "Bar color"
+        }
+      }
+    },
+    "chart-gauge": {
+      "description": "Gauge/Dial chart for single metric display",
+      "category": "chart",
+      "properties": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "description": "Current value to display"
+        },
+        "min": {
+          "type": "number",
+          "default": 0,
+          "description": "Minimum value on scale"
+        },
+        "max": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum value on scale"
+        },
+        "height": {
+          "type": "number",
+          "default": 200,
+          "description": "Chart height in pixels"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chart title"
+        },
+        "label": {
+          "type": "string",
+          "description": "Label for the metric"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit to display with value"
+        },
+        "thresholds": {
+          "type": "array",
+          "description": "Threshold colors",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "color": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "chart-treemap": {
+      "description": "Treemap for hierarchical proportional data",
+      "category": "chart",
+      "properties": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "value": { "type": "number" },
+              "color": { "type": "string" }
+            }
+          },
+          "description": "Treemap items with label and value for sizing"
+        },
+        "height": {
+          "type": "number",
+          "default": 300,
+          "description": "Chart height in pixels"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chart title"
+        },
+        "colors": {
+          "type": "array",
+          "description": "Custom color scheme"
+        }
+      }
+    },
     "app-shell": {
       "description": "Application shell layout with sidebar navigation and header",
       "category": "custom",

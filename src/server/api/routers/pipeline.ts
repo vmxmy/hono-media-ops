@@ -243,4 +243,19 @@ export const pipelineRouter = createTRPCRouter({
 
       return result;
     }),
+
+  // ==================== Analytics ====================
+
+  /** 获取 Pipeline 统计信息 */
+  getStatistics: protectedProcedure
+    .input(z.object({
+      timeRange: z.object({
+        start: z.date(),
+        end: z.date(),
+      }).optional(),
+    }))
+    .query(({ ctx, input }) => ctx.services.pipeline.getStatistics(
+      ctx.user.id,
+      input.timeRange
+    )),
 });

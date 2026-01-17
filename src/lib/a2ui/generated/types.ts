@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-15T06:46:25.957Z
+// Generated at: 2026-01-17T15:16:33.170Z
 
 import type { CSSProperties } from "react"
 
@@ -55,6 +55,11 @@ export type A2UINode =
   | A2UIChartBarNode
   | A2UIChartRadialBarNode
   | A2UIChartWordCloudNode
+  | A2UIChartScatterNode
+  | A2UIChartHeatmapNode
+  | A2UIChartHistogramNode
+  | A2UIChartGaugeNode
+  | A2UIChartTreemapNode
   | A2UIAppShellNode
   | A2UIThemeSwitcherNode
   | A2UIMaterialsTableNode
@@ -383,6 +388,60 @@ export interface A2UIChartRadialBarNode extends A2UIBaseNode {
 export interface A2UIChartWordCloudNode extends A2UIBaseNode {
   type: "chart-word-cloud"
   words: Array<{ text: string; value: number }> // Words array with text and value
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  colors?: unknown[] // Custom color scheme
+}
+
+// Scatter plot for correlation analysis
+export interface A2UIChartScatterNode extends A2UIBaseNode {
+  type: "chart-scatter"
+  data: Array<{ x: number; y: number; id: string; title: string }> // Scatter data points with x, y coordinates and optional metadata
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  xAxisLabel?: string // X axis label
+  yAxisLabel?: string // Y axis label
+  pointSize?: number // Point size in pixels
+}
+
+// Heatmap for multi-dimensional data visualization
+export interface A2UIChartHeatmapNode extends A2UIBaseNode {
+  type: "chart-heatmap"
+  data: Array<{ x: string; y: string; value: number }> // Heatmap data with x, y coordinates and value for color intensity
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  xAxisLabel?: string // X axis label
+  yAxisLabel?: string // Y axis label
+}
+
+// Histogram for frequency distribution
+export interface A2UIChartHistogramNode extends A2UIBaseNode {
+  type: "chart-histogram"
+  data: Array<{ range: string; count: number }> // Histogram bins with range label and count
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  xAxisLabel?: string // X axis label
+  yAxisLabel?: string // Y axis label
+  color?: string // Bar color
+}
+
+// Gauge/Dial chart for single metric display
+export interface A2UIChartGaugeNode extends A2UIBaseNode {
+  type: "chart-gauge"
+  value: number // Current value to display
+  min?: number // Minimum value on scale
+  max?: number // Maximum value on scale
+  height?: number // Chart height in pixels
+  title?: string // Chart title
+  label?: string // Label for the metric
+  unit?: string // Unit to display with value
+  thresholds?: Array<{ value: number; color: string; label: string }> // Threshold colors
+}
+
+// Treemap for hierarchical proportional data
+export interface A2UIChartTreemapNode extends A2UIBaseNode {
+  type: "chart-treemap"
+  data: Array<{ id: string; label: string; value: number; color: string }> // Treemap items with label and value for sizing
   height?: number // Chart height in pixels
   title?: string // Chart title
   colors?: unknown[] // Custom color scheme

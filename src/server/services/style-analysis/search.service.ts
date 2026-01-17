@@ -7,7 +7,7 @@ import { eq, and, sql, inArray, isNull, desc, getTableColumns } from "drizzle-or
 import { createHash } from "crypto";
 import OpenAI from "openai";
 import { db } from "@/server/db";
-import { styleAnalyses, tasks, type StyleAnalysis } from "@/server/db/schema";
+import { styleAnalyses, pipelines, type StyleAnalysis } from "@/server/db/schema";
 import { styleAnalysisCrudService } from "./crud.service";
 import type { GetAllStyleAnalysesOptions } from "./types";
 import { env } from "@/env";
@@ -263,10 +263,10 @@ export const styleAnalysisSearchService = {
       .select({
         ...getTableColumns(styleAnalyses),
         useCount: sql<number>`(
-          SELECT count(*) 
-          FROM ${tasks} 
-          WHERE ${tasks.refMaterialId} = "style_analyses"."id" 
-            AND ${tasks.deletedAt} IS NULL
+          SELECT count(*)
+          FROM ${pipelines}
+          WHERE ${pipelines.styleAnalysisId} = "style_analyses"."id"
+            AND ${pipelines.deletedAt} IS NULL
         )::int`.as("use_count"),
       })
       .from(styleAnalyses)

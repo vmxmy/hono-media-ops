@@ -55,6 +55,11 @@ export type {
   A2UIChartBarNode,
   A2UIChartRadialBarNode,
   A2UIChartWordCloudNode,
+  A2UIChartScatterNode,
+  A2UIChartHeatmapNode,
+  A2UIChartHistogramNode,
+  A2UIChartGaugeNode,
+  A2UIChartTreemapNode,
   // Custom
   A2UIAppShellNode,
   A2UIThemeSwitcherNode,

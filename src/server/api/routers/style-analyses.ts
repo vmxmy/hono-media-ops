@@ -394,6 +394,9 @@ export const styleAnalysesRouter = createTRPCRouter({
   getMyStatistics: protectedProcedure
     .query(({ ctx }) => ctx.services.styleAnalysis.getStatistics(ctx.user.id)),
 
+  getMyDetailedMetrics: protectedProcedure
+    .query(({ ctx }) => ctx.services.styleAnalysis.getDetailedMetrics(ctx.user.id)),
+
   // ==================== Execution Prompt Generation ====================
 
   /** 获取记录并附带动态生成的 execution_prompt */
@@ -436,6 +439,60 @@ export const styleAnalysesRouter = createTRPCRouter({
   /** 获取 embedding 统计 */
   getEmbeddingStats: protectedProcedure
     .query(({ ctx }) => ctx.services.styleAnalysis.getEmbeddingStats()),
+
+  // ==================== Usage Analytics ====================
+
+  /** 获取最常用的风格分析 */
+  getTopUsedStyles: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(50).default(10),
+      timeRange: z.object({
+        start: z.date(),
+        end: z.date(),
+      }).optional(),
+    }))
+    .query(({ ctx, input }) => ctx.services.styleAnalysis.getTopUsedStyles(
+      ctx.user.id,
+      input.limit,
+      input.timeRange
+    )),
+
+  /** 按时间段聚合指标统计 */
+  getMetricsByTimeRange: protectedProcedure
+    .input(z.object({
+      granularity: z.enum(['week', 'month']),
+      startDate: z.date(),
+      endDate: z.date(),
+    }))
+    .query(({ ctx, input }) => ctx.services.styleAnalysis.getMetricsByTimeRange(
+      ctx.user.id,
+      input.granularity,
+      input.startDate,
+      input.endDate
+    )),
+
+  /** 获取用户使用模式洞察 */
+  getUserUsagePattern: protectedProcedure
+    .query(({ ctx }) => ctx.services.styleAnalysis.getUserUsagePattern(ctx.user.id)),
+
+  /** 获取风格-提示词组合分析 */
+  getStylePromptCombinations: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(50).default(10),
+      timeRange: z.object({
+        start: z.date(),
+        end: z.date(),
+      }).optional(),
+    }))
+    .query(({ ctx, input }) => ctx.services.styleAnalysis.getStylePromptCombinations(
+      ctx.user.id,
+      input.limit,
+      input.timeRange
+    )),
+
+  /** 比较用户指标与全局平均值 */
+  compareMetricsWithAverage: protectedProcedure
+    .query(({ ctx }) => ctx.services.styleAnalysis.compareMetricsWithAverage(ctx.user.id)),
 });
 
 // Backwards compatibility - export as reverseLogsRouter
