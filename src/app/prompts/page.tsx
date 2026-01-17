@@ -9,6 +9,7 @@ import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { showConfirmToast } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import { buildPromptCardActionButtons } from "./prompt-card-actions"
 
 interface ImagePromptFormData {
   title: string
@@ -576,9 +577,7 @@ export default function ImagePromptsPage() {
             {
               type: "row",
               gap: "0.25rem",
-              children: [
-                { type: "button", text: t("common.edit"), variant: "ghost", size: "sm", onClick: { action: "edit", args: [prompt.id], stopPropagation: true } },
-              ],
+              children: buildPromptCardActionButtons(t, prompt.id),
             },
           ],
         },
