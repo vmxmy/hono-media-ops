@@ -75,6 +75,118 @@ export { styleAnalysisService as reverseLogService } from "./style-analysis";
 export { wechatArticleService } from "./wechat-article.service";
 export type { WechatArticleService, GetWechatArticlesInput } from "./wechat-article.service";
 
+export { materialAnalyticsService } from "./material-analytics.service";
+export type {
+  MaterialAnalyticsService,
+  MaterialOverview,
+  GrowthTrend,
+  UsageStats,
+  QualityMetrics,
+  StatusDistribution,
+  CreationTrend,
+  WordCountDistribution,
+  MetricsScatterPoint,
+  ParaCountDistribution,
+  SentLenDistribution,
+  QualityGrade,
+  QualityScore,
+  MaterialQualityDetail,
+  TypeDistribution,
+  TypeRadarComparison,
+  TypeTrend,
+  TopUsedMaterial,
+  MaterialLifecycle,
+  LifecycleStage,
+} from "./material-analytics.service";
+
+export { imagePromptAnalyticsService } from "./image-prompt-analytics.service";
+export type {
+  ImagePromptAnalyticsService,
+  PromptOverview,
+  PromptUsageTrend,
+  CategoryDistribution,
+  CategoryUsage,
+  ModelDistribution,
+  RatioDistribution,
+  ResolutionDistribution,
+  RatingDistribution,
+  TopRatedPrompt,
+  SourceDistribution,
+  PromptCreationTrend,
+  TagCount,
+} from "./image-prompt-analytics.service";
+
+export { taskAnalyticsService } from "./task-analytics.service";
+export type {
+  TaskAnalyticsService,
+  TaskOverview,
+  TaskStatusDistribution,
+  TaskCreationTrend,
+  TaskCompletionTrend,
+  ProgressAnalysis,
+  ReferenceUsage,
+  ExecutionStats,
+  TopTopic,
+  TopKeyword,
+} from "./task-analytics.service";
+
+export { xhsAnalyticsService } from "./xhs-analytics.service";
+export type {
+  XhsAnalyticsService,
+  XhsOverview,
+  XhsStatusDistribution,
+  XhsCreationTrend,
+  XhsCompletionTrend,
+  XhsImageTypeDistribution,
+  XhsRatioDistribution,
+  XhsResolutionDistribution,
+  XhsCompletionAnalysis,
+  XhsTopSource,
+  XhsPerformanceMetrics,
+} from "./xhs-analytics.service";
+
+export { wechatArticleAnalyticsService } from "./wechat-article-analytics.service";
+export type {
+  WechatArticleAnalyticsService,
+  WechatArticleOverview,
+  AccountDistribution,
+  AuthorDistribution,
+  ImportTrend,
+  PublishTrend,
+  AdAnalysis,
+  CoverAnalysis,
+  TimeDistribution,
+  TopArticles,
+  AccountStats,
+} from "./wechat-article-analytics.service";
+
+export { pipelineAnalyticsService } from "./pipeline-analytics.service";
+export type {
+  PipelineAnalyticsService,
+  PipelineOverview,
+  PipelineStatusDistribution,
+  PipelineCreationTrend,
+  PipelineCompletionTrend,
+  PipelineProgressAnalysis,
+  PipelineTopSource,
+  PipelineTopTopic,
+  PipelineTopKeyword,
+  PipelinePerformanceMetrics,
+} from "./pipeline-analytics.service";
+
+export { embeddingAnalyticsService } from "./embedding-analytics.service";
+export type {
+  EmbeddingAnalyticsService,
+  EmbeddingOverview,
+  ModelVersionDistribution,
+  EmbeddingCreationTrend,
+  TaskEmbeddingStatus,
+  ContentHashAnalysis,
+  EmbeddingAge,
+  RecentEmbedding,
+  EmbeddingGrowthRate,
+} from "./embedding-analytics.service";
+
 import { taskService } from "./task.service";
 import { imagePromptService } from "./image-prompt.service";
 import { styleAnalysisService } from "./style-analysis";
@@ -87,6 +199,13 @@ import { chapterService } from "./chapter.service";
 import { xhsImageService } from "./xhs-image.service";
 import { pipelineService } from "./pipeline.service";
 import { wechatArticleService } from "./wechat-article.service";
+import { materialAnalyticsService } from "./material-analytics.service";
+import { imagePromptAnalyticsService } from "./image-prompt-analytics.service";
+import { taskAnalyticsService } from "./task-analytics.service";
+import { xhsAnalyticsService } from "./xhs-analytics.service";
+import { wechatArticleAnalyticsService } from "./wechat-article-analytics.service";
+import { pipelineAnalyticsService } from "./pipeline-analytics.service";
+import { embeddingAnalyticsService } from "./embedding-analytics.service";
 
 export const services = {
   task: taskService,
@@ -101,6 +220,13 @@ export const services = {
   xhsImage: xhsImageService,
   pipeline: pipelineService,
   wechatArticle: wechatArticleService,
+  materialAnalytics: materialAnalyticsService,
+  imagePromptAnalytics: imagePromptAnalyticsService,
+  taskAnalytics: taskAnalyticsService,
+  xhsAnalytics: xhsAnalyticsService,
+  wechatArticleAnalytics: wechatArticleAnalyticsService,
+  pipelineAnalytics: pipelineAnalyticsService,
+  embeddingAnalytics: embeddingAnalyticsService,
   // Backwards compatibility
   reverseLog: styleAnalysisService,
 } as const;

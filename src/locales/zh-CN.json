@@ -86,6 +86,13 @@
   "nav.reverse": "素材仓库",
   "nav.xhsImages": "小红书图片",
   "nav.wechatArticles": "微信文章库",
+  "nav.materials": "素材指标",
+  "nav.imagePromptAnalytics": "提示词指标",
+  "nav.taskAnalytics": "任务指标",
+  "nav.xhsAnalytics": "小红书图片指标",
+  "nav.wechatArticleAnalytics": "微信文章指标",
+  "nav.pipelineAnalytics": "流水线指标",
+  "nav.embeddingAnalytics": "向量嵌入指标",
   "tasks.title": "写点东西",
   "tasks.newTask": "写点啥",
   "tasks.noTasks": "暂无任务",
@@ -461,5 +468,7 @@
   "wechatArticles.nextPage": "下一页",
   "wechatArticles.viewOriginal": "阅读原文",
   "wechatArticles.author": "作者",
-  "wechatArticles.publishTime": "发布时间"
+  "wechatArticles.publishTime": "发布时间",
+  "wechatArticles.accountName": "公众号名称",
+  "wechatArticles.fakeid": "公众号ID"
 }

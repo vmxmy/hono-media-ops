@@ -11,6 +11,13 @@ import { chaptersRouter } from "./routers/chapters";
 import { xhsImagesRouter } from "./routers/xhs-images";
 import { pipelineRouter } from "./routers/pipeline";
 import { wechatArticleRouter } from "./routers/wechat-articles";
+import { materialAnalyticsRouter } from "./routers/material-analytics";
+import { imagePromptAnalyticsRouter } from "./routers/image-prompt-analytics";
+import { taskAnalyticsRouter } from "./routers/task-analytics";
+import { xhsAnalyticsRouter } from "./routers/xhs-analytics";
+import { wechatArticleAnalyticsRouter } from "./routers/wechat-article-analytics";
+import { pipelineAnalyticsRouter } from "./routers/pipeline-analytics";
+import { embeddingAnalyticsRouter } from "./routers/embedding-analytics";
 
 export const appRouter = createTRPCRouter({
   tasks: tasksRouter,
@@ -25,6 +32,13 @@ export const appRouter = createTRPCRouter({
   xhsImages: xhsImagesRouter,
   pipeline: pipelineRouter,
   wechatArticles: wechatArticleRouter,
+  materialAnalytics: materialAnalyticsRouter,
+  imagePromptAnalytics: imagePromptAnalyticsRouter,
+  taskAnalytics: taskAnalyticsRouter,
+  xhsAnalytics: xhsAnalyticsRouter,
+  wechatArticleAnalytics: wechatArticleAnalyticsRouter,
+  pipelineAnalytics: pipelineAnalyticsRouter,
+  embeddingAnalytics: embeddingAnalyticsRouter,
   // Backwards compatibility
   reverseLogs: styleAnalysesRouter,
 });

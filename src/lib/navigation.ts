@@ -8,6 +8,13 @@ export const NAV_ITEMS = [
   { key: "reverse", path: "/reverse", labelKey: "nav.reverse" as I18nKey },
   { key: "xhsImages", path: "/xhs-images", labelKey: "nav.xhsImages" as I18nKey },
   { key: "insights", path: "/insights", labelKey: "nav.insights" as I18nKey },
+  { key: "materials", path: "/materials", labelKey: "nav.materials" as I18nKey },
+  { key: "imagePromptAnalytics", path: "/image-prompt-analytics", labelKey: "nav.imagePromptAnalytics" as I18nKey },
+  { key: "taskAnalytics", path: "/task-analytics", labelKey: "nav.taskAnalytics" as I18nKey },
+  { key: "xhsAnalytics", path: "/xhs-analytics", labelKey: "nav.xhsAnalytics" as I18nKey },
+  { key: "wechatArticleAnalytics", path: "/wechat-article-analytics", labelKey: "nav.wechatArticleAnalytics" as I18nKey },
+  { key: "pipelineAnalytics", path: "/pipeline-analytics", labelKey: "nav.pipelineAnalytics" as I18nKey },
+  { key: "embeddingAnalytics", path: "/embedding-analytics", labelKey: "nav.embeddingAnalytics" as I18nKey },
   { key: "prompts", path: "/prompts", labelKey: "nav.prompts" as I18nKey },
 ]
 

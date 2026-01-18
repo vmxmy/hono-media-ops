@@ -1,0 +1,475 @@
+"use client"
+
+import { useCallback, useMemo } from "react"
+import { useSession, signOut } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
+import { api } from "@/trpc/react"
+import { useI18n } from "@/contexts/i18n-context"
+import { A2UIRenderer } from "@/components/a2ui"
+import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
+import { buildNavItems } from "@/lib/navigation"
+
+export default function PipelineAnalyticsPage() {
+  const { t } = useI18n()
+  const { status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
+  const mounted = status !== "loading"
+  const logout = () => signOut({ callbackUrl: "/login" })
+  const navItems = buildNavItems(t)
+
+  // API calls
+  const { data: overview } = api.pipelineAnalytics.getOverview.useQuery()
+  const { data: statusDistribution } = api.pipelineAnalytics.getStatusDistribution.useQuery()
+  const { data: creationTrend } = api.pipelineAnalytics.getCreationTrend.useQuery({ days: 30 })
+  const { data: completionTrend } = api.pipelineAnalytics.getCompletionTrend.useQuery({ days: 30 })
+  const { data: progressAnalysis } = api.pipelineAnalytics.getProgressAnalysis.useQuery()
+  const { data: topSources } = api.pipelineAnalytics.getTopSources.useQuery({ limit: 10 })
+  const { data: topTopics } = api.pipelineAnalytics.getTopTopics.useQuery({ limit: 10 })
+  const { data: topKeywords } = api.pipelineAnalytics.getTopKeywords.useQuery({ limit: 20 })
+  const { data: performanceMetrics } = api.pipelineAnalytics.getPerformanceMetrics.useQuery()
+
+  const handleAction = useCallback(
+    (action: string, args?: unknown[]) => {
+      switch (action) {
+        case "navigate": {
+          const href = args?.[0] as string
+          if (href) router.push(href)
+          break
+        }
+        case "logout":
+          logout()
+          break
+      }
+    },
+    [router, logout]
+  )
+
+  // Overview card
+  const overviewCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Overview", variant: "h4" },
+            {
+              type: "row",
+              gap: "1rem",
+              wrap: true,
+              children: [
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.totalPipelines.toLocaleString() ?? "0", variant: "h2" },
+                    { type: "text", text: "Total Pipelines", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.completedCount.toLocaleString() ?? "0", variant: "h2", color: "success" },
+                    { type: "text", text: "Completed", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.processingCount.toLocaleString() ?? "0", variant: "h2" },
+                    { type: "text", text: "Processing", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: `${overview?.completionRate.toFixed(1) ?? "0"}%`, variant: "h2" },
+                    { type: "text", text: "Completion Rate", variant: "caption", color: "muted" },
+                  ],
+                },
+              ],
+            },
+            { type: "divider" },
+            {
+              type: "row",
+              gap: "1rem",
+              wrap: true,
+              children: [
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.analyzingCount.toLocaleString() ?? "0", variant: "h2" },
+                    { type: "text", text: "Analyzing", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.pendingSelectionCount.toLocaleString() ?? "0", variant: "h2" },
+                    { type: "text", text: "Pending Selection", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: overview?.failedCount.toLocaleString() ?? "0", variant: "h2", color: "destructive" },
+                    { type: "text", text: "Failed", variant: "caption", color: "muted" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  }, [overview])
+
+  // Status distribution card
+  const statusDistCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Status Distribution", variant: "h4" },
+            {
+              type: "column",
+              gap: "0.5rem",
+              children: (statusDistribution?.map((item) => ({
+                type: "row" as const,
+                justify: "between" as const,
+                padding: "0.5rem" as const,
+                style: { borderBottom: "1px solid #eee" },
+                children: [
+                  { type: "text" as const, text: item.status, variant: "body" as const },
+                  { type: "text" as const, text: `${item.count} (${item.percentage.toFixed(1)}%)`, variant: "caption" as const, color: "muted" as const },
+                ],
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [statusDistribution])
+
+  // Creation trend card
+  const creationTrendCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h4" },
+            {
+              type: "column",
+              gap: "0.25rem",
+              children: (creationTrend?.slice(-7).map((item) => ({
+                type: "row" as const,
+                justify: "between" as const,
+                padding: "0.5rem" as const,
+                children: [
+                  { type: "text" as const, text: item.date, variant: "body" as const },
+                  { type: "text" as const, text: `${item.count} pipelines`, variant: "caption" as const, color: "muted" as const },
+                ],
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [creationTrend])
+
+  // Completion trend card
+  const completionTrendCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Completion Trend (30 Days)", variant: "h4" },
+            {
+              type: "column",
+              gap: "0.25rem",
+              children: (completionTrend?.slice(-7).map((item) => ({
+                type: "row" as const,
+                justify: "between" as const,
+                padding: "0.5rem" as const,
+                children: [
+                  { type: "text" as const, text: item.date, variant: "body" as const },
+                  { type: "text" as const, text: `${item.count} (${(item.avgCompletionTime / 60).toFixed(1)}m)`, variant: "caption" as const, color: "muted" as const },
+                ],
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [completionTrend])
+
+  // Progress analysis card
+  const progressAnalysisCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Progress Analysis", variant: "h4" },
+            {
+              type: "row",
+              gap: "1rem",
+              wrap: true,
+              children: [
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: `${progressAnalysis?.avgArticleProgress.toFixed(1) ?? "0"}%`, variant: "h2" },
+                    { type: "text", text: "Avg Article Progress", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: `${progressAnalysis?.avgXhsProgress.toFixed(1) ?? "0"}%`, variant: "h2" },
+                    { type: "text", text: "Avg XHS Progress", variant: "caption", color: "muted" },
+                  ],
+                },
+              ],
+            },
+            { type: "divider" },
+            {
+              type: "row",
+              gap: "1rem",
+              wrap: true,
+              children: [
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: progressAnalysis?.fullyCompletedArticles.toLocaleString() ?? "0", variant: "h2", color: "success" },
+                    { type: "text", text: "Completed Articles", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: progressAnalysis?.fullyCompletedXhs.toLocaleString() ?? "0", variant: "h2", color: "success" },
+                    { type: "text", text: "Completed XHS", variant: "caption", color: "muted" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  }, [progressAnalysis])
+
+  // Top sources card
+  const topSourcesCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Top Sources", variant: "h4" },
+            {
+              type: "column",
+              gap: "0.5rem",
+              children: (topSources?.map((item) => ({
+                type: "column" as const,
+                gap: "0.25rem" as const,
+                padding: "0.5rem" as const,
+                style: { borderBottom: "1px solid #eee" },
+                children: [
+                  { type: "text" as const, text: item.sourceUrl, variant: "body" as const },
+                  {
+                    type: "row" as const,
+                    gap: "1rem" as const,
+                    children: [
+                      { type: "text" as const, text: `${item.count} total`, variant: "caption" as const, color: "muted" as const },
+                      { type: "text" as const, text: `${item.successCount} success`, variant: "caption" as const, color: "muted" as const },
+                      { type: "text" as const, text: `${item.successRate.toFixed(1)}% rate`, variant: "caption" as const, color: "muted" as const },
+                    ],
+                  },
+                ],
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [topSources])
+
+  // Top topics card
+  const topTopicsCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Top Topics", variant: "h4" },
+            {
+              type: "column",
+              gap: "0.5rem",
+              children: (topTopics?.map((item) => ({
+                type: "row" as const,
+                justify: "between" as const,
+                padding: "0.5rem" as const,
+                style: { borderBottom: "1px solid #eee" },
+                children: [
+                  { type: "text" as const, text: item.topic, variant: "body" as const },
+                  { type: "text" as const, text: `${item.count} (${item.avgWordCount.toFixed(0)} words)`, variant: "caption" as const, color: "muted" as const },
+                ],
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [topTopics])
+
+  // Top keywords card
+  const topKeywordsCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Top Keywords", variant: "h4" },
+            {
+              type: "row",
+              gap: "0.5rem",
+              wrap: true,
+              children: (topKeywords?.slice(0, 15).map((item) => ({
+                type: "badge" as const,
+                text: `${item.keyword} (${item.count})`,
+                color: "primary" as const,
+              })) ?? []) as A2UINode[],
+            },
+          ],
+        },
+      ],
+    }
+  }, [topKeywords])
+
+  // Performance metrics card
+  const performanceCard = useMemo((): A2UICardNode => {
+    return {
+      type: "card",
+      children: [
+        {
+          type: "column",
+          gap: "0.5rem",
+          children: [
+            { type: "text", text: "Performance Metrics", variant: "h4" },
+            {
+              type: "row",
+              gap: "1rem",
+              wrap: true,
+              children: [
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: `${((performanceMetrics?.avgTimeToComplete ?? 0) / 60).toFixed(1)}m`, variant: "h2" },
+                    { type: "text", text: "Avg Time", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: `${performanceMetrics?.successRate.toFixed(1) ?? "0"}%`, variant: "h2", color: "success" },
+                    { type: "text", text: "Success Rate", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: performanceMetrics?.avgArticleChapters.toFixed(1) ?? "0", variant: "h2" },
+                    { type: "text", text: "Avg Chapters", variant: "caption", color: "muted" },
+                  ],
+                },
+                {
+                  type: "column",
+                  gap: "0.25rem",
+                  className: "text-center flex-1 min-w-[100px]",
+                  children: [
+                    { type: "text", text: performanceMetrics?.avgXhsImages.toFixed(1) ?? "0", variant: "h2" },
+                    { type: "text", text: "Avg Images", variant: "caption", color: "muted" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  }, [performanceMetrics])
+
+  if (!mounted) return null
+
+  const appShellNode: A2UIAppShellNode = {
+    type: "app-shell",
+    brand: t("app.title"),
+    logoSrc: "/logo.png",
+    logoAlt: "Wonton",
+    navItems,
+    activePath: pathname,
+    children: [
+      {
+        type: "column",
+        gap: "1.5rem",
+        children: [
+          overviewCard,
+          { type: "row", gap: "1rem", children: [statusDistCard, progressAnalysisCard] },
+          { type: "row", gap: "1rem", children: [creationTrendCard, completionTrendCard] },
+          { type: "row", gap: "1rem", children: [topSourcesCard, topTopicsCard] },
+          { type: "row", gap: "1rem", children: [topKeywordsCard, performanceCard] },
+        ],
+      },
+    ],
+  }
+
+  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+}
