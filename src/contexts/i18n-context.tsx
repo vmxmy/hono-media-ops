@@ -497,6 +497,8 @@ export type I18nKey =
     | "wechatArticles.viewOriginal"
     | "wechatArticles.author"
     | "wechatArticles.publishTime"
+    | "wechatArticles.accountName"
+    | "wechatArticles.fakeid"
 
 interface I18nContextValue {
     locale: Locale

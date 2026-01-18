@@ -184,8 +184,8 @@ export default function InsightsPage() {
     const binCount = 10
     const binSize = Math.max(Math.ceil((max - min) / binCount), 100)
     const bins = Array.from({ length: binCount }, (_, i) => ({
-      range: `${min + i * binSize} - ${Math.min((i + 1) * binSize, max)}`,
-      count: wordCounts.filter((wc) => wc >= min + i * binSize && wc < Math.min((i + 1) * binSize, max)).length,
+      range: `${min + i * binSize} - ${Math.min(min + (i + 1) * binSize, max)}`,
+      count: wordCounts.filter((wc) => wc >= min + i * binSize && wc < Math.min(min + (i + 1) * binSize, max)).length,
     }))
 
     return bins

@@ -125,20 +125,44 @@ export default function WechatArticlesPage() {
               align: "center",
               children: [
                 {
-                  type: "row",
-                  gap: "1rem",
+                  type: "column",
+                  gap: "0.25rem",
                   children: [
                     {
-                      type: "text",
-                      text: `${t("wechatArticles.author")}: ${article.authorName || "-"}`,
-                      variant: "caption",
-                      color: "muted"
+                      type: "row",
+                      gap: "1rem",
+                      children: [
+                        {
+                          type: "text",
+                          text: `${t("wechatArticles.author")}: ${article.authorName || "-"}`,
+                          variant: "caption",
+                          color: "muted"
+                        },
+                        {
+                          type: "text",
+                          text: `${t("wechatArticles.publishTime")}: ${formatDate(article.createTime)}`,
+                          variant: "caption",
+                          color: "muted"
+                        }
+                      ]
                     },
                     {
-                      type: "text",
-                      text: `${t("wechatArticles.publishTime")}: ${formatDate(article.createTime)}`,
-                      variant: "caption",
-                      color: "muted"
+                      type: "row",
+                      gap: "1rem",
+                      children: [
+                        {
+                          type: "text",
+                          text: `${t("wechatArticles.accountName")}: ${article.accountName || "-"}`,
+                          variant: "caption",
+                          color: "muted"
+                        },
+                        {
+                          type: "text",
+                          text: `${t("wechatArticles.fakeid")}: ${article.fakeid || "-"}`,
+                          variant: "caption",
+                          color: "muted"
+                        }
+                      ]
                     }
                   ]
                 },
