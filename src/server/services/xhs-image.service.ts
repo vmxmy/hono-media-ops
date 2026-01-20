@@ -149,6 +149,7 @@ export const xhsImageService = {
     status: XhsJobStatus,
     errorMessage?: string
   ): Promise<{ success: boolean }> {
+    const now = new Date();
     const [current] = await db
       .select({
         status: xhsImageJobs.status,
@@ -160,11 +161,11 @@ export const xhsImageService = {
 
     const updates: Partial<XhsImageJob> = {
       status,
-      updatedAt: new Date(),
+      updatedAt: now,
     };
 
     if (status === "completed") {
-      updates.completedAt = new Date();
+      updates.completedAt = now;
     }
 
     if (errorMessage !== undefined) {
@@ -178,6 +179,21 @@ export const xhsImageService = {
 
     const shouldCountUsage = current?.status !== "completed" && status === "completed";
     if (shouldCountUsage) {
+      const metadata = current?.metadata;
+      const promptId = metadata && typeof metadata === "object"
+        ? (metadata as Record<string, unknown>).image_prompt_id
+        : undefined;
+
+      if (typeof promptId === "string" && promptId) {
+        await db
+          .update(imagePrompts)
+          .set({
+            useCount: sql<number>`${imagePrompts.useCount} + 1`,
+            lastUsedAt: now,
+            updatedAt: now,
+          })
+          .where(eq(imagePrompts.id, promptId));
+      }
     }
 
     return { success: true };

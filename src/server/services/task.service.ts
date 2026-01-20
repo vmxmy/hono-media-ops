@@ -675,6 +675,34 @@ export const taskService = {
         .limit(1);
 
       if (isFirstCompletion) {
+        const usageUpdates: Promise<unknown>[] = [];
+
+        if (taskRow?.refMaterialId) {
+          usageUpdates.push(
+            db.update(styleAnalyses)
+              .set({
+                useCount: sql<number>`${styleAnalyses.useCount} + 1`,
+                updatedAt: now,
+              })
+              .where(eq(styleAnalyses.id, taskRow.refMaterialId))
+          );
+        }
+
+        if (taskRow?.coverPromptId) {
+          usageUpdates.push(
+            db.update(imagePrompts)
+              .set({
+                useCount: sql<number>`${imagePrompts.useCount} + 1`,
+                lastUsedAt: now,
+                updatedAt: now,
+              })
+              .where(eq(imagePrompts.id, taskRow.coverPromptId))
+          );
+        }
+
+        if (usageUpdates.length > 0) {
+          await Promise.all(usageUpdates);
+        }
       }
 
       if (shouldGenerateEmbedding && taskRow && articleMarkdown) {

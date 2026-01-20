@@ -7,6 +7,16 @@ import { getToken } from "next-auth/jwt"
 const userStatusCache = new Map<string, { active: boolean; timestamp: number }>()
 const CACHE_TTL_MS = 60 * 1000
 
+const PUBLIC_PATHS = new Set(["/", "/login", "/articles"])
+const PUBLIC_PREFIXES = ["/articles/", "/uploads/"]
+const PUBLIC_FILE_EXT_RE = /\.[^/]+$/
+
+function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true
+  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true
+  return PUBLIC_FILE_EXT_RE.test(pathname)
+}
+
 // Security policy: fail-closed (default) vs fail-open
 // Set USER_STATUS_CHECK_FAIL_OPEN=true only if availability is critical
 const FAIL_OPEN = process.env.USER_STATUS_CHECK_FAIL_OPEN === "true"
@@ -94,6 +104,10 @@ async function isUserActive(userId: string): Promise<boolean> {
 }
 
 export async function middleware(req: NextRequest) {
+  if (isPublicPath(req.nextUrl.pathname)) {
+    return NextResponse.next()
+  }
+
   // Auth.js v5 uses 'authjs' prefix instead of 'next-auth'
   const isSecure = req.nextUrl.protocol === "https:"
   const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token"
@@ -131,5 +145,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/tasks/:path*", "/prompts/:path*", "/reverse/:path*", "/insights/:path*", "/profile/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

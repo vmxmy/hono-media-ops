@@ -251,17 +251,13 @@ export const embeddingAnalyticsService = {
    * Get embedding age analysis
    */
   async getEmbeddingAge(userId: string): Promise<EmbeddingAge> {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-
     const result = await db
       .select({
         avgAgeInDays: sql<number>`AVG(EXTRACT(EPOCH FROM (NOW() - ${articleEmbeddings.createdAt})) / 86400)::float`,
         oldestEmbedding: sql<Date>`MIN(${articleEmbeddings.createdAt})`,
         newestEmbedding: sql<Date>`MAX(${articleEmbeddings.createdAt})`,
-        embeddingsOlderThan30Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} < ${thirtyDaysAgo})::int`,
-        embeddingsOlderThan90Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} < ${ninetyDaysAgo})::int`,
+        embeddingsOlderThan30Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} < (NOW() - interval '30 days'))::int`,
+        embeddingsOlderThan90Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} < (NOW() - interval '90 days'))::int`,
       })
       .from(articleEmbeddings)
       .innerJoin(tasks, eq(articleEmbeddings.taskId, tasks.id))
@@ -320,16 +316,11 @@ export const embeddingAnalyticsService = {
    * Get growth rate analysis
    */
   async getGrowthRate(userId: string): Promise<EmbeddingGrowthRate> {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-
     const result = await db
       .select({
-        last7Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= ${sevenDaysAgo})::int`,
-        last30Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= ${thirtyDaysAgo})::int`,
-        last90Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= ${ninetyDaysAgo})::int`,
+        last7Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= (NOW() - interval '7 days'))::int`,
+        last30Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= (NOW() - interval '30 days'))::int`,
+        last90Days: sql<number>`count(*) filter (where ${articleEmbeddings.createdAt} >= (NOW() - interval '90 days'))::int`,
       })
       .from(articleEmbeddings)
       .innerJoin(tasks, eq(articleEmbeddings.taskId, tasks.id))
