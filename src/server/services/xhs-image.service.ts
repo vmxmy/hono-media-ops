@@ -8,10 +8,12 @@ import {
   type XhsImage,
 } from "@/server/db/schema";
 import { env } from "@/env";
+import { buildCancelJobUpdate, buildXhsImageJobMetadata, getRetryInputFromMetadata } from "./xhs-image-metadata";
+import type { XhsImageJobStatus } from "@/lib/xhs-image-job-status";
 
 // ==================== Types ====================
 
-export type XhsJobStatus = "pending" | "processing" | "completed" | "failed";
+export type XhsJobStatus = XhsImageJobStatus;
 export type XhsImageType = "cover" | "content" | "ending";
 
 export interface GetAllXhsJobsOptions {
@@ -144,6 +146,41 @@ export const xhsImageService = {
     return { success: true };
   },
 
+  async cancelJob(id: string): Promise<{ success: boolean }> {
+    await db
+      .update(xhsImageJobs)
+      .set(buildCancelJobUpdate(new Date()))
+      .where(eq(xhsImageJobs.id, id));
+
+    return { success: true };
+  },
+
+  async retryJob(id: string): Promise<{ success: boolean; jobId?: string; message?: string }> {
+    const [job] = await db
+      .select({
+        userId: xhsImageJobs.userId,
+        metadata: xhsImageJobs.metadata,
+      })
+      .from(xhsImageJobs)
+      .where(and(eq(xhsImageJobs.id, id), isNull(xhsImageJobs.deletedAt)))
+      .limit(1);
+
+    if (!job?.userId) {
+      return { success: false, message: "Job not found" };
+    }
+
+    const retryInput = getRetryInputFromMetadata(job.metadata);
+    if (!retryInput) {
+      return { success: false, message: "Job metadata missing" };
+    }
+
+    return this.triggerGeneration({
+      userId: job.userId,
+      inputContent: retryInput.inputContent,
+      promptId: retryInput.promptId,
+    });
+  },
+
   async updateJobStatus(
     id: string,
     status: XhsJobStatus,
@@ -226,7 +263,7 @@ export const xhsImageService = {
       status: "pending",
       ratio: "3:4",
       resolution: "2k",
-      metadata: { image_prompt_id: input.promptId },
+      metadata: buildXhsImageJobMetadata(input.inputContent, input.promptId),
     });
 
     // Build webhook payload

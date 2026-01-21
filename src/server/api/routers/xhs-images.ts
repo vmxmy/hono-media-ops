@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { idSchema, paginationSchema } from "../schemas/common";
+import { XHS_IMAGE_JOB_STATUSES } from "@/lib/xhs-image-job-status";
 
-const xhsJobStatusSchema = z.enum(["pending", "processing", "completed", "failed"]);
+const xhsJobStatusSchema = z.enum(XHS_IMAGE_JOB_STATUSES);
 
 export const xhsImagesRouter = createTRPCRouter({
   // Get all jobs with pagination
@@ -45,6 +46,20 @@ export const xhsImagesRouter = createTRPCRouter({
     .input(idSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.services.xhsImage.deleteJob(input.id);
+    }),
+
+  // Cancel a job
+  cancel: protectedProcedure
+    .input(idSchema)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.services.xhsImage.cancelJob(input.id);
+    }),
+
+  // Retry a job (create a new one)
+  retry: protectedProcedure
+    .input(idSchema)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.services.xhsImage.retryJob(input.id);
     }),
 
   // Update job status

@@ -50,6 +50,7 @@ export const xhsJobStatusEnum = pgEnum("xhs_job_status", [
   "processing",
   "completed",
   "failed",
+  "cancelled",
 ]);
 
 // ==================== Image Prompt Enums ====================
