@@ -95,6 +95,7 @@ git commit -m "feat: add xhs job status helpers"
 import assert from "node:assert/strict"
 import {
   buildXhsImageJobMetadata,
+  buildCancelJobUpdate,
   getRetryInputFromMetadata,
 } from "../../src/server/services/xhs-image-metadata"
 
@@ -105,6 +106,13 @@ assert.equal(metadata.input_content, "测试内容")
 assert.deepEqual(getRetryInputFromMetadata(metadata), {
   promptId: "prompt-1",
   inputContent: "测试内容",
+})
+
+const now = new Date("2026-01-01T00:00:00.000Z")
+assert.deepEqual(buildCancelJobUpdate(now), {
+  status: "cancelled",
+  errorMessage: "用户取消",
+  updatedAt: now,
 })
 
 assert.equal(getRetryInputFromMetadata({}), null)
@@ -121,6 +129,12 @@ Expected: FAIL with module not found or missing export errors
 export const buildXhsImageJobMetadata = (inputContent: string, promptId: string) => ({
   image_prompt_id: promptId,
   input_content: inputContent,
+})
+
+export const buildCancelJobUpdate = (updatedAt: Date, errorMessage: string = "用户取消") => ({
+  status: "cancelled",
+  errorMessage,
+  updatedAt,
 })
 
 export const getRetryInputFromMetadata = (metadata: unknown) => {
@@ -156,13 +170,24 @@ git commit -m "feat: add xhs image job metadata helpers"
 - Modify: `src/server/db/schema/enums.ts`
 - Modify: `src/server/services/xhs-image.service.ts`
 - Modify: `src/server/api/routers/xhs-images.ts`
+- Test: `tests/xhs-images/job-service-actions.test.ts`
 
 **Step 1: Write the failing test**
 
-Run: `node --loader tsx tests/xhs-images/job-status.test.ts`
-Expected: FAIL (if not yet updated to use new status helper)
+```ts
+import assert from "node:assert/strict"
+import { xhsImageService } from "../../src/server/services/xhs-image.service"
 
-**Step 2: Implement minimal changes**
+assert.equal(typeof xhsImageService.cancelJob, "function")
+assert.equal(typeof xhsImageService.retryJob, "function")
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `node --loader tsx tests/xhs-images/job-service-actions.test.ts`
+Expected: FAIL with undefined function errors
+
+**Step 3: Implement minimal changes**
 
 - `xhsJobStatusEnum` 增加 `"cancelled"`
 - 服务层类型改用 `XhsImageJobStatus`
@@ -170,18 +195,19 @@ Expected: FAIL (if not yet updated to use new status helper)
 - 新增 `cancelJob` 与 `retryJob` 方法（使用 `getRetryInputFromMetadata`）
 - `xhsJobStatusSchema` 使用 `XHS_IMAGE_JOB_STATUSES`
 
-**Step 3: Run tests**
+**Step 4: Run tests**
 
 Run:
 - `node --loader tsx tests/xhs-images/job-status.test.ts`
 - `node --loader tsx tests/xhs-images/job-retry-input.test.ts`
+- `node --loader tsx tests/xhs-images/job-service-actions.test.ts`
 
 Expected: PASS
 
-**Step 4: Commit**
+**Step 5: Commit**
 
 ```bash
-git add src/server/db/schema/enums.ts src/server/services/xhs-image.service.ts src/server/api/routers/xhs-images.ts
+git add src/server/db/schema/enums.ts src/server/services/xhs-image.service.ts src/server/api/routers/xhs-images.ts tests/xhs-images/job-service-actions.test.ts
 git commit -m "feat: add cancelled status and xhs job actions"
 ```
 
@@ -201,7 +227,7 @@ git commit -m "feat: add cancelled status and xhs job actions"
 Run:
 - `node --loader tsx tests/xhs-images/job-status.test.ts`
 
-Expected: FAIL (before UI uses status helper)
+Expected: FAIL if UI helper exports are not wired yet
 
 **Step 2: Implement minimal changes**
 
@@ -251,4 +277,3 @@ Expected: PASS
 ```bash
 git status -sb
 ```
-
