@@ -10,6 +10,7 @@ import {
 import { env } from "@/env";
 import { buildCancelJobUpdate, buildXhsImageJobMetadata, getRetryInputFromMetadata } from "./xhs-image-metadata";
 import type { XhsImageJobStatus } from "@/lib/xhs-image-job-status";
+import { buildXhsJobStatusCondition } from "./xhs-image-filters";
 
 // ==================== Types ====================
 
@@ -47,12 +48,9 @@ export const xhsImageService = {
       conditions.push(eq(xhsImageJobs.userId, userId));
     }
 
-    if (status) {
-      if (Array.isArray(status)) {
-        conditions.push(sql`${xhsImageJobs.status} = ANY(${status})`);
-      } else {
-        conditions.push(eq(xhsImageJobs.status, status));
-      }
+    const statusCondition = buildXhsJobStatusCondition(status);
+    if (statusCondition) {
+      conditions.push(statusCondition);
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
