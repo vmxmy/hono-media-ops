@@ -7,25 +7,8 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
-
-const CHART_HEIGHT = {
-  card: 280,
-  trend: 300,
-  compact: 200,
-  bar: 250,
-  heatmap: 280,
-  scatter: 300,
-  gauge: 200,
-  treemap: 280,
-} as const
-
-const CARD_MIN_WIDTH = "280px"
-const LAYOUT_GAP = {
-  section: "1.5rem",
-  card: "1rem",
-  content: "0.5rem",
-} as const
 
 export default function MaterialsPage() {
   const { t } = useI18n()
@@ -35,6 +18,7 @@ export default function MaterialsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Material Analytics API calls
   const { data: materialOverview } = api.materialAnalytics.getOverview.useQuery()
@@ -68,23 +52,23 @@ export default function MaterialsPage() {
 
   const materialOverviewCard = useMemo((): A2UICardNode => {
     if (!materialOverview) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Material Overview", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Material Overview", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -129,28 +113,28 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialOverview, t])
 
   const materialQualityMetricsCard = useMemo((): A2UICardNode => {
     if (!materialQualityMetrics) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Quality Metrics", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Quality Metrics", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -204,15 +188,15 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialQualityMetrics, t])
 
   const materialWordCountDistCard = useMemo((): A2UICardNode => {
     if (!materialWordCountDist || materialWordCountDist.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = materialWordCountDist.map((item) => ({
@@ -222,18 +206,18 @@ export default function MaterialsPage() {
       color: "#3b82f6",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Word Count Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Word Count Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "vertical",
               keys: ["value"],
               indexBy: "label",
@@ -241,15 +225,15 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialWordCountDist, t])
 
   const materialTypeDistCard = useMemo((): A2UICardNode => {
     if (!materialTypeDistribution || materialTypeDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
@@ -260,42 +244,42 @@ export default function MaterialsPage() {
       color: colors[index % colors.length],
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Type Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Type Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [materialTypeDistribution, t])
 
   const materialTopUsedCard = useMemo((): A2UICardNode => {
     if (!materialTopUsed || materialTopUsed.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Used Materials", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Top Used Materials", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -329,15 +313,15 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialTopUsed, t])
 
   const materialGrowthTrendCard = useMemo((): A2UICardNode => {
     if (!materialGrowthTrend || materialGrowthTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -349,31 +333,31 @@ export default function MaterialsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Material Growth Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Material Growth Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [materialGrowthTrend, t])
 
   const materialMetricsScatterCard = useMemo((): A2UICardNode => {
     if (!materialMetricsScatter || materialMetricsScatter.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = materialMetricsScatter.map((item) => ({
@@ -383,33 +367,33 @@ export default function MaterialsPage() {
       title: item.sourceTitle,
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "TTR vs Burstiness", variant: "h4", weight: "semibold" },
+            { type: "text", text: "TTR vs Burstiness", variant: "h3", weight: "semibold" },
             {
               type: "chart-scatter",
               data: chartData,
-              height: CHART_HEIGHT.scatter,
+              height: ANALYTICS_LAYOUT.chartHeight.scatter,
               xAxisLabel: "TTR",
               yAxisLabel: "Burstiness",
             },
           ],
         },
       ],
-    }
+    })
   }, [materialMetricsScatter, t])
 
   const materialStatusDistCard = useMemo((): A2UICardNode => {
     if (!materialStatusDist || materialStatusDist.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = { SUCCESS: "#22c55e", PENDING: "#f59e0b", FAILED: "#ef4444" }
@@ -420,32 +404,32 @@ export default function MaterialsPage() {
       color: colors[item.status as keyof typeof colors] || "#6b7280",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Status Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Status Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [materialStatusDist, t])
 
   const materialCreationTrendCard = useMemo((): A2UICardNode => {
     if (!materialCreationTrend || materialCreationTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -457,31 +441,31 @@ export default function MaterialsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Creation Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [materialCreationTrend, t])
 
   const materialParaCountDistCard = useMemo((): A2UICardNode => {
     if (!materialParaCountDist || materialParaCountDist.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = materialParaCountDist.map((item) => ({
@@ -491,18 +475,18 @@ export default function MaterialsPage() {
       color: "#8b5cf6",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Paragraph Count Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Paragraph Count Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "vertical",
               keys: ["value"],
               indexBy: "label",
@@ -510,15 +494,15 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialParaCountDist, t])
 
   const materialSentLenDistCard = useMemo((): A2UICardNode => {
     if (!materialSentLenDist || materialSentLenDist.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = materialSentLenDist.map((item) => ({
@@ -528,18 +512,18 @@ export default function MaterialsPage() {
       color: "#ec4899",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Sentence Length Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Sentence Length Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "vertical",
               keys: ["value"],
               indexBy: "label",
@@ -547,15 +531,15 @@ export default function MaterialsPage() {
           ],
         },
       ],
-    }
+    })
   }, [materialSentLenDist, t])
 
   const materialTypeTrendCard = useMemo((): A2UICardNode => {
     if (!materialTypeTrend || materialTypeTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
@@ -574,23 +558,23 @@ export default function MaterialsPage() {
       data,
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Type Trend (90 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Type Trend (90 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [materialTypeTrend, t])
 
   if (!mounted) return null
@@ -609,19 +593,14 @@ export default function MaterialsPage() {
     children: [
       {
         type: "column",
-        gap: LAYOUT_GAP.section,
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
-          { type: "text", text: "Material Analytics", variant: "h2", weight: "bold" },
-          materialOverviewCard,
-          materialQualityMetricsCard,
-          materialWordCountDistCard,
-          materialTypeDistCard,
-          materialTopUsedCard,
-          materialGrowthTrendCard,
-          materialMetricsScatterCard,
-          materialStatusDistCard,
-          materialCreationTrendCard,
-          materialParaCountDistCard,
+          analyticsHeader("Material Analytics", "Material coverage, quality, and usage signals."),
+          analyticsGrid([materialOverviewCard, materialQualityMetricsCard]),
+          analyticsGrid([materialWordCountDistCard, materialTypeDistCard]),
+          analyticsGrid([materialTopUsedCard, materialGrowthTrendCard]),
+          analyticsGrid([materialMetricsScatterCard, materialStatusDistCard]),
+          analyticsGrid([materialCreationTrendCard, materialParaCountDistCard]),
           materialSentLenDistCard,
           materialTypeTrendCard,
         ],

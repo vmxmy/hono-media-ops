@@ -53,8 +53,10 @@ export function analyticsGrid(
 
 export function analyticsCard(card: A2UICardNode): A2UICardNode {
   const className = ["min-w-0 h-full", card.className].filter(Boolean).join(" ")
+  const style = { minWidth: ANALYTICS_LAYOUT.cardMinWidth, ...card.style }
   return {
     ...card,
     className,
+    style,
   }
 }

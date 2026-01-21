@@ -7,6 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
 
 export default function WechatArticleAnalyticsPage() {
@@ -17,6 +18,7 @@ export default function WechatArticleAnalyticsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // API calls
   const { data: overview } = api.wechatArticleAnalytics.getOverview.useQuery()
@@ -48,17 +50,17 @@ export default function WechatArticleAnalyticsPage() {
 
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Overview", variant: "h4" },
+            { type: "text", text: "Overview", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -102,7 +104,7 @@ export default function WechatArticleAnalyticsPage() {
             { type: "divider" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -128,22 +130,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [overview])
 
   // Account distribution card
   const accountDistCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Accounts", variant: "h4" },
+            { type: "text", text: "Top Accounts", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (accountDistribution?.slice(0, 10).map((item) => ({
                 type: "row" as const,
                 justify: "between" as const,
@@ -158,22 +160,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [accountDistribution])
 
   // Author distribution card
   const authorDistCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Authors", variant: "h4" },
+            { type: "text", text: "Top Authors", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (authorDistribution?.slice(0, 10).map((item) => ({
                 type: "row" as const,
                 justify: "between" as const,
@@ -188,19 +190,19 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [authorDistribution])
 
   // Import trend card
   const importTrendCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Import Trend (30 Days)", variant: "h4" },
+            { type: "text", text: "Import Trend (30 Days)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -217,19 +219,19 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [importTrend])
 
   // Publish trend card
   const publishTrendCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Publish Trend (30 Days)", variant: "h4" },
+            { type: "text", text: "Publish Trend (30 Days)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -246,22 +248,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [publishTrend])
 
   // Ad analysis card
   const adAnalysisCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Ad Analysis", variant: "h4" },
+            { type: "text", text: "Ad Analysis", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -311,22 +313,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [adAnalysis])
 
   // Cover analysis card
   const coverAnalysisCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Cover Analysis", variant: "h4" },
+            { type: "text", text: "Cover Analysis", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -361,19 +363,19 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [coverAnalysis])
 
   // Time distribution card
   const timeDistCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Publish Time Distribution (by Hour)", variant: "h4" },
+            { type: "text", text: "Publish Time Distribution (by Hour)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -390,22 +392,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [timeDistribution])
 
   // Top articles card
   const topArticlesCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Recent Articles", variant: "h4" },
+            { type: "text", text: "Recent Articles", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: topArticles?.slice(0, 10).map((article) => ({
                 type: "column" as const,
                 gap: "0.25rem" as const,
@@ -415,7 +417,7 @@ export default function WechatArticleAnalyticsPage() {
                   { type: "text" as const, text: article.title, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: "0.5rem" as const,
+                    gap: ANALYTICS_LAYOUT.contentGap as const,
                     children: [
                       { type: "text" as const, text: article.accountName, variant: "caption" as const, color: "muted" as const },
                       ...(article.isAd ? [{ type: "badge" as const, text: "Ad", color: "destructive" as const }] : []),
@@ -427,22 +429,22 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topArticles])
 
   // Account stats card
   const accountStatsCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Account Statistics", variant: "h4" },
+            { type: "text", text: "Account Statistics", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: accountStats?.slice(0, 10).map((account) => ({
                 type: "column" as const,
                 gap: "0.25rem" as const,
@@ -452,7 +454,7 @@ export default function WechatArticleAnalyticsPage() {
                   { type: "text" as const, text: account.accountName, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: "1rem" as const,
+                    gap: ANALYTICS_LAYOUT.cardGap as const,
                     children: [
                       { type: "text" as const, text: `${account.articleCount} articles`, variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: `Ad: ${account.adRate.toFixed(1)}%`, variant: "caption" as const, color: "muted" as const },
@@ -465,7 +467,7 @@ export default function WechatArticleAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [accountStats])
 
   if (!mounted) return null
@@ -480,14 +482,15 @@ export default function WechatArticleAnalyticsPage() {
     children: [
       {
         type: "column",
-        gap: "1.5rem",
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
+          analyticsHeader("Wechat Article Analytics", "Article import, publishing, and coverage insights."),
           overviewCard,
-          { type: "row", gap: "1rem", children: [accountDistCard, authorDistCard] },
-          { type: "row", gap: "1rem", children: [importTrendCard, publishTrendCard] },
-          { type: "row", gap: "1rem", children: [adAnalysisCard, coverAnalysisCard] },
+          analyticsGrid([accountDistCard, authorDistCard]),
+          analyticsGrid([importTrendCard, publishTrendCard]),
+          analyticsGrid([adAnalysisCard, coverAnalysisCard]),
           timeDistCard,
-          { type: "row", gap: "1rem", children: [topArticlesCard, accountStatsCard] },
+          analyticsGrid([topArticlesCard, accountStatsCard]),
         ],
       },
     ],

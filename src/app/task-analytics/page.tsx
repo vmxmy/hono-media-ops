@@ -7,21 +7,8 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
-
-const CHART_HEIGHT = {
-  card: 280,
-  trend: 300,
-  compact: 200,
-  bar: 250,
-} as const
-
-const CARD_MIN_WIDTH = "280px"
-const LAYOUT_GAP = {
-  section: "1.5rem",
-  card: "1rem",
-  content: "0.5rem",
-} as const
 
 export default function TaskAnalyticsPage() {
   const { t } = useI18n()
@@ -31,6 +18,7 @@ export default function TaskAnalyticsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Task Analytics API calls
   const { data: overview } = api.taskAnalytics.getOverview.useQuery()
@@ -62,23 +50,23 @@ export default function TaskAnalyticsPage() {
 
   const overviewCard = useMemo((): A2UICardNode => {
     if (!overview) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Overview", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Overview", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -122,7 +110,7 @@ export default function TaskAnalyticsPage() {
             },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -167,15 +155,15 @@ export default function TaskAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [overview, t])
 
   const statusDistCard = useMemo((): A2UICardNode => {
     if (!statusDistribution || statusDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const statusColors: Record<string, string> = {
@@ -193,32 +181,32 @@ export default function TaskAnalyticsPage() {
       color: statusColors[item.status] || "#6b7280",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Status Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Status Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [statusDistribution, t])
 
   const creationTrendCard = useMemo((): A2UICardNode => {
     if (!creationTrend || creationTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -230,31 +218,31 @@ export default function TaskAnalyticsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Creation Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [creationTrend, t])
 
   const completionTrendCard = useMemo((): A2UICardNode => {
     if (!completionTrend || completionTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -266,31 +254,31 @@ export default function TaskAnalyticsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Completion Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Completion Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [completionTrend, t])
 
   const wordCountDistCard = useMemo((): A2UICardNode => {
     if (!wordCountDistribution || wordCountDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = wordCountDistribution.map((item) => ({
@@ -300,18 +288,18 @@ export default function TaskAnalyticsPage() {
       color: "#8b5cf6",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Word Count Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Word Count Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "horizontal",
               keys: ["value"],
               indexBy: "label",
@@ -319,28 +307,28 @@ export default function TaskAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [wordCountDistribution, t])
 
   const progressCard = useMemo((): A2UICardNode => {
     if (!progressAnalysis) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Progress Analysis", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Progress Analysis", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -376,15 +364,15 @@ export default function TaskAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [progressAnalysis, t])
 
   const referenceCard = useMemo((): A2UICardNode => {
     if (!referenceUsage) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [
@@ -394,45 +382,45 @@ export default function TaskAnalyticsPage() {
       { id: "Neither", label: "Neither", value: referenceUsage.withNeither, color: "#6b7280" },
     ]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Reference Usage", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Reference Usage", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [referenceUsage, t])
 
   const executionCard = useMemo((): A2UICardNode => {
     if (!executionStats) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Execution Statistics", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Execution Statistics", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -468,25 +456,25 @@ export default function TaskAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [executionStats, t])
 
   const topTopicsCard = useMemo((): A2UICardNode => {
     if (!topTopics || topTopics.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Topics", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Top Topics", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -520,7 +508,7 @@ export default function TaskAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topTopics, t])
 
   const topKeywordsCard = useMemo((): A2UICardNode => {
@@ -536,23 +524,23 @@ export default function TaskAnalyticsPage() {
       value: keyword.count,
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Keywords", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Top Keywords", variant: "h3", weight: "semibold" },
             {
               type: "chart-word-cloud",
               words: wordCloudData,
-              height: CHART_HEIGHT.compact,
+              height: ANALYTICS_LAYOUT.chartHeight.compact,
             },
           ],
         },
       ],
-    }
+    })
   }, [topKeywords, t])
 
   if (!mounted) return null
@@ -571,30 +559,14 @@ export default function TaskAnalyticsPage() {
     children: [
       {
         type: "column",
-        gap: LAYOUT_GAP.section,
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
-          { type: "text", text: "Task Analytics", variant: "h2", weight: "bold" },
+          analyticsHeader("Task Analytics", "Task execution, quality, and throughput metrics."),
           overviewCard,
           statusDistCard,
-          {
-            type: "row",
-            gap: LAYOUT_GAP.card,
-            wrap: true,
-            children: [
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [creationTrendCard] },
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [completionTrendCard] },
-            ],
-          },
+          analyticsGrid([creationTrendCard, completionTrendCard]),
           wordCountDistCard,
-          {
-            type: "row",
-            gap: LAYOUT_GAP.card,
-            wrap: true,
-            children: [
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [progressCard] },
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [executionCard] },
-            ],
-          },
+          analyticsGrid([progressCard, executionCard]),
           referenceCard,
           topTopicsCard,
           topKeywordsCard,

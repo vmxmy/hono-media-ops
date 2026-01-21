@@ -7,22 +7,9 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
 
-const CHART_HEIGHT = {
-  card: 280,
-  trend: 300,
-  compact: 200,
-  bar: 250,
-  scatter: 300,
-} as const
-
-const CARD_MIN_WIDTH = "280px"
-const LAYOUT_GAP = {
-  section: "1.5rem",
-  card: "1rem",
-  content: "0.5rem",
-} as const
 
 export default function ImagePromptAnalyticsPage() {
   const { t } = useI18n()
@@ -32,6 +19,7 @@ export default function ImagePromptAnalyticsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Image Prompt Analytics API calls
   const { data: overview } = api.imagePromptAnalytics.getOverview.useQuery()
@@ -65,23 +53,23 @@ export default function ImagePromptAnalyticsPage() {
 
   const overviewCard = useMemo((): A2UICardNode => {
     if (!overview) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Overview", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Overview", variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -126,15 +114,15 @@ export default function ImagePromptAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [overview, t])
 
   const categoryDistCard = useMemo((): A2UICardNode => {
     if (!categoryDistribution || categoryDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
@@ -145,32 +133,32 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[index % colors.length],
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Category Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Category Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [categoryDistribution, t])
 
   const modelDistCard = useMemo((): A2UICardNode => {
     if (!modelDistribution || modelDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"]
@@ -181,24 +169,24 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[index % colors.length],
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Model Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Model Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [modelDistribution, t])
 
   const ratioDistCard = useMemo((): A2UICardNode => {
@@ -216,18 +204,18 @@ export default function ImagePromptAnalyticsPage() {
       color: "#8b5cf6",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Ratio Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Ratio Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "horizontal",
               keys: ["value"],
               indexBy: "label",
@@ -235,15 +223,15 @@ export default function ImagePromptAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [ratioDistribution, t])
 
   const resolutionDistCard = useMemo((): A2UICardNode => {
     if (!resolutionDistribution || resolutionDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = resolutionDistribution.map((item) => ({
@@ -253,18 +241,18 @@ export default function ImagePromptAnalyticsPage() {
       color: "#ec4899",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Resolution Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Resolution Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "horizontal",
               keys: ["value"],
               indexBy: "label",
@@ -272,15 +260,15 @@ export default function ImagePromptAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [resolutionDistribution, t])
 
   const ratingDistCard = useMemo((): A2UICardNode => {
     if (!ratingDistribution || ratingDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = ratingDistribution.map((item) => ({
@@ -290,18 +278,18 @@ export default function ImagePromptAnalyticsPage() {
       color: "#f59e0b",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Rating Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Rating Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: chartData,
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
               layout: "horizontal",
               keys: ["value"],
               indexBy: "label",
@@ -309,15 +297,15 @@ export default function ImagePromptAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [ratingDistribution, t])
 
   const sourceDistCard = useMemo((): A2UICardNode => {
     if (!sourceDistribution || sourceDistribution.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const colors = { manual: "#3b82f6", ai: "#22c55e", imported: "#f59e0b" }
@@ -328,42 +316,42 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[item.source as keyof typeof colors] || "#6b7280",
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Source Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Source Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: chartData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [sourceDistribution, t])
 
   const topRatedCard = useMemo((): A2UICardNode => {
     if (!topRatedPrompts || topRatedPrompts.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Rated Prompts", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Top Rated Prompts", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -397,15 +385,15 @@ export default function ImagePromptAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topRatedPrompts, t])
 
   const usageTrendCard = useMemo((): A2UICardNode => {
     if (!usageTrend || usageTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -417,31 +405,31 @@ export default function ImagePromptAnalyticsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Usage Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Usage Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [usageTrend, t])
 
   const creationTrendCard = useMemo((): A2UICardNode => {
     if (!creationTrend || creationTrend.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const chartData = [{
@@ -453,31 +441,31 @@ export default function ImagePromptAnalyticsPage() {
       })),
     }]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Creation Trend (30 Days)", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h3", weight: "semibold" },
             {
               type: "chart-line",
               data: chartData,
-              height: CHART_HEIGHT.trend,
+              height: ANALYTICS_LAYOUT.chartHeight.trend,
             },
           ],
         },
       ],
-    }
+    })
   }, [creationTrend, t])
 
   const topTagsCard = useMemo((): A2UICardNode => {
     if (!topTags || topTags.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     const wordCloudData = topTags.map((tag) => ({
@@ -485,23 +473,23 @@ export default function ImagePromptAnalyticsPage() {
       value: tag.count,
     }))
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Tags", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Top Tags", variant: "h3", weight: "semibold" },
             {
               type: "chart-word-cloud",
               words: wordCloudData,
-              height: CHART_HEIGHT.compact,
+              height: ANALYTICS_LAYOUT.chartHeight.compact,
             },
           ],
         },
       ],
-    }
+    })
   }, [topTags, t])
 
   if (!mounted) return null
@@ -520,40 +508,16 @@ export default function ImagePromptAnalyticsPage() {
     children: [
       {
         type: "column",
-        gap: LAYOUT_GAP.section,
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
-          { type: "text", text: "Image Prompt Analytics", variant: "h2", weight: "bold" },
+          analyticsHeader("Image Prompt Analytics", "Prompt usage, quality, and distribution insights."),
           overviewCard,
           categoryDistCard,
-          {
-            type: "row",
-            gap: LAYOUT_GAP.card,
-            wrap: true,
-            children: [
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [modelDistCard] },
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [sourceDistCard] },
-            ],
-          },
-          {
-            type: "row",
-            gap: LAYOUT_GAP.card,
-            wrap: true,
-            children: [
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [ratioDistCard] },
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [resolutionDistCard] },
-            ],
-          },
+          analyticsGrid([modelDistCard, sourceDistCard]),
+          analyticsGrid([ratioDistCard, resolutionDistCard]),
           ratingDistCard,
           topRatedCard,
-          {
-            type: "row",
-            gap: LAYOUT_GAP.card,
-            wrap: true,
-            children: [
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [usageTrendCard] },
-              { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [creationTrendCard] },
-            ],
-          },
+          analyticsGrid([usageTrendCard, creationTrendCard]),
           topTagsCard,
         ],
       },

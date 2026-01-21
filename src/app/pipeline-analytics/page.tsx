@@ -7,6 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
 
 export default function PipelineAnalyticsPage() {
@@ -17,6 +18,7 @@ export default function PipelineAnalyticsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // API calls
   const { data: overview } = api.pipelineAnalytics.getOverview.useQuery()
@@ -47,17 +49,17 @@ export default function PipelineAnalyticsPage() {
 
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Overview", variant: "h4" },
+            { type: "text", text: "Overview", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -101,7 +103,7 @@ export default function PipelineAnalyticsPage() {
             { type: "divider" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -136,22 +138,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [overview])
 
   // Status distribution card
   const statusDistCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Status Distribution", variant: "h4" },
+            { type: "text", text: "Status Distribution", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (statusDistribution?.map((item) => ({
                 type: "row" as const,
                 justify: "between" as const,
@@ -166,19 +168,19 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [statusDistribution])
 
   // Creation trend card
   const creationTrendCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Creation Trend (30 Days)", variant: "h4" },
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -195,19 +197,19 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [creationTrend])
 
   // Completion trend card
   const completionTrendCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Completion Trend (30 Days)", variant: "h4" },
+            { type: "text", text: "Completion Trend (30 Days)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -224,22 +226,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [completionTrend])
 
   // Progress analysis card
   const progressAnalysisCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Progress Analysis", variant: "h4" },
+            { type: "text", text: "Progress Analysis", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -265,7 +267,7 @@ export default function PipelineAnalyticsPage() {
             { type: "divider" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -291,22 +293,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [progressAnalysis])
 
   // Top sources card
   const topSourcesCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Sources", variant: "h4" },
+            { type: "text", text: "Top Sources", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (topSources?.map((item) => ({
                 type: "column" as const,
                 gap: "0.25rem" as const,
@@ -316,7 +318,7 @@ export default function PipelineAnalyticsPage() {
                   { type: "text" as const, text: item.sourceUrl, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: "1rem" as const,
+                    gap: ANALYTICS_LAYOUT.cardGap as const,
                     children: [
                       { type: "text" as const, text: `${item.count} total`, variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: `${item.successCount} success`, variant: "caption" as const, color: "muted" as const },
@@ -329,22 +331,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topSources])
 
   // Top topics card
   const topTopicsCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Topics", variant: "h4" },
+            { type: "text", text: "Top Topics", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (topTopics?.map((item) => ({
                 type: "row" as const,
                 justify: "between" as const,
@@ -359,22 +361,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topTopics])
 
   // Top keywords card
   const topKeywordsCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Top Keywords", variant: "h4" },
+            { type: "text", text: "Top Keywords", variant: "h3" },
             {
               type: "row",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               wrap: true,
               children: (topKeywords?.slice(0, 15).map((item) => ({
                 type: "badge" as const,
@@ -385,22 +387,22 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topKeywords])
 
   // Performance metrics card
   const performanceCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Performance Metrics", variant: "h4" },
+            { type: "text", text: "Performance Metrics", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -444,7 +446,7 @@ export default function PipelineAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [performanceMetrics])
 
   if (!mounted) return null
@@ -459,13 +461,14 @@ export default function PipelineAnalyticsPage() {
     children: [
       {
         type: "column",
-        gap: "1.5rem",
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
+          analyticsHeader("Pipeline Analytics", "Pipeline throughput and performance overview."),
           overviewCard,
-          { type: "row", gap: "1rem", children: [statusDistCard, progressAnalysisCard] },
-          { type: "row", gap: "1rem", children: [creationTrendCard, completionTrendCard] },
-          { type: "row", gap: "1rem", children: [topSourcesCard, topTopicsCard] },
-          { type: "row", gap: "1rem", children: [topKeywordsCard, performanceCard] },
+          analyticsGrid([statusDistCard, progressAnalysisCard]),
+          analyticsGrid([creationTrendCard, completionTrendCard]),
+          analyticsGrid([topSourcesCard, topTopicsCard]),
+          analyticsGrid([topKeywordsCard, performanceCard]),
         ],
       },
     ],

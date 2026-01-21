@@ -7,25 +7,8 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
-
-const CHART_HEIGHT = {
-  card: 280,
-  trend: 300,
-  compact: 200,
-  bar: 250,
-  heatmap: 280,
-  scatter: 300,
-  gauge: 200,
-  treemap: 280,
-} as const
-
-const CARD_MIN_WIDTH = "280px"
-const LAYOUT_GAP = {
-  section: "1.5rem",
-  card: "1rem",
-  content: "0.5rem",
-} as const
 
 export default function InsightsPage() {
   const { t } = useI18n()
@@ -35,6 +18,7 @@ export default function InsightsPage() {
   const mounted = status !== "loading"
   const logout = () => signOut({ callbackUrl: "/login" })
   const navItems = buildNavItems(t)
+  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
   const [trendDays, setTrendDays] = useState(30)
 
   const { data: profile, isLoading: profileLoading } = api.reverseLogs.getMyStyleProfile.useQuery()
@@ -223,21 +207,21 @@ export default function InsightsPage() {
 
   const headerCard = useMemo((): A2UICardNode => {
     if (profileLoading) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
-      }
+      })
     }
 
     if (!profile) {
-      return {
+      return wrapCard({
         type: "card",
         className: "p-8 text-center",
         children: [{ type: "text", text: t("insights.noProfile"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
@@ -277,28 +261,28 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [profile, profileLoading, t])
 
   const metricsCard = useMemo((): A2UICardNode => {
     if (!metricsStats) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.noData"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: t("insights.averageMetrics"), variant: "h4", weight: "semibold" },
+            { type: "text", text: t("insights.averageMetrics"), variant: "h3", weight: "semibold" },
             {
               type: "row",
-              gap: LAYOUT_GAP.card,
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               justify: "around",
               children: [
@@ -345,22 +329,22 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [metricsStats, t])
 
-  const buildScatterChartCard = (): A2UINode => ({
+  const buildScatterChartCard = (): A2UINode => wrapCard({
     type: "card",
     children: [
       {
         type: "column",
-        gap: LAYOUT_GAP.content,
+        gap: ANALYTICS_LAYOUT.contentGap,
         children: [
-          { type: "text", text: "TTR vs Burstiness", variant: "h4", weight: "semibold" },
+          { type: "text", text: "TTR vs Burstiness", variant: "h3", weight: "semibold" },
           scatterData.length > 0
             ? {
                 type: "chart-scatter",
                 data: scatterData,
-                height: CHART_HEIGHT.scatter,
+                height: ANALYTICS_LAYOUT.chartHeight.scatter,
                 xAxisLabel: "TTR",
                 yAxisLabel: "Burstiness",
                 pointSize: 8,
@@ -371,19 +355,19 @@ export default function InsightsPage() {
     ],
   })
 
-  const buildHistogramCard = (): A2UICardNode => ({
+  const buildHistogramCard = (): A2UICardNode => wrapCard({
     type: "card",
     children: [
       {
         type: "column",
-        gap: LAYOUT_GAP.content,
+        gap: ANALYTICS_LAYOUT.contentGap,
         children: [
-          { type: "text", text: "Word Count Distribution", variant: "h4", weight: "semibold" },
+          { type: "text", text: "Word Count Distribution", variant: "h3", weight: "semibold" },
           wordCountHistogramData.length > 0
             ? {
                 type: "chart-histogram",
                 data: wordCountHistogramData,
-                height: CHART_HEIGHT.bar,
+                height: ANALYTICS_LAYOUT.chartHeight.bar,
                 xAxisLabel: "Word Count",
                 yAxisLabel: "Frequency",
               }
@@ -397,20 +381,20 @@ export default function InsightsPage() {
     if (!metricsStats) return []
 
     return [
-      {
+      wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "TTR Level", variant: "h4", weight: "semibold" },
+              { type: "text", text: "TTR Level", variant: "h3", weight: "semibold" },
               {
                 type: "chart-gauge",
                 value: parseFloat(metricsStats.ttr) * 100,
                 min: 0,
                 max: 100,
-                height: CHART_HEIGHT.gauge,
+                height: ANALYTICS_LAYOUT.chartHeight.gauge,
                 label: "TTR",
                 thresholds: [
                   { value: 40, color: "#ef4444", label: "Low" },
@@ -421,21 +405,21 @@ export default function InsightsPage() {
             ],
           },
         ],
-      },
-      {
+      }),
+      wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Burstiness Level", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Burstiness Level", variant: "h3", weight: "semibold" },
               {
                 type: "chart-gauge",
                 value: parseFloat(metricsStats.burstiness) * 100,
                 min: 0,
                 max: 100,
-                height: CHART_HEIGHT.gauge,
+                height: ANALYTICS_LAYOUT.chartHeight.gauge,
                 label: "Burstiness",
                 thresholds: [
                   { value: 30, color: "#22c55e", label: "Low" },
@@ -446,54 +430,54 @@ export default function InsightsPage() {
             ],
           },
         ],
-      },
+      }),
     ]
   }
 
   const radarCard = useMemo((): A2UICardNode => {
     if (radarData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [{ type: "text", text: t("common.noData"), color: "muted" }],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: t("insights.styleProfile"), variant: "h4", weight: "semibold" },
+            { type: "text", text: t("insights.styleProfile"), variant: "h3", weight: "semibold" },
             {
               type: "chart-radar",
               data: radarData,
               keys: ["value"],
               indexBy: "trait",
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               maxValue: 100,
             },
           ],
         },
       ],
-    }
+    })
   }, [radarData, t])
 
   const trendCard = useMemo((): A2UICardNode => {
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
             {
               type: "row",
               justify: "between",
               align: "center",
               children: [
-                { type: "text", text: t("insights.metricsTrend"), variant: "h4", weight: "semibold" },
+                { type: "text", text: t("insights.metricsTrend"), variant: "h3", weight: "semibold" },
                 {
                   type: "select",
                   id: "trendDays",
@@ -512,7 +496,7 @@ export default function InsightsPage() {
               ? {
                   type: "chart-line",
                   data: trendChartData,
-                  height: CHART_HEIGHT.trend,
+                  height: ANALYTICS_LAYOUT.chartHeight.trend,
                   enableArea: true,
                   curve: "catmullRom",
                   xLegend: t("common.date"),
@@ -521,145 +505,145 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [trendChartData, trendDays, t])
 
   const wordCloudCard = useMemo((): A2UICardNode => {
     if (wordCloudData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: t("insights.toneKeywords"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("insights.toneKeywords"), variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: t("insights.toneKeywords"), variant: "h4", weight: "semibold" },
+            { type: "text", text: t("insights.toneKeywords"), variant: "h3", weight: "semibold" },
             {
               type: "chart-word-cloud",
               words: wordCloudData,
-              height: CHART_HEIGHT.compact,
+              height: ANALYTICS_LAYOUT.chartHeight.compact,
             },
           ],
         },
       ],
-    }
+    })
   }, [wordCloudData, t])
 
   const barChartCard = useMemo((): A2UICardNode => {
     if (barChartData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: t("insights.categoryInsights"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("insights.categoryInsights"), variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: t("insights.categoryInsights"), variant: "h4", weight: "semibold" },
+            { type: "text", text: t("insights.categoryInsights"), variant: "h3", weight: "semibold" },
             {
               type: "chart-bar",
               data: barChartData,
               keys: ["count"],
               indexBy: "type",
               layout: "horizontal",
-              height: CHART_HEIGHT.bar,
+              height: ANALYTICS_LAYOUT.chartHeight.bar,
             },
           ],
         },
       ],
-    }
+    })
   }, [barChartData, t])
 
   const treemapCard = useMemo((): A2UICardNode => {
     if (treemapData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Category Distribution", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Category Distribution", variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Category Distribution", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Category Distribution", variant: "h3", weight: "semibold" },
             {
               type: "chart-treemap",
               data: treemapData,
-              height: CHART_HEIGHT.treemap,
+              height: ANALYTICS_LAYOUT.chartHeight.treemap,
             },
           ],
         },
       ],
-    }
+    })
   }, [treemapData])
 
   const styleCombinationsCard = useMemo((): A2UICardNode => {
     if (styleCombinationsData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Best Style-Prompt Combinations", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Best Style-Prompt Combinations", variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Best Style-Prompt Combinations", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Best Style-Prompt Combinations", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -709,24 +693,24 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [styleCombinationsData, t])
 
   const metricsComparisonCard = useMemo((): A2UICardNode => {
     if (!metricsComparison) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Your Metrics vs Global Average", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Your Metrics vs Global Average", variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
     const metrics = [
@@ -736,14 +720,14 @@ export default function InsightsPage() {
       { label: "Burstiness", user: Number(metricsComparison.userMetrics.burstiness) || 0, global: Number(metricsComparison.globalMetrics.burstiness) || 0, diff: Number(metricsComparison.comparison.burstinessDiff) || 0 },
     ]
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Your Metrics vs Global Average", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Your Metrics vs Global Average", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.75rem",
@@ -795,34 +779,34 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [metricsComparison, t])
 
   const topStylesCard = useMemo((): A2UICardNode => {
     if (topStylesData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Most Used Styles", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Most Used Styles", variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Most Used Styles", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Most Used Styles", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -861,34 +845,34 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topStylesData, t])
 
   const topPromptsCard = useMemo((): A2UICardNode => {
     if (topPromptsData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: "Most Used Prompts", variant: "h4", weight: "semibold" },
+              { type: "text", text: "Most Used Prompts", variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Most Used Prompts", variant: "h4", weight: "semibold" },
+            { type: "text", text: "Most Used Prompts", variant: "h3", weight: "semibold" },
             {
               type: "column",
               gap: "0.5rem",
@@ -927,101 +911,61 @@ export default function InsightsPage() {
           ],
         },
       ],
-    }
+    })
   }, [topPromptsData, t])
 
   const typeDistributionCard = useMemo((): A2UICardNode => {
     if (typeDistributionData.length === 0) {
-      return {
+      return wrapCard({
         type: "card",
         children: [
           {
             type: "column",
-            gap: LAYOUT_GAP.content,
+            gap: ANALYTICS_LAYOUT.contentGap,
             children: [
-              { type: "text", text: t("insights.byCategory"), variant: "h4", weight: "semibold" },
+              { type: "text", text: t("insights.byCategory"), variant: "h3", weight: "semibold" },
               { type: "text", text: t("common.noData"), color: "muted" },
             ],
           },
         ],
-      }
+      })
     }
 
-    return {
+    return wrapCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: LAYOUT_GAP.content,
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: t("insights.byCategory"), variant: "h4", weight: "semibold" },
+            { type: "text", text: t("insights.byCategory"), variant: "h3", weight: "semibold" },
             {
               type: "chart-pie",
               data: typeDistributionData,
-              height: CHART_HEIGHT.card,
+              height: ANALYTICS_LAYOUT.chartHeight.card,
               innerRadius: 0.5,
             },
           ],
         },
       ],
-    }
+    })
   }, [typeDistributionData, t])
 
   const buildPageNode = (): A2UIColumnNode => ({
     type: "column",
-    gap: LAYOUT_GAP.section,
+    gap: ANALYTICS_LAYOUT.sectionGap,
     children: [
-      { type: "text", text: t("insights.title"), variant: "h2", weight: "bold" },
+      analyticsHeader(t("insights.title"), "Style profile and usage insights."),
       headerCard,
       metricsCard,
       metricsComparisonCard,
-      {
-        type: "row",
-        gap: LAYOUT_GAP.card,
-        wrap: true,
-        children: [
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [typeDistributionCard] },
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [radarCard] },
-        ],
-      },
-      {
-        type: "row",
-        gap: LAYOUT_GAP.card,
-        wrap: true,
-        children: [
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildScatterChartCard()] },
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [buildHistogramCard()] },
-        ],
-      },
+      analyticsGrid([typeDistributionCard, radarCard]),
+      analyticsGrid([buildScatterChartCard(), buildHistogramCard()]),
       trendCard,
-      {
-        type: "row",
-        gap: LAYOUT_GAP.card,
-        wrap: true,
-        children: [
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: buildGaugeCards() },
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [wordCloudCard] },
-        ],
-      },
-      {
-        type: "row",
-        gap: LAYOUT_GAP.card,
-        wrap: true,
-        children: [
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [barChartCard] },
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [treemapCard] },
-        ],
-      },
+      analyticsGrid([...buildGaugeCards(), wordCloudCard], "three"),
+      analyticsGrid([barChartCard, treemapCard]),
       styleCombinationsCard,
-      {
-        type: "row",
-        gap: LAYOUT_GAP.card,
-        wrap: true,
-        children: [
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [topStylesCard] },
-          { type: "column", style: { flex: 1, minWidth: CARD_MIN_WIDTH }, children: [topPromptsCard] },
-        ],
-      },
+      analyticsGrid([topStylesCard, topPromptsCard]),
     ],
   })
 

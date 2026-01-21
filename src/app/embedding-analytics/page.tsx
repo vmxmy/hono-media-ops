@@ -7,6 +7,7 @@ import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
+import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
 import { buildNavItems } from "@/lib/navigation"
 
 export default function EmbeddingAnalyticsPage() {
@@ -46,17 +47,17 @@ export default function EmbeddingAnalyticsPage() {
 
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Overview", variant: "h4" },
+            { type: "text", text: "Overview", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -100,22 +101,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [overview])
 
   // Model version distribution card
   const modelVersionCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Model Versions", variant: "h4" },
+            { type: "text", text: "Model Versions", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (modelVersionDistribution?.map((item) => ({
                 type: "row" as const,
                 justify: "between" as const,
@@ -130,19 +131,19 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [modelVersionDistribution])
 
   // Creation trend card
   const creationTrendCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Creation Trend (30 Days)", variant: "h4" },
+            { type: "text", text: "Creation Trend (30 Days)", variant: "h3" },
             {
               type: "column",
               gap: "0.25rem",
@@ -159,22 +160,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [creationTrend])
 
   // Task embedding status card
   const taskStatusCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Task Embedding Status", variant: "h4" },
+            { type: "text", text: "Task Embedding Status", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -218,22 +219,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [taskEmbeddingStatus])
 
   // Content hash analysis card
   const contentHashCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Content Hash Analysis", variant: "h4" },
+            { type: "text", text: "Content Hash Analysis", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -283,22 +284,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [contentHashAnalysis])
 
   // Embedding age card
   const embeddingAgeCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Embedding Age", variant: "h4" },
+            { type: "text", text: "Embedding Age", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -333,22 +334,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [embeddingAge])
 
   // Recent embeddings card
   const recentEmbeddingsCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Recent Embeddings", variant: "h4" },
+            { type: "text", text: "Recent Embeddings", variant: "h3" },
             {
               type: "column",
-              gap: "0.5rem",
+              gap: ANALYTICS_LAYOUT.contentGap,
               children: (recentEmbeddings?.slice(0, 10).map((item) => ({
                 type: "column" as const,
                 gap: "0.25rem" as const,
@@ -370,22 +371,22 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [recentEmbeddings])
 
   // Growth rate card
   const growthRateCard = useMemo((): A2UICardNode => {
-    return {
+    return analyticsCard({
       type: "card",
       children: [
         {
           type: "column",
-          gap: "0.5rem",
+          gap: ANALYTICS_LAYOUT.contentGap,
           children: [
-            { type: "text", text: "Growth Rate", variant: "h4" },
+            { type: "text", text: "Growth Rate", variant: "h3" },
             {
               type: "row",
-              gap: "1rem",
+              gap: ANALYTICS_LAYOUT.cardGap,
               wrap: true,
               children: [
                 {
@@ -420,7 +421,7 @@ export default function EmbeddingAnalyticsPage() {
           ],
         },
       ],
-    }
+    })
   }, [growthRate])
 
   if (!mounted) return null
@@ -435,12 +436,13 @@ export default function EmbeddingAnalyticsPage() {
     children: [
       {
         type: "column",
-        gap: "1.5rem",
+        gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
+          analyticsHeader("Embedding Analytics", "Embedding coverage and freshness overview."),
           overviewCard,
-          { type: "row", gap: "1rem", children: [modelVersionCard, taskStatusCard] },
-          { type: "row", gap: "1rem", children: [creationTrendCard, contentHashCard] },
-          { type: "row", gap: "1rem", children: [embeddingAgeCard, growthRateCard] },
+          analyticsGrid([modelVersionCard, taskStatusCard]),
+          analyticsGrid([creationTrendCard, contentHashCard]),
+          analyticsGrid([embeddingAgeCard, growthRateCard]),
           recentEmbeddingsCard,
         ],
       },
