@@ -14,6 +14,13 @@ import type {
   A2UIRowNode,
 } from "@/lib/a2ui"
 import { buildNavItems } from "@/lib/navigation"
+import {
+  XHS_IMAGE_JOB_STATUSES,
+  isXhsImageJobCancellable,
+  isXhsImageJobRetryable,
+  toggleXhsImageJobStatus,
+  type XhsImageJobStatus,
+} from "@/lib/xhs-image-job-status"
 
 // Polling interval in milliseconds
 const POLLING_INTERVAL = 5000
@@ -34,7 +41,7 @@ interface XhsJob {
   sourceTitle: string | null
   totalImages: number
   completedImages: number
-  status: "pending" | "processing" | "completed" | "failed"
+  status: XhsImageJobStatus
   errorMessage: string | null
   ratio: string | null
   resolution: string | null
@@ -58,6 +65,8 @@ export default function XhsImagesPage() {
   const [zoomedJobId, setZoomedJobId] = useState<string | null>(null)
   // Modal state for generating new images
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+  // Status filter state (empty means all)
+  const [statusFilters, setStatusFilters] = useState<XhsImageJobStatus[]>([])
 
   // Get processing count for smart polling
   const { data: processingCountData = 0 } = api.xhsImages.getProcessingCount.useQuery(undefined, {
@@ -72,7 +81,11 @@ export default function XhsImagesPage() {
     error,
     refetch: invalidateJobs,
   } = api.xhsImages.getAll.useQuery(
-    { page: 1, pageSize: 50 },
+    {
+      page: 1,
+      pageSize: 50,
+      status: statusFilters.length > 0 ? statusFilters : undefined,
+    },
     {
       enabled: mounted,
       refetchInterval: processingCount > 0 ? POLLING_INTERVAL : false,
@@ -109,6 +122,30 @@ export default function XhsImagesPage() {
     },
   })
 
+  const cancelMutation = api.xhsImages.cancel.useMutation({
+    onSuccess: () => {
+      invalidateJobs()
+      a2uiToast.success(t("xhsImages.cancelSuccess"))
+    },
+    onError: () => {
+      a2uiToast.error(t("xhsImages.cancelFailed"))
+    },
+  })
+
+  const retryMutation = api.xhsImages.retry.useMutation({
+    onSuccess: (result) => {
+      if (!result.success) {
+        a2uiToast.error(result.message || t("xhsImages.retryFailed"))
+        return
+      }
+      invalidateJobs()
+      a2uiToast.success(t("xhsImages.retrySuccess"))
+    },
+    onError: (error) => {
+      a2uiToast.error(error.message || t("xhsImages.retryFailed"))
+    },
+  })
+
   const publishMutation = api.xhsImages.publish.useMutation({
     onSuccess: () => {
       a2uiToast.success(t("xhsImages.publishSuccess"))
@@ -122,6 +159,16 @@ export default function XhsImagesPage() {
     showConfirmToast(t("xhsImages.deleteConfirm"), () => deleteMutation.mutate({ id }), {
       label: t("common.confirm"),
     })
+  }
+
+  const handleCancel = (id: string) => {
+    showConfirmToast(t("xhsImages.cancelConfirm"), () => cancelMutation.mutate({ id }), {
+      label: t("common.confirm"),
+    })
+  }
+
+  const handleRetry = (id: string) => {
+    retryMutation.mutate({ id })
   }
 
   const handlePublish = (id: string) => {
@@ -148,18 +195,20 @@ export default function XhsImagesPage() {
     }
   }
 
-  const getStatusBadge = (status: string): A2UINode => {
-    const colorMap: Record<string, "default" | "processing" | "success" | "destructive"> = {
+  const getStatusBadge = (status: XhsImageJobStatus): A2UINode => {
+    const colorMap: Record<XhsImageJobStatus, "default" | "processing" | "success" | "destructive" | "cancelled"> = {
       pending: "default",
       processing: "processing",
       completed: "success",
       failed: "destructive",
+      cancelled: "cancelled",
     }
-    const labelMap: Record<string, string> = {
+    const labelMap: Record<XhsImageJobStatus, string> = {
       pending: t("status.pending"),
       processing: t("status.processing"),
       completed: t("status.completed"),
       failed: t("status.failed"),
+      cancelled: t("status.cancelled"),
     }
     return {
       type: "badge",
@@ -167,6 +216,25 @@ export default function XhsImagesPage() {
       color: colorMap[status] ?? "default",
     }
   }
+
+  const buildStatusFilterChip = (
+    label: string,
+    active: boolean,
+    action: string,
+    args?: unknown[]
+  ): A2UINode => ({
+    type: "button",
+    text: label,
+    variant: "outline",
+    size: "sm",
+    className: [
+      "rounded-full",
+      active
+        ? "border-primary/40 bg-primary/10 text-primary"
+        : "border-border/60 text-muted-foreground hover:text-foreground",
+    ].join(" "),
+    onClick: { action, args },
+  })
 
   // Build single image thumbnail - supports normal and zoomed modes
   const buildImageThumbnail = (image: XhsImage, jobId: string, isZoomed: boolean): A2UINode => {
@@ -340,8 +408,12 @@ export default function XhsImagesPage() {
       ? Math.round((job.completedImages / job.totalImages) * 100)
       : 0
     const isProcessing = job.status === "processing"
-    const isFailed = job.status === "failed"
+    const isErrorState = job.status === "failed" || job.status === "cancelled"
     const isZoomed = zoomedJobId === job.id
+    const isCancellable = isXhsImageJobCancellable(job.status)
+    const isRetryable = isXhsImageJobRetryable(job.status)
+    const isCancelling = cancelMutation.isPending && cancelMutation.variables?.id === job.id
+    const isRetrying = retryMutation.isPending && retryMutation.variables?.id === job.id
 
     return {
       type: "card",
@@ -395,6 +467,23 @@ export default function XhsImagesPage() {
                           align: "center",
                           children: [
                             getStatusBadge(job.status),
+                            ...(isCancellable ? [{
+                              type: "button" as const,
+                              text: isCancelling ? t("xhsImages.cancelling") : t("xhsImages.cancel"),
+                              variant: "outline" as const,
+                              size: "sm" as const,
+                              className: "border-destructive/40 text-destructive hover:bg-destructive/10",
+                              disabled: isCancelling,
+                              onClick: { action: "cancelJob", args: [job.id] },
+                            }] : []),
+                            ...(isRetryable ? [{
+                              type: "button" as const,
+                              text: isRetrying ? t("xhsImages.retrying") : t("xhsImages.retry"),
+                              variant: "secondary" as const,
+                              size: "sm" as const,
+                              disabled: isRetrying,
+                              onClick: { action: "retryJob", args: [job.id] },
+                            }] : []),
                             ...(job.status === "completed" ? [{
                               type: "button" as const,
                               text: publishMutation.isPending ? t("xhsImages.publishing") : t("xhsImages.publish"),
@@ -449,7 +538,7 @@ export default function XhsImagesPage() {
                       className: "h-1.5",
                     }] : []),
                     // Error message
-                    ...(isFailed && job.errorMessage ? [{
+                    ...(isErrorState && job.errorMessage ? [{
                       type: "text" as const,
                       text: `❌ ${job.errorMessage}`,
                       variant: "caption" as const,
@@ -551,6 +640,24 @@ export default function XhsImagesPage() {
           },
         ],
       },
+      {
+        type: "row",
+        align: "center",
+        wrap: true,
+        gap: "0.5rem",
+        children: [
+          { type: "text", text: t("xhsImages.filterLabel"), variant: "caption", color: "muted" },
+          buildStatusFilterChip(t("xhsImages.filterAll"), statusFilters.length === 0, "clearStatusFilters"),
+          ...XHS_IMAGE_JOB_STATUSES.map((status) =>
+            buildStatusFilterChip(
+              t(`status.${status}` as const),
+              statusFilters.includes(status),
+              "toggleStatusFilter",
+              [status]
+            )
+          ),
+        ],
+      },
     ],
   }
 
@@ -572,6 +679,12 @@ export default function XhsImagesPage() {
         case "publish":
           handlePublish(args?.[0] as string)
           break
+        case "cancelJob":
+          handleCancel(args?.[0] as string)
+          break
+        case "retryJob":
+          handleRetry(args?.[0] as string)
+          break
         case "copyUrl":
           handleCopyUrl(args?.[0] as string)
           break
@@ -583,9 +696,18 @@ export default function XhsImagesPage() {
         case "openGenerateModal":
           setIsGenerateModalOpen(true)
           break
+        case "toggleStatusFilter": {
+          const status = args?.[0] as XhsImageJobStatus
+          if (!status) return
+          setStatusFilters(prev => toggleXhsImageJobStatus(prev, status))
+          break
+        }
+        case "clearStatusFilters":
+          setStatusFilters([])
+          break
       }
     },
-    [router]
+    [router, logout, handleDelete, handlePublish, handleCancel, handleRetry, handleCopyUrl]
   )
 
   if (!mounted) return null
