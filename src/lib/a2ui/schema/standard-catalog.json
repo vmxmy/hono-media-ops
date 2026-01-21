@@ -201,6 +201,10 @@
           "enum": ["sm"],
           "description": "Hide label at or below breakpoint"
         },
+        "ariaLabel": {
+          "type": "string",
+          "description": "Accessible label for icon-only buttons"
+        },
         "fullWidth": {
           "type": "boolean",
           "default": false,

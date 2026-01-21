@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Pencil, BookOpen, Newspaper, BarChart3, Image, Images, User, Zap, Library } from "lucide-react"
@@ -31,14 +32,14 @@ export function A2UIThemeSwitcher({
 }
 
 const NavIcons: Record<string, React.ReactNode> = {
-  pipeline: <Zap className="h-5 w-5 flex-shrink-0" />,
-  tasks: <Pencil className="h-5 w-5 flex-shrink-0" />,
-  articles: <BookOpen className="h-5 w-5 flex-shrink-0" />,
-  wechatArticles: <Library className="h-5 w-5 flex-shrink-0" />,
-  reverse: <Newspaper className="h-5 w-5 flex-shrink-0" />,
-  xhsImages: <Images className="h-5 w-5 flex-shrink-0" />,
-  insights: <BarChart3 className="h-5 w-5 flex-shrink-0" />,
-  prompts: <Image className="h-5 w-5 flex-shrink-0" />,
+  pipeline: <Zap className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  tasks: <Pencil className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  articles: <BookOpen className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  wechatArticles: <Library className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  reverse: <Newspaper className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  xhsImages: <Images className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  insights: <BarChart3 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  prompts: <Image className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
 }
 
 export function A2UIAppShell({
@@ -158,10 +159,17 @@ export function A2UIAppShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background" style={node.style}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:text-foreground focus:shadow"
+      >
+        跳到主内容
+      </a>
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -172,10 +180,12 @@ export function A2UIAppShell({
       >
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center justify-between border-b border-border px-3">
-            <button
+            <Link
+              href={homePath}
               onClick={handleHome}
-              className="flex items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-accent"
+              className="flex items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title={node.brand ?? "Home"}
+              aria-label={node.brand ?? "Home"}
             >
               {node.logoSrc ? (
                 <img
@@ -191,36 +201,40 @@ export function A2UIAppShell({
                   {node.brand}
                 </span>
               )}
-            </button>
+            </Link>
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="rounded-md p-1 text-muted-foreground hover:bg-accent md:hidden"
+              className="rounded-md p-1 text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden"
+              aria-label="关闭菜单"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 p-2">
+          <nav className="flex-1 space-y-1 p-2" id="app-shell-nav">
             {node.navItems.map((item) => {
               const isActive = node.activePath === item.path
               const icon = NavIcons[item.key]
               const showLabel = isMobileMenuOpen || !isCollapsed
               return (
-                <button
+                <Link
                   key={item.key}
+                  href={item.path}
                   onClick={() => handleNavigate(item.path)}
                   title={!showLabel ? item.label : undefined}
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   } ${!showLabel ? "justify-center px-2 md:justify-center md:px-2" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   {icon}
                   {showLabel && <span>{item.label}</span>}
-                </button>
+                </Link>
               )
             })}
           </nav>
@@ -228,14 +242,16 @@ export function A2UIAppShell({
           <div className="hidden border-t border-border p-2 md:block">
             <button
               onClick={toggleCollapsed}
-              className="flex w-full items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title={isCollapsed ? "展开侧边栏" : "收起侧边栏"}
+              aria-label={isCollapsed ? "展开侧边栏" : "收起侧边栏"}
             >
               <svg
                 className={`h-5 w-5 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
               </svg>
@@ -246,7 +262,7 @@ export function A2UIAppShell({
             <div className="border-t border-border p-3 md:hidden">
               <button
                 onClick={handleLogout}
-                className="flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {node.logoutLabel ?? "退出"}
               </button>
@@ -259,9 +275,13 @@ export function A2UIAppShell({
         <header className="z-30 flex h-14 flex-shrink-0 items-center justify-between gap-4 border-b border-border bg-background px-4 md:px-6">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden"
+            aria-label="打开菜单"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="app-shell-nav"
+            type="button"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
@@ -287,22 +307,33 @@ export function A2UIAppShell({
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                    className="flex items-center justify-center rounded-md border border-border p-2 text-foreground transition-colors hover:bg-accent"
+                    className="flex items-center justify-center rounded-md border border-border p-2 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     aria-label="用户中心"
+                    aria-expanded={isUserMenuOpen}
+                    aria-controls="user-menu"
+                    type="button"
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4" aria-hidden="true" />
                   </button>
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 top-10 z-40 w-40 rounded-md border border-border bg-popover shadow-lg">
-                      <button
+                    <div
+                      id="user-menu"
+                      className="absolute right-0 top-10 z-40 w-40 rounded-md border border-border bg-popover shadow-lg"
+                      role="menu"
+                    >
+                      <Link
+                        href="/profile"
                         onClick={() => handleNavigate("/profile")}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        role="menuitem"
                       >
                         个人资料
-                      </button>
+                      </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        role="menuitem"
+                        type="button"
                       >
                         {node.logoutLabel ?? "退出"}
                       </button>
@@ -314,7 +345,7 @@ export function A2UIAppShell({
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-auto p-4 md:p-6">
+        <main id="main-content" className="flex min-h-0 flex-1 flex-col overflow-auto p-4 md:p-6">
           {node.children && renderChildren?.(node.children)}
         </main>
       </div>

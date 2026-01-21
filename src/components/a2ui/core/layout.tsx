@@ -1,6 +1,7 @@
 "use client"
 
-import type { CSSProperties } from "react"
+import type { CSSProperties, KeyboardEvent } from "react"
+import Link from "next/link"
 import type {
   A2UIColumnNode,
   A2UIRowNode,
@@ -94,16 +95,26 @@ export function A2UICard({ node, onAction, renderChildren }: A2UIComponentProps<
   const handleClick = node.onClick
     ? () => onAction(node.onClick!.action, node.onClick!.args)
     : undefined
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!handleClick) return
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      handleClick()
+    }
+  }
 
   const className = `rounded-lg border border-border bg-card p-3 shadow-sm transition-colors md:p-4 ${
     node.hoverable !== false ? "hover:bg-card/80" : ""
-  } ${handleClick ? "cursor-pointer" : ""} ${node.className || ""}`.trim()
+  } ${handleClick ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" : ""} ${node.className || ""}`.trim()
 
   return (
     <div
       className={className}
       style={node.style}
       onClick={handleClick}
+      onKeyDown={handleClick ? handleKeyDown : undefined}
+      role={handleClick ? "button" : undefined}
+      tabIndex={handleClick ? 0 : undefined}
     >
       {node.children && renderChildren?.(node.children)}
     </div>
@@ -137,14 +148,38 @@ export function A2UINavLink({ node, onAction }: A2UIComponentProps<A2UINavLinkNo
     ? "bg-accent text-accent-foreground"
     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
 
+  const content = (
+    <>
+      {node.icon && <span className="text-base" aria-hidden="true">{node.icon}</span>}
+      <span>{node.label ?? node.text}</span>
+    </>
+  )
+
+  const className = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeClasses}`
+
+  if (node.href) {
+    return (
+      <Link
+        href={node.href}
+        onClick={handleClick}
+        className={className}
+        style={node.style}
+        aria-current={node.active ? "page" : undefined}
+      >
+        {content}
+      </Link>
+    )
+  }
+
   return (
     <button
+      type="button"
       onClick={handleClick}
-      className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeClasses}`}
+      className={className}
       style={node.style}
+      aria-current={node.active ? "page" : undefined}
     >
-      {node.icon && <span className="text-base">{node.icon}</span>}
-      <span>{node.label}</span>
+      {content}
     </button>
   )
 }

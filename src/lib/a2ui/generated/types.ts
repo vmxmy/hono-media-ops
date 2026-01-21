@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-17T15:16:33.170Z
+// Generated at: 2026-01-21T00:52:03.453Z
 
 import type { CSSProperties } from "react"
 
@@ -153,6 +153,7 @@ export interface A2UIButtonNode extends A2UIBaseNode {
   disabled?: boolean // Disable the button
   icon?: "google" | "github" | "plus" // Icon to display before text
   hideLabelOn?: "sm" // Hide label at or below breakpoint
+  ariaLabel?: string // Accessible label for icon-only buttons
   fullWidth?: boolean // Make button full width
   buttonType?: "button" | "submit" | "reset" // HTML button type attribute
   onClick?: A2UIAction // Click action handler

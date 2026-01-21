@@ -132,6 +132,7 @@ export function ThemeSwitcher() {
     variant: "secondary",
     onClick: { action: "toggleOpen" },
     className: "w-9 h-9 p-0",
+    ariaLabel: t("settings.theme"),
   }
 
   const themeOptions = [

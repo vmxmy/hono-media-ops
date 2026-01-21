@@ -1,6 +1,6 @@
 // AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY
 // Generated from: src/lib/a2ui/schema/standard-catalog.json
-// Generated at: 2026-01-17T15:16:33.171Z
+// Generated at: 2026-01-21T00:52:03.454Z
 
 import type { A2UIComponentDefinition, A2UICatalog } from "../catalog-types"
 
@@ -217,6 +217,10 @@ export const COMPONENT_DEFINITIONS: A2UIComponentDefinition[] = [
         type: "string",
         description: "Hide label at or below breakpoint",
         enum: ["sm"],
+      },
+      ariaLabel: {
+        type: "string",
+        description: "Accessible label for icon-only buttons",
       },
       fullWidth: {
         type: "boolean",

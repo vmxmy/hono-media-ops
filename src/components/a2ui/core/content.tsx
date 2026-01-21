@@ -112,6 +112,7 @@ export function A2UIIcon({ node }: A2UIComponentProps<A2UIIconNode>) {
         color={node.color}
         style={node.style}
         className="inline-flex items-center justify-center"
+        aria-hidden="true"
       />
     )
   }
@@ -124,6 +125,7 @@ export function A2UIIcon({ node }: A2UIComponentProps<A2UIIconNode>) {
         ...node.style,
       }}
       className="inline-flex items-center justify-center"
+      aria-hidden="true"
     >
       {node.name}
     </span>
@@ -168,7 +170,7 @@ export function A2UILink({ node, onAction }: A2UIComponentProps<A2UILinkNode>) {
       style={node.style}
     >
       {node.text}
-      {node.external && <span className="text-xs">↗</span>}
+      {node.external && <span className="text-xs" aria-hidden="true">↗</span>}
     </a>
   )
 }
