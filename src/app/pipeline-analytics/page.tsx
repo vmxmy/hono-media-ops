@@ -1,24 +1,17 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function PipelineAnalyticsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // API calls
   const { data: overview } = api.pipelineAnalytics.getOverview.useQuery()
@@ -31,25 +24,9 @@ export default function PipelineAnalyticsPage() {
   const { data: topKeywords } = api.pipelineAnalytics.getTopKeywords.useQuery({ limit: 20 })
   const { data: performanceMetrics } = api.pipelineAnalytics.getPerformanceMetrics.useQuery()
 
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
-    },
-    [router, logout]
-  )
-
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -143,7 +120,7 @@ export default function PipelineAnalyticsPage() {
 
   // Status distribution card
   const statusDistCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -173,7 +150,7 @@ export default function PipelineAnalyticsPage() {
 
   // Creation trend card
   const creationTrendCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -202,7 +179,7 @@ export default function PipelineAnalyticsPage() {
 
   // Completion trend card
   const completionTrendCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -231,7 +208,7 @@ export default function PipelineAnalyticsPage() {
 
   // Progress analysis card
   const progressAnalysisCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -298,7 +275,7 @@ export default function PipelineAnalyticsPage() {
 
   // Top sources card
   const topSourcesCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -336,7 +313,7 @@ export default function PipelineAnalyticsPage() {
 
   // Top topics card
   const topTopicsCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -366,7 +343,7 @@ export default function PipelineAnalyticsPage() {
 
   // Top keywords card
   const topKeywordsCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -392,7 +369,7 @@ export default function PipelineAnalyticsPage() {
 
   // Performance metrics card
   const performanceCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -449,17 +426,9 @@ export default function PipelineAnalyticsPage() {
     })
   }, [performanceMetrics])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    children: [
-      {
+  const contentNode: A2UINode = {
         type: "column",
         gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
@@ -470,9 +439,11 @@ export default function PipelineAnalyticsPage() {
           analyticsGrid([topSourcesCard, topTopicsCard]),
           analyticsGrid([topKeywordsCard, performanceCard]),
         ],
-      },
-    ],
-  }
+      }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} />
+    </DashboardShell>
+  )
 }

@@ -1,24 +1,17 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useMemo } from "react"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UICardNode } from "@/lib/a2ui"
+import type { A2UICardNode, A2UINode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function TaskAnalyticsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Task Analytics API calls
   const { data: overview } = api.taskAnalytics.getOverview.useQuery()
@@ -32,31 +25,15 @@ export default function TaskAnalyticsPage() {
   const { data: topTopics } = api.taskAnalytics.getTopTopics.useQuery({ limit: 10 })
   const { data: topKeywords } = api.taskAnalytics.getTopKeywords.useQuery({ limit: 20 })
 
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
-    },
-    [router, logout]
-  )
-
   const overviewCard = useMemo((): A2UICardNode => {
     if (!overview) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -160,7 +137,7 @@ export default function TaskAnalyticsPage() {
 
   const statusDistCard = useMemo((): A2UICardNode => {
     if (!statusDistribution || statusDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -181,7 +158,7 @@ export default function TaskAnalyticsPage() {
       color: statusColors[item.status] || "#6b7280",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -203,7 +180,7 @@ export default function TaskAnalyticsPage() {
 
   const creationTrendCard = useMemo((): A2UICardNode => {
     if (!creationTrend || creationTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -218,7 +195,7 @@ export default function TaskAnalyticsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -239,7 +216,7 @@ export default function TaskAnalyticsPage() {
 
   const completionTrendCard = useMemo((): A2UICardNode => {
     if (!completionTrend || completionTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -254,7 +231,7 @@ export default function TaskAnalyticsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -275,7 +252,7 @@ export default function TaskAnalyticsPage() {
 
   const wordCountDistCard = useMemo((): A2UICardNode => {
     if (!wordCountDistribution || wordCountDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -288,7 +265,7 @@ export default function TaskAnalyticsPage() {
       color: "#8b5cf6",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -312,13 +289,13 @@ export default function TaskAnalyticsPage() {
 
   const progressCard = useMemo((): A2UICardNode => {
     if (!progressAnalysis) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -369,7 +346,7 @@ export default function TaskAnalyticsPage() {
 
   const referenceCard = useMemo((): A2UICardNode => {
     if (!referenceUsage) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -382,7 +359,7 @@ export default function TaskAnalyticsPage() {
       { id: "Neither", label: "Neither", value: referenceUsage.withNeither, color: "#6b7280" },
     ]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -404,13 +381,13 @@ export default function TaskAnalyticsPage() {
 
   const executionCard = useMemo((): A2UICardNode => {
     if (!executionStats) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -461,13 +438,13 @@ export default function TaskAnalyticsPage() {
 
   const topTopicsCard = useMemo((): A2UICardNode => {
     if (!topTopics || topTopics.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -524,7 +501,7 @@ export default function TaskAnalyticsPage() {
       value: keyword.count,
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -543,37 +520,27 @@ export default function TaskAnalyticsPage() {
     })
   }, [topKeywords, t])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
+  const contentNode: A2UINode = {
+    type: "column",
+    gap: ANALYTICS_LAYOUT.sectionGap,
     children: [
-      {
-        type: "column",
-        gap: ANALYTICS_LAYOUT.sectionGap,
-        children: [
-          analyticsHeader("Task Analytics", "Task execution, quality, and throughput metrics."),
-          overviewCard,
-          statusDistCard,
-          analyticsGrid([creationTrendCard, completionTrendCard]),
-          wordCountDistCard,
-          analyticsGrid([progressCard, executionCard]),
-          referenceCard,
-          topTopicsCard,
-          topKeywordsCard,
-        ],
-      },
+      analyticsHeader("Task Analytics", "Task execution, quality, and throughput metrics."),
+      overviewCard,
+      statusDistCard,
+      analyticsGrid([creationTrendCard, completionTrendCard]),
+      wordCountDistCard,
+      analyticsGrid([progressCard, executionCard]),
+      referenceCard,
+      topTopicsCard,
+      topKeywordsCard,
     ],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} />
+    </DashboardShell>
+  )
 }

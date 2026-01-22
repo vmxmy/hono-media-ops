@@ -1,25 +1,18 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useMemo } from "react"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import type { A2UICardNode, A2UINode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 
 export default function ImagePromptAnalyticsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Image Prompt Analytics API calls
   const { data: overview } = api.imagePromptAnalytics.getOverview.useQuery()
@@ -35,31 +28,15 @@ export default function ImagePromptAnalyticsPage() {
   const { data: creationTrend } = api.imagePromptAnalytics.getCreationTrend.useQuery({ days: 30 })
   const { data: topTags } = api.imagePromptAnalytics.getTopTags.useQuery({ limit: 20 })
 
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
-    },
-    [router, logout]
-  )
-
   const overviewCard = useMemo((): A2UICardNode => {
     if (!overview) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -119,7 +96,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const categoryDistCard = useMemo((): A2UICardNode => {
     if (!categoryDistribution || categoryDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -133,7 +110,7 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[index % colors.length],
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -155,7 +132,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const modelDistCard = useMemo((): A2UICardNode => {
     if (!modelDistribution || modelDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -169,7 +146,7 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[index % colors.length],
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -204,7 +181,7 @@ export default function ImagePromptAnalyticsPage() {
       color: "#8b5cf6",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -228,7 +205,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const resolutionDistCard = useMemo((): A2UICardNode => {
     if (!resolutionDistribution || resolutionDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -241,7 +218,7 @@ export default function ImagePromptAnalyticsPage() {
       color: "#ec4899",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -265,7 +242,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const ratingDistCard = useMemo((): A2UICardNode => {
     if (!ratingDistribution || ratingDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -278,7 +255,7 @@ export default function ImagePromptAnalyticsPage() {
       color: "#f59e0b",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -302,7 +279,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const sourceDistCard = useMemo((): A2UICardNode => {
     if (!sourceDistribution || sourceDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -316,7 +293,7 @@ export default function ImagePromptAnalyticsPage() {
       color: colors[item.source as keyof typeof colors] || "#6b7280",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -338,13 +315,13 @@ export default function ImagePromptAnalyticsPage() {
 
   const topRatedCard = useMemo((): A2UICardNode => {
     if (!topRatedPrompts || topRatedPrompts.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -390,7 +367,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const usageTrendCard = useMemo((): A2UICardNode => {
     if (!usageTrend || usageTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -405,7 +382,7 @@ export default function ImagePromptAnalyticsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -426,7 +403,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const creationTrendCard = useMemo((): A2UICardNode => {
     if (!creationTrend || creationTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -441,7 +418,7 @@ export default function ImagePromptAnalyticsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -462,7 +439,7 @@ export default function ImagePromptAnalyticsPage() {
 
   const topTagsCard = useMemo((): A2UICardNode => {
     if (!topTags || topTags.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -473,7 +450,7 @@ export default function ImagePromptAnalyticsPage() {
       value: tag.count,
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -492,37 +469,27 @@ export default function ImagePromptAnalyticsPage() {
     })
   }, [topTags, t])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
+  const contentNode: A2UINode = {
+    type: "column",
+    gap: ANALYTICS_LAYOUT.sectionGap,
     children: [
-      {
-        type: "column",
-        gap: ANALYTICS_LAYOUT.sectionGap,
-        children: [
-          analyticsHeader("Image Prompt Analytics", "Prompt usage, quality, and distribution insights."),
-          overviewCard,
-          categoryDistCard,
-          analyticsGrid([modelDistCard, sourceDistCard]),
-          analyticsGrid([ratioDistCard, resolutionDistCard]),
-          ratingDistCard,
-          topRatedCard,
-          analyticsGrid([usageTrendCard, creationTrendCard]),
-          topTagsCard,
-        ],
-      },
+      analyticsHeader("Image Prompt Analytics", "Prompt usage, quality, and distribution insights."),
+      overviewCard,
+      categoryDistCard,
+      analyticsGrid([modelDistCard, sourceDistCard]),
+      analyticsGrid([ratioDistCard, resolutionDistCard]),
+      ratingDistCard,
+      topRatedCard,
+      analyticsGrid([usageTrendCard, creationTrendCard]),
+      topTagsCard,
     ],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} />
+    </DashboardShell>
+  )
 }

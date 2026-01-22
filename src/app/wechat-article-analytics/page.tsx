@@ -1,24 +1,17 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function WechatArticleAnalyticsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // API calls
   const { data: overview } = api.wechatArticleAnalytics.getOverview.useQuery()
@@ -32,25 +25,9 @@ export default function WechatArticleAnalyticsPage() {
   const { data: topArticles } = api.wechatArticleAnalytics.getTopArticles.useQuery({ limit: 20 })
   const { data: accountStats } = api.wechatArticleAnalytics.getAccountStats.useQuery({ limit: 20 })
 
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
-    },
-    [router, logout]
-  )
-
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -135,7 +112,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Account distribution card
   const accountDistCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -165,7 +142,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Author distribution card
   const authorDistCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -195,7 +172,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Import trend card
   const importTrendCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -224,7 +201,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Publish trend card
   const publishTrendCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -253,7 +230,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Ad analysis card
   const adAnalysisCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -318,7 +295,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Cover analysis card
   const coverAnalysisCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -368,7 +345,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Time distribution card
   const timeDistCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -397,7 +374,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Top articles card
   const topArticlesCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -434,7 +411,7 @@ export default function WechatArticleAnalyticsPage() {
 
   // Account stats card
   const accountStatsCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -470,17 +447,9 @@ export default function WechatArticleAnalyticsPage() {
     })
   }, [accountStats])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    children: [
-      {
+  const contentNode: A2UINode = {
         type: "column",
         gap: ANALYTICS_LAYOUT.sectionGap,
         children: [
@@ -492,9 +461,11 @@ export default function WechatArticleAnalyticsPage() {
           timeDistCard,
           analyticsGrid([topArticlesCard, accountStatsCard]),
         ],
-      },
-    ],
-  }
+      }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} />
+    </DashboardShell>
+  )
 }

@@ -1,23 +1,17 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useMemo } from "react"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UICardNode, A2UINode } from "@/lib/a2ui"
+import type { A2UICardNode, A2UINode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function EmbeddingAnalyticsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   // API calls
   const { data: overview } = api.embeddingAnalytics.getOverview.useQuery()
@@ -28,22 +22,6 @@ export default function EmbeddingAnalyticsPage() {
   const { data: embeddingAge } = api.embeddingAnalytics.getEmbeddingAge.useQuery()
   const { data: recentEmbeddings } = api.embeddingAnalytics.getRecentEmbeddings.useQuery({ limit: 20 })
   const { data: growthRate } = api.embeddingAnalytics.getGrowthRate.useQuery()
-
-  const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
-    },
-    [router, logout]
-  )
 
   // Overview card
   const overviewCard = useMemo((): A2UICardNode => {
@@ -424,30 +402,24 @@ export default function EmbeddingAnalyticsPage() {
     })
   }, [growthRate])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
+  const contentNode: A2UINode = {
+    type: "column",
+    gap: ANALYTICS_LAYOUT.sectionGap,
     children: [
-      {
-        type: "column",
-        gap: ANALYTICS_LAYOUT.sectionGap,
-        children: [
-          analyticsHeader("Embedding Analytics", "Embedding coverage and freshness overview."),
-          overviewCard,
-          analyticsGrid([modelVersionCard, taskStatusCard]),
-          analyticsGrid([creationTrendCard, contentHashCard]),
-          analyticsGrid([embeddingAgeCard, growthRateCard]),
-          recentEmbeddingsCard,
-        ],
-      },
+      analyticsHeader("Embedding Analytics", "Embedding coverage and freshness overview."),
+      overviewCard,
+      analyticsGrid([modelVersionCard, taskStatusCard]),
+      analyticsGrid([creationTrendCard, contentHashCard]),
+      analyticsGrid([embeddingAgeCard, growthRateCard]),
+      recentEmbeddingsCard,
     ],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} />
+    </DashboardShell>
+  )
 }
