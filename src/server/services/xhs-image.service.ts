@@ -249,24 +249,8 @@ export const xhsImageService = {
       return { success: false, message: "Webhook URL not configured" };
     }
 
-    // Create a new job record
-    const jobId = crypto.randomUUID();
-    await db.insert(xhsImageJobs).values({
-      id: jobId,
-      userId: input.userId,
-      sourceUrl: "",
-      sourceTitle: input.inputContent.slice(0, 100),
-      totalImages: 0,
-      completedImages: 0,
-      status: "pending",
-      ratio: "3:4",
-      resolution: "2k",
-      metadata: buildXhsImageJobMetadata(input.inputContent, input.promptId),
-    });
-
-    // Build webhook payload
+    // Build webhook payload - webhook will generate job_id and create DB record
     const payload = {
-      job_id: jobId,
       user_id: input.userId,
       input_content: input.inputContent,
       prompt_id: input.promptId,
@@ -284,19 +268,26 @@ export const xhsImageService = {
       console.log("[XhsImageService] Webhook response status:", response.status);
 
       if (!response.ok) {
-        console.error(`[XhsImageService] Webhook failed: ${response.status} ${response.statusText}`);
-        await this.updateJobStatus(jobId, "failed", `Webhook error: ${response.status}`);
-        return { success: false, jobId, message: `Webhook failed: ${response.status}` };
+        const errorMsg = `Webhook error: ${response.status}`;
+        console.error(`[XhsImageService] ${errorMsg}`);
+        return { success: false, message: errorMsg };
       }
 
-      // Update job to processing
-      await this.updateJobStatus(jobId, "processing");
+      // Parse webhook response to get job_id
+      const result = await response.json() as { job_id?: string };
+      const jobId = result.job_id;
 
+      if (!jobId) {
+        console.error("[XhsImageService] Webhook response missing job_id");
+        return { success: false, message: "Webhook response missing job_id" };
+      }
+
+      console.log("[XhsImageService] Job created with ID:", jobId);
       return { success: true, jobId };
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
       console.error("[XhsImageService] Webhook error:", error);
-      await this.updateJobStatus(jobId, "failed", error instanceof Error ? error.message : "Unknown error");
-      return { success: false, jobId, message: error instanceof Error ? error.message : "Unknown error" };
+      return { success: false, message: errorMsg };
     }
   },
 
