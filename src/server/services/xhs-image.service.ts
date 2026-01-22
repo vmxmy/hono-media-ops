@@ -169,7 +169,7 @@ export const xhsImageService = {
 
     const retryInput = getRetryInputFromMetadata(job.metadata);
     if (!retryInput) {
-      return { success: false, message: "Job metadata missing" };
+      return { success: false, message: "此任务缺少必要信息，无法重试。请创建新任务。" };
     }
 
     return this.triggerGeneration({
