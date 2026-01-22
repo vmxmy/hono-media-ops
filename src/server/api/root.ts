@@ -9,7 +9,6 @@ import { userStorageConfigRouter } from "./routers/user-storage-config";
 import { exportRouter } from "./routers/export";
 import { chaptersRouter } from "./routers/chapters";
 import { xhsImagesRouter } from "./routers/xhs-images";
-import { pipelineRouter } from "./routers/pipeline";
 import { wechatArticleRouter } from "./routers/wechat-articles";
 import { materialAnalyticsRouter } from "./routers/material-analytics";
 import { imagePromptAnalyticsRouter } from "./routers/image-prompt-analytics";
@@ -30,7 +29,6 @@ export const appRouter = createTRPCRouter({
   export: exportRouter,
   chapters: chaptersRouter,
   xhsImages: xhsImagesRouter,
-  pipeline: pipelineRouter,
   wechatArticles: wechatArticleRouter,
   materialAnalytics: materialAnalyticsRouter,
   imagePromptAnalytics: imagePromptAnalyticsRouter,

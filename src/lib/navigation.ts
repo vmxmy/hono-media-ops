@@ -54,7 +54,6 @@ export function buildGroupedNavItems(t: (key: I18nKey) => string): NavEntry[] {
       label: t("nav.creationGroup"),
       collapsible: true,
       items: [
-        { key: "pipeline", path: "/pipeline", label: t("nav.pipeline") },
         { key: "tasks", path: "/tasks", label: t("nav.tasks") },
         { key: "xhsImages", path: "/xhs-images", label: t("nav.xhsImages") },
       ],
