@@ -455,7 +455,8 @@ export interface A2UIAppShellNode extends A2UIBaseNode {
   brand?: string // Brand text
   logoSrc?: string // Logo image source
   logoAlt?: string // Logo image alt
-  navItems: Array<{ key: string; label: string; path: string }> // Sidebar navigation items
+  navItems: Array<{ key: string; label: string; path: string }> // Sidebar navigation items (backwards compatibility)
+  navEntries?: Array<{ key: string; label: string; path: string } | { type: "group"; key: string; label: string; collapsible?: boolean; items: Array<{ key: string; label: string; path: string }> }> // Grouped navigation items
   activePath?: string // Active pathname for highlighting
   onNavigate?: A2UIAction // Navigate action
   onLogout?: A2UIAction // Logout action

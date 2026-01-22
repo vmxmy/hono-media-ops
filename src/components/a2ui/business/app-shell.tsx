@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Pencil, BookOpen, Newspaper, BarChart3, Image, Images, User, Zap, Library } from "lucide-react"
+import { Pencil, BookOpen, Newspaper, BarChart3, Image, Images, User, Zap, Library, ChevronDown } from "lucide-react"
 import type {
   A2UIAppShellNode,
   A2UINode,
@@ -20,6 +20,7 @@ import { CreateHubModal } from "@/components/create-hub-modal"
 import { CreateTaskModal } from "@/components/create-task-modal"
 import { CreateXhsImageModal } from "@/components/create-xhs-image-modal"
 import { useI18n } from "@/contexts/i18n-context"
+import type { NavEntry } from "@/lib/navigation"
 
 export function A2UIThemeSwitcher({
   node,
@@ -40,6 +41,14 @@ const NavIcons: Record<string, React.ReactNode> = {
   xhsImages: <Images className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
   insights: <BarChart3 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
   prompts: <Image className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  analytics: <BarChart3 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  materials: <Library className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  taskAnalytics: <BarChart3 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  imagePromptAnalytics: <Image className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  xhsAnalytics: <Images className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  wechatArticleAnalytics: <Library className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  pipelineAnalytics: <Zap className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
+  embeddingAnalytics: <BarChart3 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />,
 }
 
 export function A2UIAppShell({
@@ -54,8 +63,14 @@ export function A2UIAppShell({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const activeItem = node.navItems.find((item) => item.path === node.activePath)
-  const homePath = node.navItems[0]?.path ?? "/"
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+
+  // Support both flat navItems and grouped navEntries
+  const navEntries = (node.navEntries ?? node.navItems.map(item => ({ ...item, type: undefined }))) as NavEntry[]
+  const activeItem = navEntries
+    .flatMap(entry => (entry as any).type === "group" ? (entry as any).items : [entry])
+    .find((item: any) => item.path === node.activePath)
+  const homePath = navEntries[0] && "path" in navEntries[0] ? navEntries[0].path : "/"
 
   // Create Hub modal state
   const [isCreateHubOpen, setIsCreateHubOpen] = useState(false)
@@ -68,12 +83,28 @@ export function A2UIAppShell({
     if (saved !== null) {
       setIsCollapsed(saved === "true")
     }
+    // Load expanded groups state
+    const savedGroups = localStorage.getItem("nav-groups-expanded")
+    if (savedGroups) {
+      try {
+        setExpandedGroups(JSON.parse(savedGroups))
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
   }, [])
 
   const toggleCollapsed = () => {
     const newValue = !isCollapsed
     setIsCollapsed(newValue)
     localStorage.setItem("sidebar-collapsed", String(newValue))
+  }
+
+  const toggleGroup = (groupKey: string) => {
+    const newValue = !expandedGroups[groupKey]
+    const newGroups = { ...expandedGroups, [groupKey]: newValue }
+    setExpandedGroups(newGroups)
+    localStorage.setItem("nav-groups-expanded", JSON.stringify(newGroups))
   }
 
   useEffect(() => {
@@ -214,28 +245,113 @@ export function A2UIAppShell({
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 p-2" id="app-shell-nav">
-            {node.navItems.map((item) => {
-              const isActive = node.activePath === item.path
-              const icon = NavIcons[item.key]
-              const showLabel = isMobileMenuOpen || !isCollapsed
-              return (
-                <Link
-                  key={item.key}
-                  href={item.path}
-                  onClick={() => handleNavigate(item.path)}
-                  title={!showLabel ? item.label : undefined}
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  } ${!showLabel ? "justify-center px-2 md:justify-center md:px-2" : ""}`}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  {icon}
-                  {showLabel && <span>{item.label}</span>}
-                </Link>
-              )
+          <nav className="flex-1 space-y-1 p-2 overflow-y-auto" id="app-shell-nav">
+            {navEntries.map((entry) => {
+              // Regular nav item
+              if (!("type" in entry) || !entry.type) {
+                const item = entry as any
+                const isActive = node.activePath === item.path
+                const icon = NavIcons[item.key]
+                const showLabel = isMobileMenuOpen || !isCollapsed
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.path}
+                    onClick={() => handleNavigate(item.path)}
+                    title={!showLabel ? item.label : undefined}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    } ${!showLabel ? "justify-center px-2 md:justify-center md:px-2" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {icon}
+                    {showLabel && <span>{item.label}</span>}
+                  </Link>
+                )
+              }
+
+              // Nav group
+              if (entry.type === "group") {
+                const group = entry as any
+                const showLabel = isMobileMenuOpen || !isCollapsed
+                const isExpanded = expandedGroups[group.key] ?? false
+                const groupIcon = NavIcons[group.key]
+
+                // When collapsed, don't show groups at all
+                if (!showLabel) {
+                  return null
+                }
+
+                return (
+                  <div key={group.key}>
+                    {group.collapsible ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.key)}
+                          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground mt-2"
+                          aria-expanded={isExpanded}
+                        >
+                          {groupIcon}
+                          <span className="flex-1 text-left">{group.label}</span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            aria-hidden="true"
+                          />
+                        </button>
+                        {isExpanded && (
+                          <div className="space-y-1 pl-4">
+                            {group.items.map((item: any) => {
+                              const isActive = node.activePath === item.path
+                              return (
+                                <Link
+                                  key={item.key}
+                                  href={item.path}
+                                  onClick={() => handleNavigate(item.path)}
+                                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                                    isActive
+                                      ? "bg-primary text-primary-foreground"
+                                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                  }`}
+                                  aria-current={isActive ? "page" : undefined}
+                                >
+                                  <span>{item.label}</span>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // Non-collapsible group (just render items directly)
+                      group.items.map((item: any) => {
+                        const isActive = node.activePath === item.path
+                        const icon = NavIcons[item.key]
+                        return (
+                          <Link
+                            key={item.key}
+                            href={item.path}
+                            onClick={() => handleNavigate(item.path)}
+                            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                              isActive
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            }`}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            {icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        )
+                      })
+                    )}
+                  </div>
+                )
+              }
+
+              return null
             })}
           </nav>
 
