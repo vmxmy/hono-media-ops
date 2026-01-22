@@ -51,13 +51,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
     activePath: pathname,
     onNavigate: { action: "navigate" },
     onLogout: { action: "logout" },
-    children: [
-      {
-        type: "container",
-        children: [children as any],
-      },
-    ],
+    children: [],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <A2UIRenderer node={appShellNode} onAction={handleAction}>
+      {children}
+    </A2UIRenderer>
+  )
 }

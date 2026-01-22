@@ -78,7 +78,7 @@ async function isUserActive(userId: string): Promise<boolean> {
     const timestamp = Date.now()
     const signature = await generateSignature(userId, timestamp)
 
-    const response = await fetch(`${baseUrl}/api/auth/check-user?userId=${encodeURIComponent(userId)}`, {
+    const response = await fetch(`${baseUrl}/api/internal/check-user?userId=${encodeURIComponent(userId)}`, {
       headers: {
         "x-internal-timestamp": String(timestamp),
         "x-internal-signature": signature,

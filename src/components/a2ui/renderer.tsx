@@ -51,6 +51,7 @@ interface A2UIRendererProps {
   onAction?: A2UIActionHandler
   registry?: A2UIRegistry
   className?: string
+  children?: React.ReactNode
 }
 
 export function A2UIRenderer({
@@ -58,6 +59,7 @@ export function A2UIRenderer({
   onAction,
   registry: customRegistry,
   className,
+  children,
 }: A2UIRendererProps) {
   // Ensure default registry is initialized
   const defaultRegistry = useMemo(() => ensureInitialized(), [])
@@ -78,7 +80,24 @@ export function A2UIRenderer({
     [handleAction, registry]
   )
 
-  const content = <A2UINodeRenderer node={node} />
+  // If node is app-shell and we have React children, inject them
+  const nodeWithChildren = useMemo(() => {
+    if (children && !Array.isArray(node) && node.type === "app-shell") {
+      return {
+        ...node,
+        children: [
+          ...(node.children || []),
+          {
+            type: "react-slot" as const,
+            reactContent: children,
+          } as any,
+        ],
+      }
+    }
+    return node
+  }, [node, children])
+
+  const content = <A2UINodeRenderer node={nodeWithChildren} />
 
   return (
     <A2UIContext.Provider value={contextValue}>
@@ -113,6 +132,11 @@ function A2UINodeRenderer({ node }: A2UINodeRendererProps) {
   const Component = registry.get(node.type)
 
   if (!Component) {
+    // Handle special react-slot type for injecting React children
+    if ((node as any).type === "react-slot" && "reactContent" in node) {
+      return <>{(node as any).reactContent}</>
+    }
+
     if (process.env.NODE_ENV === "development") {
       console.warn(`A2UI: No component registered for type "${node.type}"`)
     }
