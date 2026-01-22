@@ -110,6 +110,10 @@ export type I18nKey =
     | "nav.wechatArticleAnalytics"
     | "nav.pipelineAnalytics"
     | "nav.embeddingAnalytics"
+    | "nav.insights"
+    | "nav.reverse"
+    | "nav.creationGroup"
+    | "nav.materialsGroup"
     // Tasks
     | "tasks.title"
     | "tasks.newTask"

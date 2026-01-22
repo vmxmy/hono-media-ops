@@ -47,14 +47,29 @@ export function buildNavItems(t: (key: I18nKey) => string): NavItem[] {
 // Grouped navigation structure
 export function buildGroupedNavItems(t: (key: I18nKey) => string): NavEntry[] {
   return [
-    { key: "pipeline", path: "/pipeline", label: t("nav.pipeline") },
-    { key: "tasks", path: "/tasks", label: t("nav.tasks") },
-    { key: "reverse", path: "/reverse", label: t("nav.reverse") },
     { key: "articles", path: "/articles", label: t("nav.articles") },
-    { key: "wechatArticles", path: "/wechat-articles", label: t("nav.wechatArticles") },
-    { key: "xhsImages", path: "/xhs-images", label: t("nav.xhsImages") },
-    { key: "prompts", path: "/prompts", label: t("nav.prompts") },
-    { key: "insights", path: "/insights", label: t("nav.insights") },
+    {
+      type: "group",
+      key: "creation",
+      label: t("nav.creationGroup"),
+      collapsible: true,
+      items: [
+        { key: "pipeline", path: "/pipeline", label: t("nav.pipeline") },
+        { key: "tasks", path: "/tasks", label: t("nav.tasks") },
+        { key: "xhsImages", path: "/xhs-images", label: t("nav.xhsImages") },
+      ],
+    },
+    {
+      type: "group",
+      key: "materials",
+      label: t("nav.materialsGroup"),
+      collapsible: true,
+      items: [
+        { key: "reverse", path: "/reverse", label: t("nav.reverse") },
+        { key: "wechatArticles", path: "/wechat-articles", label: t("nav.wechatArticles") },
+        { key: "prompts", path: "/prompts", label: t("nav.prompts") },
+      ],
+    },
     {
       type: "group",
       key: "analytics",

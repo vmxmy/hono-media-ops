@@ -94,6 +94,8 @@
   "nav.wechatArticleAnalytics": "WeChat Article Analytics",
   "nav.pipelineAnalytics": "Pipeline Analytics",
   "nav.embeddingAnalytics": "Embedding Analytics",
+  "nav.creationGroup": "Creation",
+  "nav.materialsGroup": "Materials",
   "tasks.title": "Write Something",
   "tasks.newTask": "New Task",
   "tasks.noTasks": "No tasks yet",

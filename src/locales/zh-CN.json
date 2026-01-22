@@ -94,6 +94,8 @@
   "nav.wechatArticleAnalytics": "微信文章指标",
   "nav.pipelineAnalytics": "流水线指标",
   "nav.embeddingAnalytics": "向量嵌入指标",
+  "nav.creationGroup": "创作组",
+  "nav.materialsGroup": "素材组",
   "tasks.title": "写点东西",
   "tasks.newTask": "写点啥",
   "tasks.noTasks": "暂无任务",
