@@ -118,82 +118,92 @@ export const articleService = {
    * Regular listing without search
    */
   async getPublishedWithoutSearch(page: number, pageSize: number): Promise<{ items: ArticleListItem[]; total: number }> {
-    const offset = (page - 1) * pageSize;
+    try {
+      const offset = (page - 1) * pageSize;
 
-    // Use DISTINCT ON to get only the latest execution per task
-    const latestExecutions = db
-      .selectDistinctOn([taskExecutions.taskId], {
-        taskId: taskExecutions.taskId,
-        executionId: taskExecutions.id,
-        articleMarkdown: taskExecutions.articleMarkdown,
-        articleTitle: taskExecutions.articleTitle,
-        articleSubtitle: taskExecutions.articleSubtitle,
-        coverUrl: sql<string>`
-          (
-            select elem->>'r2_url'
-            from jsonb_array_elements(
-              case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
-                   then ${taskExecutions.wechatMediaInfo}
-                   else '[]'::jsonb
-              end
-            ) elem
-            order by elem->>'uploaded_at' desc nulls last
-            limit 1
+      // Use DISTINCT ON to get only the latest execution per task
+      const latestExecutions = db
+        .selectDistinctOn([taskExecutions.taskId], {
+          taskId: taskExecutions.taskId,
+          executionId: taskExecutions.id,
+          articleMarkdown: taskExecutions.articleMarkdown,
+          articleTitle: taskExecutions.articleTitle,
+          articleSubtitle: taskExecutions.articleSubtitle,
+          coverUrl: sql<string>`
+            CASE
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array' THEN
+                (
+                  select elem->>'r2_url'
+                  from jsonb_array_elements(${taskExecutions.wechatMediaInfo}) elem
+                  order by elem->>'uploaded_at' desc nulls last
+                  limit 1
+                )
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'object' THEN
+                ${taskExecutions.wechatMediaInfo}->>'r2_url'
+              ELSE NULL
+            END
+          `.as("cover_url"),
+          startedAt: taskExecutions.startedAt,
+        })
+        .from(taskExecutions)
+        .where(
+          and(
+            eq(taskExecutions.status, "completed"),
+            isNotNull(taskExecutions.articleMarkdown)
           )
-        `.as("cover_url"),
-        startedAt: taskExecutions.startedAt,
-      })
-      .from(taskExecutions)
-      .where(
-        and(
-          eq(taskExecutions.status, "completed"),
-          isNotNull(taskExecutions.articleMarkdown)
         )
-      )
-      .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
-      .as("latest_exec");
+        .orderBy(taskExecutions.taskId, desc(taskExecutions.startedAt))
+        .as("latest_exec");
 
-    const conditions = [
-      eq(tasks.status, "completed"),
-      isNull(tasks.deletedAt)
-    ];
+      const conditions = [
+        eq(tasks.status, "completed"),
+        isNull(tasks.deletedAt)
+      ];
 
-    const articlesQuery = db
-      .select({
-        id: tasks.id,
-        topic: tasks.topic,
-        keywords: tasks.keywords,
-        createdAt: tasks.createdAt,
-        coverUrl: latestExecutions.coverUrl,
-        articleMarkdown: latestExecutions.articleMarkdown,
-        articleTitle: latestExecutions.articleTitle,
-        articleSubtitle: latestExecutions.articleSubtitle,
-        authorName: users.name,
-        authorUsername: users.username,
-        styleName: styleAnalyses.styleName,
-        primaryType: styleAnalyses.primaryType,
-      })
-      .from(tasks)
-      .innerJoin(latestExecutions, eq(tasks.id, latestExecutions.taskId))
-      .leftJoin(users, eq(tasks.userId, users.id))
-      .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
-      .where(and(...conditions))
-      .orderBy(desc(tasks.createdAt))
-      .limit(pageSize)
-      .offset(offset);
+      const articlesQuery = db
+        .select({
+          id: tasks.id,
+          topic: tasks.topic,
+          keywords: tasks.keywords,
+          createdAt: tasks.createdAt,
+          coverUrl: latestExecutions.coverUrl,
+          articleMarkdown: latestExecutions.articleMarkdown,
+          articleTitle: latestExecutions.articleTitle,
+          articleSubtitle: latestExecutions.articleSubtitle,
+          authorName: users.name,
+          authorUsername: users.username,
+          styleName: styleAnalyses.styleName,
+          primaryType: styleAnalyses.primaryType,
+        })
+        .from(tasks)
+        .innerJoin(latestExecutions, eq(tasks.id, latestExecutions.taskId))
+        .leftJoin(users, eq(tasks.userId, users.id))
+        .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
+        .where(and(...conditions))
+        .orderBy(desc(tasks.createdAt))
+        .limit(pageSize)
+        .offset(offset);
 
-    const countQuery = db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .innerJoin(latestExecutions, eq(tasks.id, latestExecutions.taskId))
-      .where(and(...conditions));
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .innerJoin(latestExecutions, eq(tasks.id, latestExecutions.taskId))
+        .where(and(...conditions));
 
-    const [articles, countResult] = await Promise.all([articlesQuery, countQuery]);
+      const [articles, countResult] = await Promise.all([articlesQuery, countQuery]);
 
-    return {
-      items: this.mapArticles(articles),
-      total: Number(countResult[0]?.count ?? 0),
-    };
+      return {
+        items: this.mapArticles(articles),
+        total: Number(countResult[0]?.count ?? 0),
+      };
+    } catch (error) {
+      console.error("[articleService.getPublishedWithoutSearch] Query failed:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      throw new Error(`Failed to fetch published articles: ${error instanceof Error ? error.message : String(error)}`);
+    }
   },
 
   /**
@@ -306,17 +316,18 @@ export const articleService = {
           articleTitle: taskExecutions.articleTitle,
           articleSubtitle: taskExecutions.articleSubtitle,
           coverUrl: sql<string>`
-            (
-              select elem->>'r2_url'
-              from jsonb_array_elements(
-                case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
-                     then ${taskExecutions.wechatMediaInfo}
-                     else '[]'::jsonb
-                end
-              ) elem
-              order by elem->>'uploaded_at' desc nulls last
-              limit 1
-            )
+            CASE
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array' THEN
+                (
+                  select elem->>'r2_url'
+                  from jsonb_array_elements(${taskExecutions.wechatMediaInfo}) elem
+                  order by elem->>'uploaded_at' desc nulls last
+                  limit 1
+                )
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'object' THEN
+                ${taskExecutions.wechatMediaInfo}->>'r2_url'
+              ELSE NULL
+            END
           `.as("cover_url"),
         })
         .from(taskExecutions)
@@ -429,17 +440,18 @@ export const articleService = {
           articleTitle: taskExecutions.articleTitle,
           articleSubtitle: taskExecutions.articleSubtitle,
           coverUrl: sql<string>`
-            (
-              select elem->>'r2_url'
-              from jsonb_array_elements(
-                case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
-                     then ${taskExecutions.wechatMediaInfo}
-                     else '[]'::jsonb
-                end
-              ) elem
-              order by elem->>'uploaded_at' desc nulls last
-              limit 1
-            )
+            CASE
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array' THEN
+                (
+                  select elem->>'r2_url'
+                  from jsonb_array_elements(${taskExecutions.wechatMediaInfo}) elem
+                  order by elem->>'uploaded_at' desc nulls last
+                  limit 1
+                )
+              WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'object' THEN
+                ${taskExecutions.wechatMediaInfo}->>'r2_url'
+              ELSE NULL
+            END
           `.as("cover_url"),
         })
         .from(taskExecutions)
@@ -540,17 +552,18 @@ export const articleService = {
         articleTitle: taskExecutions.articleTitle,
         articleSubtitle: taskExecutions.articleSubtitle,
         coverUrl: sql<string>`
-          (
-            select elem->>'r2_url'
-            from jsonb_array_elements(
-              case when jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array'
-                   then ${taskExecutions.wechatMediaInfo}
-                   else '[]'::jsonb
-              end
-            ) elem
-            order by elem->>'uploaded_at' desc nulls last
-            limit 1
-          )
+          CASE
+            WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'array' THEN
+              (
+                select elem->>'r2_url'
+                from jsonb_array_elements(${taskExecutions.wechatMediaInfo}) elem
+                order by elem->>'uploaded_at' desc nulls last
+                limit 1
+              )
+            WHEN jsonb_typeof(${taskExecutions.wechatMediaInfo}) = 'object' THEN
+              ${taskExecutions.wechatMediaInfo}->>'r2_url'
+            ELSE NULL
+          END
         `,
         wechatMediaInfo: taskExecutions.wechatMediaInfo,
       })
