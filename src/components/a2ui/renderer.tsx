@@ -128,15 +128,15 @@ function A2UINodeRenderer({ node }: A2UINodeRendererProps) {
     )
   }
 
+  // Handle special react-slot type for injecting React children
+  if ((node as any).type === "react-slot" && "reactContent" in node) {
+    return <>{(node as any).reactContent}</>
+  }
+
   // Get component from registry
   const Component = registry.get(node.type)
 
   if (!Component) {
-    // Handle special react-slot type for injecting React children
-    if ((node as any).type === "react-slot" && "reactContent" in node) {
-      return <>{(node as any).reactContent}</>
-    }
-
     if (process.env.NODE_ENV === "development") {
       console.warn(`A2UI: No component registered for type "${node.type}"`)
     }
