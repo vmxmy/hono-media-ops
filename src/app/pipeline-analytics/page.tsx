@@ -318,7 +318,7 @@ export default function PipelineAnalyticsPage() {
                   { type: "text" as const, text: item.sourceUrl, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: ANALYTICS_LAYOUT.cardGap as const,
+                    gap: ANALYTICS_LAYOUT.cardGap,
                     children: [
                       { type: "text" as const, text: `${item.count} total`, variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: `${item.successCount} success`, variant: "caption" as const, color: "muted" as const },

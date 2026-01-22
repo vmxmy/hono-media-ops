@@ -4,7 +4,7 @@ export const buildXhsImageJobMetadata = (inputContent: string, promptId: string)
 })
 
 export const buildCancelJobUpdate = (updatedAt: Date, errorMessage: string = "用户取消") => ({
-  status: "cancelled",
+  status: "cancelled" as const,
   errorMessage,
   updatedAt,
 })

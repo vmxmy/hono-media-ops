@@ -417,7 +417,7 @@ export default function WechatArticleAnalyticsPage() {
                   { type: "text" as const, text: article.title, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: ANALYTICS_LAYOUT.contentGap as const,
+                    gap: ANALYTICS_LAYOUT.contentGap,
                     children: [
                       { type: "text" as const, text: article.accountName, variant: "caption" as const, color: "muted" as const },
                       ...(article.isAd ? [{ type: "badge" as const, text: "Ad", color: "destructive" as const }] : []),
@@ -454,7 +454,7 @@ export default function WechatArticleAnalyticsPage() {
                   { type: "text" as const, text: account.accountName, variant: "body" as const },
                   {
                     type: "row" as const,
-                    gap: ANALYTICS_LAYOUT.cardGap as const,
+                    gap: ANALYTICS_LAYOUT.cardGap,
                     children: [
                       { type: "text" as const, text: `${account.articleCount} articles`, variant: "caption" as const, color: "muted" as const },
                       { type: "text" as const, text: `Ad: ${account.adRate.toFixed(1)}%`, variant: "caption" as const, color: "muted" as const },
