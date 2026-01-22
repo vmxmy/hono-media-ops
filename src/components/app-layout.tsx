@@ -25,14 +25,39 @@ const NavIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
   ),
-  insights: (
+  articles: (
     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  wechatArticles: (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  ),
+  xhsImages: (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   ),
   prompts: (
     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+    </svg>
+  ),
+  insights: (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  ),
+  analytics: (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+  chevronDown: (
+    <svg className="h-4 w-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   ),
 }
@@ -43,6 +68,7 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
   const { t } = useI18n()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [analyticsExpanded, setAnalyticsExpanded] = useState(false)
 
   // Create Hub modal state
   const [isCreateHubOpen, setIsCreateHubOpen] = useState(false)
@@ -55,6 +81,10 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
     if (saved !== null) {
       setIsCollapsed(saved === "true")
     }
+    const analyticsState = localStorage.getItem("analytics-expanded")
+    if (analyticsState !== null) {
+      setAnalyticsExpanded(analyticsState === "true")
+    }
   }, [])
 
   // Save collapsed state to localStorage
@@ -64,11 +94,35 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
     localStorage.setItem("sidebar-collapsed", String(newValue))
   }
 
+  const toggleAnalytics = () => {
+    const newValue = !analyticsExpanded
+    setAnalyticsExpanded(newValue)
+    localStorage.setItem("analytics-expanded", String(newValue))
+  }
+
   const navItems = [
+    // Core Functions
     { key: "tasks", path: "/tasks", label: t("nav.tasks"), icon: NavIcons.tasks },
     { key: "reverse", path: "/reverse", label: t("nav.reverse"), icon: NavIcons.reverse },
-    { key: "insights", path: "/insights", label: t("nav.insights"), icon: NavIcons.insights },
+
+    // Content Management
+    { key: "articles", path: "/articles", label: t("nav.articles"), icon: NavIcons.articles },
+    { key: "wechatArticles", path: "/wechat-articles", label: t("nav.wechatArticles"), icon: NavIcons.wechatArticles },
+    { key: "xhsImages", path: "/xhs-images", label: t("nav.xhsImages"), icon: NavIcons.xhsImages },
+
+    // Resources
     { key: "prompts", path: "/prompts", label: t("nav.prompts"), icon: NavIcons.prompts },
+    { key: "insights", path: "/insights", label: t("nav.insights"), icon: NavIcons.insights },
+  ]
+
+  const analyticsItems = [
+    { key: "materials", path: "/materials", label: t("nav.materials") },
+    { key: "taskAnalytics", path: "/task-analytics", label: t("nav.taskAnalytics") },
+    { key: "imagePromptAnalytics", path: "/image-prompt-analytics", label: t("nav.imagePromptAnalytics") },
+    { key: "xhsAnalytics", path: "/xhs-analytics", label: t("nav.xhsAnalytics") },
+    { key: "wechatArticleAnalytics", path: "/wechat-article-analytics", label: t("nav.wechatArticleAnalytics") },
+    { key: "pipelineAnalytics", path: "/pipeline-analytics", label: t("nav.pipelineAnalytics") },
+    { key: "embeddingAnalytics", path: "/embedding-analytics", label: t("nav.embeddingAnalytics") },
   ]
 
   const themeNode: A2UINode = { type: "theme-switcher" }
@@ -167,7 +221,7 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-2">
+          <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
             {navItems.map((item) => (
               <button
                 key={item.key}
@@ -183,6 +237,39 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
                 {!isCollapsed && <span>{item.label}</span>}
               </button>
             ))}
+
+            {/* Analytics Section */}
+            {!isCollapsed && (
+              <>
+                <button
+                  onClick={toggleAnalytics}
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground mt-2"
+                >
+                  {NavIcons.analytics}
+                  <span className="flex-1 text-left">{t("nav.analytics")}</span>
+                  <span className={analyticsExpanded ? "rotate-180" : ""}>
+                    {NavIcons.chevronDown}
+                  </span>
+                </button>
+                {analyticsExpanded && (
+                  <div className="space-y-1 pl-4">
+                    {analyticsItems.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => handleNavigate(item.path)}
+                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                          pathname === item.path
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </nav>
 
           {/* Collapse toggle button (desktop only) */}
