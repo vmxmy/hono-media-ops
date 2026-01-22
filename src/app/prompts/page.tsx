@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+// Removed: usePathname, useRouter - using DashboardShell now
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+import type { A2UIColumnNode, A2UICardNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { showConfirmToast } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import { buildPromptCardActionButtons } from "./prompt-card-actions"
 
 interface ImagePromptFormData {
@@ -72,10 +72,6 @@ export default function ImagePromptsPage() {
     { value: "abstract", label: t("imagePrompts.category.abstract") },
   ], [t])
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const navItems = buildNavItems(t)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ImagePromptFormData>(DEFAULT_FORM)
   const [activePromptId, setActivePromptId] = useState<string | null>(null)
@@ -98,7 +94,7 @@ export default function ImagePromptsPage() {
       category: categoryFilter || undefined,
       search: searchQuery || undefined,
     },
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
 
   const createMutation = api.imagePrompts.create.useMutation({
@@ -132,14 +128,6 @@ export default function ImagePromptsPage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          signOut({ callbackUrl: "/login" })
-          break
         case "setTitle":
           setFormData((prev) => ({ ...prev, title: args?.[0] as string }))
           break
@@ -292,7 +280,7 @@ export default function ImagePromptsPage() {
           break
       }
     },
-    [router, formData, editingId, promptsData, page, createMutation, updateMutation, deleteMutation, togglePublicMutation, t]
+    [formData, editingId, promptsData, page, createMutation, updateMutation, deleteMutation, togglePublicMutation, t]
   )
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
@@ -709,21 +697,11 @@ export default function ImagePromptsPage() {
     ],
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: detailDrawer ? [pageNode, detailDrawer] : [pageNode],
-  }
-
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={detailDrawer ? [pageNode, detailDrawer] : [pageNode]} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

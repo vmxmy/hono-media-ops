@@ -1,24 +1,18 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+// Removed: usePathname, useRouter - using DashboardShell now
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import type { A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function InsightsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
   const [trendDays, setTrendDays] = useState(30)
 
   const { data: profile, isLoading: profileLoading } = api.reverseLogs.getMyStyleProfile.useQuery()
@@ -37,20 +31,12 @@ export default function InsightsPage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "setTrendDays":
           setTrendDays(Number(args?.[0]) || 30)
           break
       }
     },
-    [router, logout]
+    []
   )
 
   const metricsStats = useMemo(() => {
@@ -207,21 +193,21 @@ export default function InsightsPage() {
 
   const headerCard = useMemo((): A2UICardNode => {
     if (profileLoading) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
     if (!profile) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         className: "p-8 text-center",
         children: [{ type: "text", text: t("insights.noProfile"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -266,13 +252,13 @@ export default function InsightsPage() {
 
   const metricsCard = useMemo((): A2UICardNode => {
     if (!metricsStats) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.noData"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -332,7 +318,7 @@ export default function InsightsPage() {
     })
   }, [metricsStats, t])
 
-  const buildScatterChartCard = (): A2UINode => wrapCard({
+  const buildScatterChartCard = (): A2UINode => analyticsCard({
     type: "card",
     children: [
       {
@@ -355,7 +341,7 @@ export default function InsightsPage() {
     ],
   })
 
-  const buildHistogramCard = (): A2UICardNode => wrapCard({
+  const buildHistogramCard = (): A2UICardNode => analyticsCard({
     type: "card",
     children: [
       {
@@ -381,7 +367,7 @@ export default function InsightsPage() {
     if (!metricsStats) return []
 
     return [
-      wrapCard({
+      analyticsCard({
         type: "card",
         children: [
           {
@@ -406,7 +392,7 @@ export default function InsightsPage() {
           },
         ],
       }),
-      wrapCard({
+      analyticsCard({
         type: "card",
         children: [
           {
@@ -436,13 +422,13 @@ export default function InsightsPage() {
 
   const radarCard = useMemo((): A2UICardNode => {
     if (radarData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.noData"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -465,7 +451,7 @@ export default function InsightsPage() {
   }, [radarData, t])
 
   const trendCard = useMemo((): A2UICardNode => {
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -510,7 +496,7 @@ export default function InsightsPage() {
 
   const wordCloudCard = useMemo((): A2UICardNode => {
     if (wordCloudData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -525,7 +511,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -546,7 +532,7 @@ export default function InsightsPage() {
 
   const barChartCard = useMemo((): A2UICardNode => {
     if (barChartData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -561,7 +547,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -585,7 +571,7 @@ export default function InsightsPage() {
 
   const treemapCard = useMemo((): A2UICardNode => {
     if (treemapData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -600,7 +586,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -621,7 +607,7 @@ export default function InsightsPage() {
 
   const styleCombinationsCard = useMemo((): A2UICardNode => {
     if (styleCombinationsData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -636,7 +622,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -698,7 +684,7 @@ export default function InsightsPage() {
 
   const metricsComparisonCard = useMemo((): A2UICardNode => {
     if (!metricsComparison) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -720,7 +706,7 @@ export default function InsightsPage() {
       { label: "Burstiness", user: Number(metricsComparison.userMetrics.burstiness) || 0, global: Number(metricsComparison.globalMetrics.burstiness) || 0, diff: Number(metricsComparison.comparison.burstinessDiff) || 0 },
     ]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -784,7 +770,7 @@ export default function InsightsPage() {
 
   const topStylesCard = useMemo((): A2UICardNode => {
     if (topStylesData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -799,7 +785,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -850,7 +836,7 @@ export default function InsightsPage() {
 
   const topPromptsCard = useMemo((): A2UICardNode => {
     if (topPromptsData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -865,7 +851,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -916,7 +902,7 @@ export default function InsightsPage() {
 
   const typeDistributionCard = useMemo((): A2UICardNode => {
     if (typeDistributionData.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [
           {
@@ -931,7 +917,7 @@ export default function InsightsPage() {
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -969,21 +955,11 @@ export default function InsightsPage() {
     ],
   })
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [buildPageNode()],
-  }
-
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={buildPageNode()} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

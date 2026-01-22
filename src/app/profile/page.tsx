@@ -1,27 +1,21 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode, A2UITabsNode } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
+import type { A2UIColumnNode, A2UINode, A2UIRowNode, A2UITabsNode } from "@/lib/a2ui"
 
 type StorageProvider = "local" | "r2" | "s3"
 
 export default function ProfilePage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   // Profile queries and mutations
-  const { data: profile } = api.users.getProfile.useQuery(undefined, { enabled: mounted })
+  const { data: profile } = api.users.getProfile.useQuery(undefined, { enabled: status !== "loading" })
   const updateProfile = api.users.updateProfile.useMutation({
     onSuccess: () => {
       a2uiToast.success(t("profile.profileUpdated"))
@@ -36,7 +30,7 @@ export default function ProfilePage() {
   // Storage config queries and mutations
   const { data: storageConfig, refetch: refetchStorageConfig } = api.userStorageConfig.get.useQuery(
     undefined,
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
   const upsertStorageConfig = api.userStorageConfig.upsert.useMutation({
     onSuccess: () => {
@@ -112,15 +106,6 @@ export default function ProfilePage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-
         // Profile actions
         case "setDisplayName":
           setDisplayName(args?.[0] as string)
@@ -226,7 +211,6 @@ export default function ProfilePage() {
       }
     },
     [
-      router, logout,
       displayName, currentPassword, newPassword, confirmPassword, updateProfile, updatePassword,
       storageProvider, storageBucket, storageAccessKey, storageSecretKey, storagePublicDomain,
       storageR2AccountId, storageS3Region, storageS3Endpoint, storageConfigName,
@@ -604,27 +588,17 @@ export default function ProfilePage() {
     ],
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [
-      {
-        type: "container",
-        className: "max-w-[960px] mx-auto w-full",
-        children: [pageContent],
-      },
-    ],
+  const contentNode: A2UINode = {
+    type: "container",
+    className: "max-w-[960px] mx-auto w-full",
+    children: [pageContent],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

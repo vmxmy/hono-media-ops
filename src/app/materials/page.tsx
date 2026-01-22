@@ -1,24 +1,18 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+// Removed: usePathname, useRouter - using DashboardShell now
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
+import type { A2UINode, A2UICardNode, A2UIColumnNode } from "@/lib/a2ui"
 import { ANALYTICS_LAYOUT, analyticsCard, analyticsGrid, analyticsHeader } from "@/lib/analytics/layout"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function MaterialsPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
-  const wrapCard = (card: A2UICardNode) => analyticsCard(card)
 
   // Material Analytics API calls
   const { data: materialOverview } = api.materialAnalytics.getOverview.useQuery()
@@ -35,30 +29,21 @@ export default function MaterialsPage() {
   const { data: materialTypeTrend } = api.materialAnalytics.getTypeTrend.useQuery({ days: 90 })
 
   const handleAction = useCallback(
-    (action: string, args?: unknown[]) => {
-      switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
-      }
+    (action: string) => {
+      // No actions needed yet
     },
-    [router, logout]
+    []
   )
 
   const materialOverviewCard = useMemo((): A2UICardNode => {
     if (!materialOverview) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -118,13 +103,13 @@ export default function MaterialsPage() {
 
   const materialQualityMetricsCard = useMemo((): A2UICardNode => {
     if (!materialQualityMetrics) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -193,7 +178,7 @@ export default function MaterialsPage() {
 
   const materialWordCountDistCard = useMemo((): A2UICardNode => {
     if (!materialWordCountDist || materialWordCountDist.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -206,7 +191,7 @@ export default function MaterialsPage() {
       color: "#3b82f6",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -230,7 +215,7 @@ export default function MaterialsPage() {
 
   const materialTypeDistCard = useMemo((): A2UICardNode => {
     if (!materialTypeDistribution || materialTypeDistribution.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -244,7 +229,7 @@ export default function MaterialsPage() {
       color: colors[index % colors.length],
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -266,13 +251,13 @@ export default function MaterialsPage() {
 
   const materialTopUsedCard = useMemo((): A2UICardNode => {
     if (!materialTopUsed || materialTopUsed.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
     }
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -318,7 +303,7 @@ export default function MaterialsPage() {
 
   const materialGrowthTrendCard = useMemo((): A2UICardNode => {
     if (!materialGrowthTrend || materialGrowthTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -333,7 +318,7 @@ export default function MaterialsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -354,7 +339,7 @@ export default function MaterialsPage() {
 
   const materialMetricsScatterCard = useMemo((): A2UICardNode => {
     if (!materialMetricsScatter || materialMetricsScatter.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -367,7 +352,7 @@ export default function MaterialsPage() {
       title: item.sourceTitle,
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -390,7 +375,7 @@ export default function MaterialsPage() {
 
   const materialStatusDistCard = useMemo((): A2UICardNode => {
     if (!materialStatusDist || materialStatusDist.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -404,7 +389,7 @@ export default function MaterialsPage() {
       color: colors[item.status as keyof typeof colors] || "#6b7280",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -426,7 +411,7 @@ export default function MaterialsPage() {
 
   const materialCreationTrendCard = useMemo((): A2UICardNode => {
     if (!materialCreationTrend || materialCreationTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -441,7 +426,7 @@ export default function MaterialsPage() {
       })),
     }]
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -462,7 +447,7 @@ export default function MaterialsPage() {
 
   const materialParaCountDistCard = useMemo((): A2UICardNode => {
     if (!materialParaCountDist || materialParaCountDist.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -475,7 +460,7 @@ export default function MaterialsPage() {
       color: "#8b5cf6",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -499,7 +484,7 @@ export default function MaterialsPage() {
 
   const materialSentLenDistCard = useMemo((): A2UICardNode => {
     if (!materialSentLenDist || materialSentLenDist.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -512,7 +497,7 @@ export default function MaterialsPage() {
       color: "#ec4899",
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -536,7 +521,7 @@ export default function MaterialsPage() {
 
   const materialTypeTrendCard = useMemo((): A2UICardNode => {
     if (!materialTypeTrend || materialTypeTrend.length === 0) {
-      return wrapCard({
+      return analyticsCard({
         type: "card",
         children: [{ type: "text", text: t("common.loading"), color: "muted" }],
       })
@@ -558,7 +543,7 @@ export default function MaterialsPage() {
       data,
     }))
 
-    return wrapCard({
+    return analyticsCard({
       type: "card",
       children: [
         {
@@ -577,36 +562,26 @@ export default function MaterialsPage() {
     })
   }, [materialTypeTrend, t])
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
+  const contentNode: A2UINode = {
+    type: "column",
+    gap: ANALYTICS_LAYOUT.sectionGap,
     children: [
-      {
-        type: "column",
-        gap: ANALYTICS_LAYOUT.sectionGap,
-        children: [
-          analyticsHeader("Material Analytics", "Material coverage, quality, and usage signals."),
-          analyticsGrid([materialOverviewCard, materialQualityMetricsCard]),
-          analyticsGrid([materialWordCountDistCard, materialTypeDistCard]),
-          analyticsGrid([materialTopUsedCard, materialGrowthTrendCard]),
-          analyticsGrid([materialMetricsScatterCard, materialStatusDistCard]),
-          analyticsGrid([materialCreationTrendCard, materialParaCountDistCard]),
-          materialSentLenDistCard,
-          materialTypeTrendCard,
-        ],
-      },
+      analyticsHeader("Material Analytics", "Material coverage, quality, and usage signals."),
+      analyticsGrid([materialOverviewCard, materialQualityMetricsCard]),
+      analyticsGrid([materialWordCountDistCard, materialTypeDistCard]),
+      analyticsGrid([materialTopUsedCard, materialGrowthTrendCard]),
+      analyticsGrid([materialMetricsScatterCard, materialStatusDistCard]),
+      analyticsGrid([materialCreationTrendCard, materialParaCountDistCard]),
+      materialSentLenDistCard,
+      materialTypeTrendCard,
     ],
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

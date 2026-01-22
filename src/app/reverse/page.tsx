@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
-import type { A2UIAppShellNode, A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
+import type { A2UIColumnNode, A2UINode, A2UIRowNode } from "@/lib/a2ui"
 import { buildMaterialCardNode, type MaterialCardBadge, type MaterialCardAction, type MaterialCardMetric } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import type {
   StyleIdentityData,
   MetricsConstraintsData,
@@ -57,11 +56,6 @@ interface StyleAnalysis {
 export default function ReversePage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedAnalysis, setSelectedAnalysis] = useState<StyleAnalysis | null>(null)
@@ -85,7 +79,7 @@ export default function ReversePage() {
   // 使用混合搜索 (关键词 + 向量) 当有搜索词时
   const { data, isLoading } = api.reverseLogs.hybridSearch.useQuery(
     { page: 1, pageSize: 50, search: searchQuery || undefined, useVectorSearch: true },
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
 
   const deleteMutation = api.reverseLogs.delete.useMutation({
@@ -1383,14 +1377,6 @@ export default function ReversePage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "newAnalysis":
           setIsModalOpen(true)
           break
@@ -1477,24 +1463,10 @@ export default function ReversePage() {
           break
       }
     },
-    [router, logout, logs, t, deleteMutation, handleSuccess, handleCreateTaskClose]
+    [logs, t, deleteMutation, handleSuccess, handleCreateTaskClose]
   )
 
-  if (!mounted) return null
-
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [pageNode],
-  }
+  if (status === "loading") return null
 
   const modalNodes: A2UINode[] = [
     ...(detailModalOpen && detailModalNode ? [detailModalNode] : []),
@@ -1513,5 +1485,9 @@ export default function ReversePage() {
     },
   ]
 
-  return <A2UIRenderer node={[appShellNode, ...modalNodes]} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={[pageNode, ...modalNodes]} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

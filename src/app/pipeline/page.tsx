@@ -1,18 +1,17 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+// Removed: usePathname, useRouter - using DashboardShell now
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
 import type {
-  A2UIAppShellNode,
   A2UINode,
   A2UICardNode,
   A2UIRowNode,
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import { SwipeSelector } from "@/components/swipe-selector"
 
 // Pipeline step type
@@ -36,11 +35,6 @@ interface PipelineItem {
 export default function PipelinePage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   const [step, setStep] = useState<PipelineStep>("input")
   const [pipelineId, setPipelineId] = useState<string | null>(null)
@@ -58,7 +52,7 @@ export default function PipelinePage() {
       page: 1,
       pageSize: 10,
     },
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
 
   const { data: materialsData, isLoading: materialsLoading } = api.reverseLogs.getAll.useQuery(
@@ -67,7 +61,7 @@ export default function PipelinePage() {
       pageSize: 50,
       search: materialSearchQuery || undefined,
     },
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
 
   const materials = materialsData?.logs ?? []
@@ -79,7 +73,7 @@ export default function PipelinePage() {
       pageSize: 50,
       search: promptSearchQuery || undefined,
     },
-    { enabled: mounted }
+    { enabled: status !== "loading" }
   )
 
   const prompts = promptsData?.items ?? []
@@ -194,14 +188,6 @@ export default function PipelinePage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "setTopic":
           setFormData((prev) => ({ ...prev, topic: args?.[0] as string }))
           break
@@ -292,7 +278,6 @@ export default function PipelinePage() {
       selectStyleMutation,
       startMutation,
       history,
-      router,
       pipelineId,
       selectedPromptId,
       materials,
@@ -764,7 +749,7 @@ export default function PipelinePage() {
     }
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
   const pageNode: A2UINode = {
     type: "container",
@@ -785,23 +770,11 @@ export default function PipelinePage() {
     ],
   }
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [pageNode],
-  }
-
   return (
     <>
-      <A2UIRenderer node={appShellNode} onAction={handleAction} />
+      <DashboardShell>
+        <A2UIRenderer node={pageNode} onAction={handleAction} />
+      </DashboardShell>
       {step === "selection" && sortedPrompts && sortedPrompts.length > 0 && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background border rounded-lg shadow-lg p-6 max-w-lg w-full">

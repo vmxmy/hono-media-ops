@@ -1,27 +1,20 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
 import type { 
-  A2UIAppShellNode, 
   A2UIColumnNode, 
   A2UINode 
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 
 export default function ArticlesPage() {
   const { t, locale } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
@@ -40,7 +33,7 @@ export default function ArticlesPage() {
     pageSize,
     search: debouncedSearch || undefined,
   }, {
-    enabled: mounted,
+    enabled: status !== "loading",
     // 30 秒定时刷新，确保新发布文章能及时显示
     refetchInterval: 30000,
     // 窗口聚焦时刷新
@@ -50,16 +43,8 @@ export default function ArticlesPage() {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "viewArticle":
-          router.push(`/articles/${args?.[0]}`)
+          window.location.href = `/articles/${args?.[0]}`
           break
         case "prevPage":
           setPage((p) => Math.max(1, p - 1))
@@ -77,7 +62,7 @@ export default function ArticlesPage() {
           break
       }
     },
-    [router, logout, data, page, pageSize]
+    [data, page, pageSize]
   )
 
   const formatDate = (date: Date) => {
@@ -359,27 +344,17 @@ export default function ArticlesPage() {
     ],
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems: navItems, // Show nav items even for public users, or customize if needed
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: status === "authenticated" ? t("auth.logout") : t("articles.loginBackend"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [
-      {
-        type: "container",
-        className: "max-w-[1200px] mx-auto w-full",
-        children: [pageContent]
-      }
-    ],
+  const contentNode: A2UINode = {
+    type: "container",
+    className: "max-w-[1200px] mx-auto w-full",
+    children: [pageContent]
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

@@ -1,19 +1,17 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import { CreateXhsImageModal } from "@/components/create-xhs-image-modal"
 import type {
-  A2UIAppShellNode,
   A2UIColumnNode,
   A2UINode,
   A2UIRowNode,
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import {
   XHS_IMAGE_JOB_STATUSES,
   isXhsImageJobCancellable,
@@ -55,11 +53,6 @@ interface XhsJobWithImages extends XhsJob {
 export default function XhsImagesPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   // Track which job is in zoomed (full-size) mode
   const [zoomedJobId, setZoomedJobId] = useState<string | null>(null)
@@ -70,7 +63,7 @@ export default function XhsImagesPage() {
 
   // Get processing count for smart polling
   const { data: processingCountData = 0 } = api.xhsImages.getProcessingCount.useQuery(undefined, {
-    enabled: mounted,
+    enabled: status !== "loading",
   })
   const processingCount = processingCountData as number
 
@@ -87,7 +80,7 @@ export default function XhsImagesPage() {
       status: statusFilters.length > 0 ? statusFilters : undefined,
     },
     {
-      enabled: mounted,
+      enabled: status !== "loading",
       refetchInterval: processingCount > 0 ? POLLING_INTERVAL : false,
     }
   )
@@ -665,14 +658,6 @@ export default function XhsImagesPage() {
   const handleA2UIAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "delete":
           handleDelete(args?.[0] as string)
           break
@@ -707,10 +692,10 @@ export default function XhsImagesPage() {
           break
       }
     },
-    [router, logout, handleDelete, handlePublish, handleCancel, handleRetry, handleCopyUrl]
+    [handleDelete, handlePublish, handleCancel, handleRetry, handleCopyUrl]
   )
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
   // Build content
   const contentNode: A2UINode = {
@@ -736,23 +721,11 @@ export default function XhsImagesPage() {
     ],
   }
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [contentNode],
-  }
-
   return (
     <>
-      <A2UIRenderer node={appShellNode} onAction={handleA2UIAction} />
+      <DashboardShell>
+        <A2UIRenderer node={contentNode} onAction={handleA2UIAction} />
+      </DashboardShell>
       <CreateXhsImageModal
         isOpen={isGenerateModalOpen}
         onClose={() => {

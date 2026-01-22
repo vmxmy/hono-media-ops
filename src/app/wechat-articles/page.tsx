@@ -1,26 +1,19 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
-import type { 
-  A2UIAppShellNode, 
-  A2UIColumnNode, 
-  A2UINode 
+import type {
+  A2UIColumnNode,
+  A2UINode
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 
 export default function WechatArticlesPage() {
   const { t, locale } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
@@ -38,20 +31,12 @@ export default function WechatArticlesPage() {
     pageSize,
     search: debouncedSearch || undefined,
   }, {
-    enabled: mounted,
+    enabled: status !== "loading",
   })
 
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "viewOriginal":
           window.open(args?.[0] as string, "_blank")
           break
@@ -68,7 +53,7 @@ export default function WechatArticlesPage() {
           break
       }
     },
-    [router, logout, data, page, pageSize]
+    [data, page, pageSize]
   )
 
   const formatDate = (timestamp: number | null) => {
@@ -241,19 +226,11 @@ export default function WechatArticlesPage() {
     ]
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    navItems: navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [pageContent],
-  }
-
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={pageContent} onAction={handleAction} />
+    </DashboardShell>
+  )
 }

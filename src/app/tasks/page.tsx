@@ -1,20 +1,18 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
 import { useTaskPolling } from "@/hooks/use-task-polling"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type {
-  A2UIAppShellNode,
   A2UIColumnNode,
   A2UINode,
   A2UICardNode,
   A2UIRowNode,
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 import { assembleChapterMarkdown, type MediaLike } from "@/lib/markdown"
 
@@ -48,11 +46,6 @@ interface TaskWithMaterial {
 export default function TasksPage() {
   const { t } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [articleViewerState, setArticleViewerState] = useState<{
     isOpen: boolean
@@ -97,7 +90,7 @@ export default function TasksPage() {
     page: 1,
     pageSize: 20,
     search: searchQuery || undefined,
-    enabled: mounted,
+    enabled: status !== "loading",
     pollingInterval: 3000,
   })
 
@@ -661,14 +654,6 @@ export default function TasksPage() {
   const handleA2UIAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "newTask":
           handleNewTask()
           break
@@ -736,8 +721,6 @@ export default function TasksPage() {
       }
     },
     [
-      router,
-      logout,
       t,
       trpcUtils,
       tasks,
@@ -763,7 +746,7 @@ export default function TasksPage() {
 
   const isRegenerate = regenerateData !== null
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
   const isArticleOpen = articleViewerState.isOpen
   // On mobile, show full screen article; on desktop, show split view
@@ -868,20 +851,6 @@ export default function TasksPage() {
 
   const contentNode = buildContentNode()
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems,
-    activePath: pathname,
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: t("auth.logout"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [contentNode],
-  }
-
   const modalNodes: A2UINode[] = [
     {
       type: "create-task-modal",
@@ -893,5 +862,9 @@ export default function TasksPage() {
     },
   ]
 
-  return <A2UIRenderer node={[appShellNode, ...modalNodes]} onAction={handleA2UIAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={[contentNode, ...modalNodes]} onAction={handleA2UIAction} />
+    </DashboardShell>
+  )
 }

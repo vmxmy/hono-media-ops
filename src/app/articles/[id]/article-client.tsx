@@ -1,16 +1,14 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer } from "@/components/a2ui"
 import type {
-  A2UIAppShellNode,
   A2UINode,
 } from "@/lib/a2ui"
-import { buildNavItems } from "@/lib/navigation"
 import { assembleChapterMarkdown, type MediaLike } from "@/lib/markdown"
 
 interface ArticleClientProps {
@@ -20,10 +18,6 @@ interface ArticleClientProps {
 export function ArticleClient({ id }: ArticleClientProps) {
   const { t, locale } = useI18n()
   const { status } = useSession()
-  const router = useRouter()
-  const mounted = status !== "loading"
-  const logout = () => signOut({ callbackUrl: "/login" })
-  const navItems = buildNavItems(t)
 
   const { data: article, isLoading, error } = api.articles.getById.useQuery({ id })
   const { data: chapters, isLoading: chaptersLoading } = api.chapters.getByTaskId.useQuery({ id })
@@ -38,20 +32,12 @@ export function ArticleClient({ id }: ArticleClientProps) {
   const handleAction = useCallback(
     (action: string, args?: unknown[]) => {
       switch (action) {
-        case "navigate": {
-          const href = args?.[0] as string
-          if (href) router.push(href)
-          break
-        }
-        case "logout":
-          logout()
-          break
         case "backToList":
-          router.push("/articles")
+          window.location.href = "/articles"
           break
       }
     },
-    [router, logout]
+    []
   )
 
   const formatDate = (date: Date) => {
@@ -201,27 +187,17 @@ export function ArticleClient({ id }: ArticleClientProps) {
     }
   }
 
-  if (!mounted) return null
+  if (status === "loading") return null
 
-  const appShellNode: A2UIAppShellNode = {
-    type: "app-shell",
-    brand: t("app.title"),
-    logoSrc: "/logo.png",
-    logoAlt: "Wonton",
-    navItems: navItems,
-    activePath: "/articles", // Keep active context
-    onNavigate: { action: "navigate" },
-    onLogout: { action: "logout" },
-    logoutLabel: status === "authenticated" ? t("auth.logout") : t("articles.loginBackend"),
-    headerActions: [{ type: "theme-switcher" }],
-    children: [
-      {
-        type: "container",
-        className: "px-4",
-        children: [buildContent()]
-      }
-    ],
+  const contentNode: A2UINode = {
+    type: "container",
+    className: "px-4",
+    children: [buildContent()]
   }
 
-  return <A2UIRenderer node={appShellNode} onAction={handleAction} />
+  return (
+    <DashboardShell>
+      <A2UIRenderer node={contentNode} onAction={handleAction} />
+    </DashboardShell>
+  )
 }
