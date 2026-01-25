@@ -107,7 +107,25 @@ const completeExecutionSchema = z.object({
 export const tasksRouter = createTRPCRouter({
   // ==================== Query Methods ====================
 
+  // Infinite scroll query (cursor-based pagination)
   getAll: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        cursor: z.string().optional(), // createdAt timestamp
+        status: taskStatusSchema.or(z.array(taskStatusSchema)).optional(),
+        search: z.string().optional(),
+      })
+    )
+    .query(({ ctx, input }) =>
+      ctx.services.task.getAllInfinite({
+        ...input,
+        userId: ctx.user.id,
+      })
+    ),
+
+  // Traditional pagination (legacy, for compatibility)
+  getAllPaginated: protectedProcedure
     .input(getAllInputSchema)
     .query(({ ctx, input }) => ctx.services.task.getAll({ ...input, userId: ctx.user.id })),
 

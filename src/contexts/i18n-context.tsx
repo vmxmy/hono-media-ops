@@ -129,6 +129,8 @@ export type I18nKey =
     | "tasks.clearSearch"
     | "tasks.writingProgress"
     | "tasks.polishing"
+    | "tasks.loadMore"
+    | "tasks.noMoreTasks"
     // Task Status
     | "status.pending"
     | "status.processing"
@@ -509,6 +511,8 @@ export type I18nKey =
     | "xhsImages.retrying"
     | "xhsImages.retrySuccess"
     | "xhsImages.retryFailed"
+    | "xhsImages.loadMore"
+    | "xhsImages.noMoreJobs"
     | "createHub.generateXhsImages"
     | "createHub.generateXhsImagesDesc"
     | "wechatArticles.title"

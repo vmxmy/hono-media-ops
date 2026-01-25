@@ -13,7 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
-import { xhsJobStatusEnum, xhsImageTypeEnum } from "../enums";
+import { xhsJobStatusEnum, xhsImageTypeEnum, xhsPublishStatusEnum } from "../enums";
 
 // ==================== XHS Image Jobs Table (小红书图片生成任务) ====================
 
@@ -40,6 +40,12 @@ export const xhsImageJobs = pgTable(
     // n8n 关联
     n8nExecutionId: text("n8n_execution_id"),
 
+    // 发布状态
+    publishStatus: xhsPublishStatusEnum("publish_status").default("not_published").notNull(),
+    publishedAt: timestamp("published_at"),
+    xhsNoteId: text("xhs_note_id"),                    // 小红书笔记 ID
+    publishErrorMessage: text("publish_error_message"), // 发布失败原因
+
     // 扩展元数据
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 
@@ -53,9 +59,11 @@ export const xhsImageJobs = pgTable(
   (table) => ({
     userIdIdx: index("idx_xhs_image_jobs_user_id").on(table.userId),
     statusIdx: index("idx_xhs_image_jobs_status").on(table.status),
+    publishStatusIdx: index("idx_xhs_image_jobs_publish_status").on(table.publishStatus),
     createdAtIdx: index("idx_xhs_image_jobs_created_at").on(table.createdAt),
     sourceUrlIdx: index("idx_xhs_image_jobs_source_url").on(table.sourceUrl),
     userStatusIdx: index("idx_xhs_image_jobs_user_status").on(table.userId, table.status),
+    xhsNoteIdIdx: index("idx_xhs_image_jobs_xhs_note_id").on(table.xhsNoteId),
   })
 );
 

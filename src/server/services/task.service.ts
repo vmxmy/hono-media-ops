@@ -1,4 +1,4 @@
-import { eq, desc, like, and, or, sql, gte, lte, inArray, isNull, isNotNull } from "drizzle-orm";
+import { eq, desc, like, and, or, sql, gte, lte, inArray, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   tasks,
@@ -30,6 +30,14 @@ export interface GetAllTasksOptions {
   hasResult?: boolean;
   sortBy?: "createdAt" | "status" | "topic";
   sortOrder?: "asc" | "desc";
+}
+
+export interface GetAllTasksInfiniteOptions {
+  limit: number;
+  cursor?: string; // createdAt timestamp
+  status?: TaskStatus | TaskStatus[];
+  search?: string;
+  userId?: string;
 }
 
 export interface CreateTaskInput {
@@ -98,6 +106,124 @@ export interface WebhookPayload {
 export const taskService = {
   // ==================== Query Methods ====================
 
+  // Infinite scroll query (cursor-based pagination)
+  async getAllInfinite(options: GetAllTasksInfiniteOptions) {
+    const { limit, cursor, status, search, userId } = options;
+
+    const conditions = [isNull(tasks.deletedAt)];
+
+    if (status) {
+      if (Array.isArray(status)) {
+        conditions.push(inArray(tasks.status, status));
+      } else {
+        conditions.push(eq(tasks.status, status));
+      }
+    }
+
+    if (search) {
+      const searchCondition = or(
+        like(tasks.topic, `%${search}%`),
+        like(tasks.keywords, `%${search}%`)
+      );
+      if (searchCondition) conditions.push(searchCondition);
+    }
+
+    if (userId) {
+      conditions.push(eq(tasks.userId, userId));
+    }
+
+    // Add cursor condition (fetch items created before cursor timestamp)
+    if (cursor) {
+      conditions.push(lt(tasks.createdAt, new Date(cursor)));
+    }
+
+    const whereClause = and(...conditions);
+
+    // Fetch limit + 1 to determine if there's a next page
+    const data = await db
+      .select({
+        task: tasks,
+        refMaterial: {
+          styleName: styleAnalyses.styleName,
+          sourceTitle: styleAnalyses.sourceTitle,
+          sourceUrl: styleAnalyses.sourceUrl,
+        },
+        coverUrl: sql<string>`
+          (
+            select elem->>'r2_url'
+            from ${taskExecutions} te,
+                 jsonb_array_elements(
+                   case when jsonb_typeof(te.wechat_media_info) = 'array'
+                     then te.wechat_media_info
+                     else jsonb_build_array(te.wechat_media_info)
+                   end
+                 ) as elem
+            where te.task_id = ${tasks.id}
+              and te.status = 'completed'
+              and elem ? 'r2_url'
+            order by te.completed_at desc nulls last
+            limit 1
+          )`,
+        articleWordCount: sql<number>`
+          (
+            select (result->>'articleWordCount')::int
+            from ${taskExecutions} te
+            where te.task_id = ${tasks.id}
+              and te.status = 'completed'
+              and te.result is not null
+            order by te.completed_at desc nulls last
+            limit 1
+          )`,
+        articleTitle: sql<string>`
+          (
+            select result->>'articleTitle'
+            from ${taskExecutions} te
+            where te.task_id = ${tasks.id}
+              and te.status = 'completed'
+              and te.result is not null
+            order by te.completed_at desc nulls last
+            limit 1
+          )`,
+        articleSubtitle: sql<string>`
+          (
+            select result->>'articleSubtitle'
+            from ${taskExecutions} te
+            where te.task_id = ${tasks.id}
+              and te.status = 'completed'
+              and te.result is not null
+            order by te.completed_at desc nulls last
+            limit 1
+          )`,
+      })
+      .from(tasks)
+      .leftJoin(styleAnalyses, eq(tasks.refMaterialId, styleAnalyses.id))
+      .where(whereClause)
+      .orderBy(desc(tasks.createdAt))
+      .limit(limit + 1);
+
+    // Check if there are more items
+    const hasMore = data.length > limit;
+    const items = hasMore ? data.slice(0, limit) : data;
+
+    // Next cursor is the createdAt of the last item
+    const nextCursor = hasMore && items.length > 0
+      ? items[items.length - 1]!.task.createdAt.toISOString()
+      : undefined;
+
+    return {
+      tasks: items.map((row) => ({
+        ...row.task,
+        coverUrl: row.coverUrl,
+        articleWordCount: row.articleWordCount,
+        articleTitle: row.articleTitle,
+        articleSubtitle: row.articleSubtitle,
+        refMaterial: row.refMaterial?.styleName ? row.refMaterial : null,
+      })),
+      nextCursor,
+    };
+  },
+
+  // Traditional pagination (legacy)
   async getAll(options: GetAllTasksOptions) {
     const { page, pageSize, status, search, userId, sortBy = "createdAt", sortOrder = "desc" } = options;
     const offset = (page - 1) * pageSize;

@@ -53,6 +53,13 @@ export const xhsJobStatusEnum = pgEnum("xhs_job_status", [
   "cancelled",
 ]);
 
+export const xhsPublishStatusEnum = pgEnum("xhs_publish_status", [
+  "not_published",  // 未发布
+  "publishing",     // 发布中
+  "published",      // 已发布
+  "failed",         // 发布失败
+]);
+
 // ==================== Image Prompt Enums ====================
 
 export const imagePromptSourceEnum = pgEnum("image_prompt_source", [

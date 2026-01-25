@@ -7,7 +7,7 @@ import type { AppRouter } from "@/server/api/root"
 
 // 从 router 推断任务类型
 type RouterOutput = inferRouterOutputs<AppRouter>
-type TasksGetAllOutput = RouterOutput["tasks"]["getAll"]
+type TasksGetAllOutput = RouterOutput["tasks"]["getAllPaginated"]
 
 interface UseTaskPollingOptions {
   /** 轮询间隔（毫秒），默认 3000ms */
@@ -68,7 +68,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
   const utils = api.useUtils()
 
   // 计算是否有正在处理的任务
-  const { data, isLoading, refetch, error, isFetching } = api.tasks.getAll.useQuery(
+  const { data, isLoading, refetch, error, isFetching } = api.tasks.getAllPaginated.useQuery(
     { page, pageSize, search: search || undefined },
     {
       enabled,
@@ -107,7 +107,7 @@ export function useTaskPolling(options: UseTaskPollingOptions = {}): TaskPolling
   }, [data?.tasks, isLoading])
 
   const invalidate = () => {
-    utils.tasks.getAll.invalidate()
+    utils.tasks.getAllPaginated.invalidate()
   }
 
   return {

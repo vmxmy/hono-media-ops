@@ -67,26 +67,30 @@ export default function XhsImagesPage() {
   })
   const processingCount = processingCountData as number
 
-  // Query all jobs - this returns jobs with imageCount only
+  // Query all jobs with infinite scroll
   const {
-    data: jobsData,
+    data: infiniteData,
     isLoading,
     error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     refetch: invalidateJobs,
-  } = api.xhsImages.getAll.useQuery(
+  } = api.xhsImages.getAll.useInfiniteQuery(
     {
-      page: 1,
-      pageSize: 50,
+      limit: 20,
       status: statusFilters.length > 0 ? statusFilters : undefined,
     },
     {
       enabled: status !== "loading",
       refetchInterval: processingCount > 0 ? POLLING_INTERVAL : false,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
     }
   )
 
-  // Get all job IDs to fetch their images
-  const jobIds = (jobsData?.jobs ?? []).map(j => j.id)
+  // Flatten all pages into single array
+  const allJobs = infiniteData?.pages.flatMap(page => page.jobs) ?? []
+  const jobIds = allJobs.map(j => j.id)
 
   // Fetch images for all jobs in one batch query per job
   // We'll use individual queries but they'll be cached
@@ -95,7 +99,7 @@ export default function XhsImagesPage() {
   )
 
   // Combine jobs with their images
-  const jobs: XhsJobWithImages[] = (jobsData?.jobs ?? []).map((job, index) => {
+  const jobs: XhsJobWithImages[] = allJobs.map((job, index) => {
     const jobData = jobsWithImages[index]?.data
     return {
       ...job,
@@ -595,7 +599,34 @@ export default function XhsImagesPage() {
     return {
       type: "column",
       gap: "1.5rem",
-      children: jobs.map(job => buildJobCard(job)),
+      children: [
+        ...jobs.map(job => buildJobCard(job)),
+        // Load more section
+        ...(hasNextPage ? [{
+          type: "card" as const,
+          hoverable: false,
+          className: "p-6 text-center",
+          children: [{
+            type: "button" as const,
+            text: isFetchingNextPage ? t("common.loading") : t("xhsImages.loadMore"),
+            variant: "outline" as const,
+            size: "lg" as const,
+            disabled: isFetchingNextPage,
+            onClick: { action: "loadMore" },
+          }],
+        }] : []),
+        // End indicator
+        ...(jobs.length > 0 && !hasNextPage ? [{
+          type: "container" as const,
+          className: "py-4 text-center",
+          children: [{
+            type: "text" as const,
+            text: t("xhsImages.noMoreJobs"),
+            color: "muted" as const,
+            variant: "caption" as const,
+          }],
+        }] : []),
+      ],
     }
   }
 
@@ -690,9 +721,12 @@ export default function XhsImagesPage() {
         case "clearStatusFilters":
           setStatusFilters([])
           break
+        case "loadMore":
+          fetchNextPage()
+          break
       }
     },
-    [handleDelete, handlePublish, handleCancel, handleRetry, handleCopyUrl]
+    [handleDelete, handlePublish, handleCancel, handleRetry, handleCopyUrl, fetchNextPage]
   )
 
   if (status === "loading") return null

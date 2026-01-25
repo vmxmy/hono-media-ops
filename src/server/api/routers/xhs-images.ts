@@ -6,8 +6,26 @@ import { XHS_IMAGE_JOB_STATUSES } from "@/lib/xhs-image-job-status";
 const xhsJobStatusSchema = z.enum(XHS_IMAGE_JOB_STATUSES);
 
 export const xhsImagesRouter = createTRPCRouter({
-  // Get all jobs with pagination
+  // Get all jobs with infinite scroll (cursor-based pagination)
   getAll: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        cursor: z.string().optional(), // Cursor is the createdAt timestamp of last item
+        status: z.union([xhsJobStatusSchema, z.array(xhsJobStatusSchema)]).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.services.xhsImage.getAllJobsInfinite({
+        limit: input.limit,
+        cursor: input.cursor,
+        status: input.status,
+        userId: ctx.session?.user?.id,
+      });
+    }),
+
+  // Get all jobs with pagination (legacy, keep for compatibility)
+  getAllPaginated: protectedProcedure
     .input(
       paginationSchema.extend({
         status: z.union([xhsJobStatusSchema, z.array(xhsJobStatusSchema)]).optional(),

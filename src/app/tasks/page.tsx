@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
-import { useTaskPolling } from "@/hooks/use-task-polling"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type {
@@ -78,23 +77,54 @@ export default function TasksPage() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // 使用智能轮询：有处理中任务时自动刷新，完成后停止
-  const {
-    data,
-    isLoading,
-    isPolling,
-    processingCount,
-    error,
-    invalidate
-  } = useTaskPolling({
-    page: 1,
-    pageSize: 20,
-    search: searchQuery || undefined,
-    enabled: status !== "loading",
-    pollingInterval: 3000,
-  })
+  // Polling interval in milliseconds
+  const POLLING_INTERVAL = 3000
 
-  const tasks = data?.tasks ?? []
+  // 使用无限滚动查询
+  const {
+    data: infiniteData,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = api.tasks.getAll.useInfiniteQuery(
+    {
+      limit: 20,
+      search: searchQuery || undefined,
+    },
+    {
+      enabled: status !== "loading",
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  )
+
+  // Flatten all pages into single array
+  const allTasks = infiniteData?.pages.flatMap(page => page.tasks) ?? []
+
+  // 计算处理中的任务数量
+  const processingCount = allTasks.filter(
+    (task) => task.status === "processing" || task.status === "pending"
+  ).length
+  const isPolling = processingCount > 0
+
+  // 智能轮询：有处理中任务时自动刷新
+  useEffect(() => {
+    if (!isPolling || status === "loading") return
+
+    const intervalId = setInterval(() => {
+      refetch()
+    }, POLLING_INTERVAL)
+
+    return () => clearInterval(intervalId)
+  }, [isPolling, status, refetch])
+
+  const tasks = allTasks
+
+  const invalidate = useCallback(() => {
+    refetch()
+  }, [refetch])
 
   const cancelMutation = api.tasks.cancel.useMutation({
     onSuccess: () => invalidate(),
@@ -590,10 +620,37 @@ export default function TasksPage() {
     return {
       type: "column",
       gap: "1rem",
-      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial, {
-        compact,
-        highlighted: task.id === viewingTaskId,
-      })),
+      children: [
+        ...tasks.map((task) => buildTaskCard(task as TaskWithMaterial, {
+          compact,
+          highlighted: task.id === viewingTaskId,
+        })),
+        // Load more section
+        ...(hasNextPage ? [{
+          type: "card" as const,
+          hoverable: false,
+          className: "p-6 text-center",
+          children: [{
+            type: "button" as const,
+            text: isFetchingNextPage ? t("common.loading") : t("tasks.loadMore"),
+            variant: "outline" as const,
+            size: "lg" as const,
+            disabled: isFetchingNextPage,
+            onClick: { action: "loadMore" },
+          }],
+        }] : []),
+        // End indicator
+        ...(tasks.length > 0 && !hasNextPage ? [{
+          type: "container" as const,
+          className: "py-4 text-center",
+          children: [{
+            type: "text" as const,
+            text: t("tasks.noMoreTasks"),
+            color: "muted" as const,
+            variant: "caption" as const,
+          }],
+        }] : []),
+      ],
     }
   }
 
@@ -718,6 +775,9 @@ export default function TasksPage() {
         case "clearSearch":
           setSearchQuery("")
           break
+        case "loadMore":
+          fetchNextPage()
+          break
       }
     },
     [
@@ -736,6 +796,7 @@ export default function TasksPage() {
       handleUpdateExecutionResult,
       handleUpdateChapter,
       handleUpdateMediaInfo,
+      fetchNextPage,
     ]
   )
 

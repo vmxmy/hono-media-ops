@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, isNull } from "drizzle-orm";
+import { eq, desc, and, sql, gte, isNull, lt } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   xhsImageJobs,
@@ -24,6 +24,13 @@ export interface GetAllXhsJobsOptions {
   userId?: string;
 }
 
+export interface GetAllXhsJobsInfiniteOptions {
+  limit: number;
+  cursor?: string; // createdAt timestamp
+  status?: XhsJobStatus | XhsJobStatus[];
+  userId?: string;
+}
+
 export interface XhsJobWithImages extends XhsImageJob {
   images: XhsImage[];
 }
@@ -37,6 +44,64 @@ export interface XhsJobListItem extends XhsImageJob {
 export const xhsImageService = {
   // ==================== Job Query Methods ====================
 
+  // Infinite scroll query (cursor-based pagination)
+  async getAllJobsInfinite(
+    options: GetAllXhsJobsInfiniteOptions
+  ): Promise<{ jobs: XhsJobListItem[]; nextCursor?: string }> {
+    const { limit, cursor, status, userId } = options;
+
+    // Build where conditions
+    const conditions = [isNull(xhsImageJobs.deletedAt)];
+
+    if (userId) {
+      conditions.push(eq(xhsImageJobs.userId, userId));
+    }
+
+    const statusCondition = buildXhsJobStatusCondition(status);
+    if (statusCondition) {
+      conditions.push(statusCondition);
+    }
+
+    // Add cursor condition (fetch items created before cursor timestamp)
+    if (cursor) {
+      conditions.push(lt(xhsImageJobs.createdAt, new Date(cursor)));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Fetch limit + 1 to determine if there's a next page
+    const jobs = await db
+      .select({
+        job: xhsImageJobs,
+        imageCount: sql<number>`(
+          SELECT count(*)::int FROM ${xhsImages}
+          WHERE ${xhsImages.jobId} = ${xhsImageJobs.id}
+        )`,
+      })
+      .from(xhsImageJobs)
+      .where(whereClause)
+      .orderBy(desc(xhsImageJobs.createdAt))
+      .limit(limit + 1);
+
+    // Check if there are more items
+    const hasMore = jobs.length > limit;
+    const items = hasMore ? jobs.slice(0, limit) : jobs;
+
+    // Next cursor is the createdAt of the last item
+    const nextCursor = hasMore && items.length > 0
+      ? items[items.length - 1]!.job.createdAt.toISOString()
+      : undefined;
+
+    return {
+      jobs: items.map((row) => ({
+        ...row.job,
+        imageCount: row.imageCount,
+      })),
+      nextCursor,
+    };
+  },
+
+  // Traditional pagination (kept for compatibility)
   async getAllJobs(options: GetAllXhsJobsOptions): Promise<{ jobs: XhsJobListItem[]; total: number }> {
     const { page, pageSize, status, userId } = options;
     const offset = (page - 1) * pageSize;
