@@ -200,6 +200,39 @@ const agentInput = {
 请根据以上信息生成正文...
 ```
 
+## 店铺详细信息提取
+
+### ⚠️ 重要提示
+
+上述查询返回的 `generated_config` 字段包含了所有店铺的详细信息，但这些信息**嵌套在 JSON 中**：
+
+```json
+{
+  "generated_config": [
+    {
+      "index": 2,
+      "type": "content",
+      "title": "瞬间 Slack",
+      "subtitle": "韩系马卡龙少女心空间",
+      "body_points": [
+        "📍 地址：深圳龙华区锦龙楼 b4 栋 301",
+        "🕙 时间：建议下午茶时段",
+        "🍰 必点：蓝柑冰淇淋汽水"
+      ]
+    }
+  ]
+}
+```
+
+如果你需要**直接获取结构化的店铺列表**（地址、时间、必点等字段分离），请参考：
+
+📄 **[增强查询文档](./n8n-publish-workflow-enhanced-query.md)**
+
+该文档提供 3 种方案：
+1. **PostgreSQL CTE 查询**（推荐） - 在 SQL 层面直接提取店铺信息
+2. **N8N Function 节点** - 使用 JavaScript 解析和提取
+3. **独立表设计** - 长期方案，适合频繁查询
+
 ## N8N 节点配置
 
 ### PostgreSQL 节点设置
