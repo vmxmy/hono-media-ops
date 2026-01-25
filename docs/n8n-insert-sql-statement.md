@@ -15,7 +15,12 @@ INSERT INTO xhs_image_jobs (
     image_prompt_id,
     input_content,
     style_prompt,
-    generated_config
+    generated_config,
+    track,
+    category,
+    meta_attributes,
+    tags,
+    keywords
 )
 VALUES (
     {{ $json.user_id }}::uuid,
@@ -27,7 +32,12 @@ VALUES (
     {{ $json.prompt_id }}::uuid,
     {{ $json.input_content }},
     {{ $json.style_prompt }},
-    {{ $json.output }}::jsonb
+    {{ $json.output }}::jsonb,
+    {{ $json.track }},
+    {{ $json.category }},
+    {{ $json.meta_attributes }}::jsonb,
+    {{ $json.tags }}::jsonb,
+    {{ $json.keywords }}::jsonb
 )
 RETURNING id, created_at;
 ```
@@ -51,7 +61,12 @@ INSERT INTO xhs_image_jobs (
     image_prompt_id,
     input_content,
     style_prompt,
-    generated_config
+    generated_config,
+    track,
+    category,
+    meta_attributes,
+    tags,
+    keywords
 )
 VALUES (
     $1::uuid,
@@ -63,7 +78,12 @@ VALUES (
     $5::uuid,
     $6,
     $7,
-    $8::jsonb
+    $8::jsonb,
+    $9,
+    $10,
+    $11::jsonb,
+    $12::jsonb,
+    $13::jsonb
 )
 RETURNING id, created_at;
 ```
@@ -78,7 +98,12 @@ RETURNING id, created_at;
   "={{ $json.prompt_id }}",
   "={{ $json.input_content }}",
   "={{ $json.style_prompt }}",
-  "={{ $json.output }}"
+  "={{ $json.output }}",
+  "={{ $json.track }}",
+  "={{ $json.category }}",
+  "={{ $json.meta_attributes }}",
+  "={{ $json.tags }}",
+  "={{ $json.keywords }}"
 ]
 ```
 
@@ -96,7 +121,12 @@ INSERT INTO xhs_image_jobs (
     image_prompt_id,
     input_content,
     style_prompt,
-    generated_config
+    generated_config,
+    track,
+    category,
+    meta_attributes,
+    tags,
+    keywords
 )
 VALUES (
     '{{ $json.user_id }}'::uuid,
@@ -108,7 +138,12 @@ VALUES (
     '{{ $json.prompt_id }}'::uuid,
     $${{ $json.input_content }}$$,
     $${{ $json.style_prompt }}$$,
-    '{{ $json.output }}'::jsonb
+    '{{ $json.output }}'::jsonb,
+    '{{ $json.track }}',
+    '{{ $json.category }}',
+    '{{ $json.meta_attributes }}'::jsonb,
+    '{{ $json.tags }}'::jsonb,
+    '{{ $json.keywords }}'::jsonb
 )
 RETURNING id, created_at;
 ```
@@ -129,8 +164,14 @@ RETURNING id, created_at;
 | `input_content` | `$json.input_content` | text | 用户输入 ⭐ |
 | `style_prompt` | `$json.style_prompt` | text | 风格提示词 ⭐ |
 | `generated_config` | `$json.output` | `::jsonb` | 生成配置 ⭐ |
+| `track` | `$json.track` | text | 内容赛道 🆕 |
+| `category` | `$json.category` | text | 内容类型 🆕 |
+| `meta_attributes` | `$json.meta_attributes` | `::jsonb` | 元属性 🆕 |
+| `tags` | `$json.tags` | `::jsonb` | 内容标签 🆕 |
+| `keywords` | `$json.keywords` | `::jsonb` | SEO 关键词 🆕 |
 
 ⭐ = 重试功能必需字段
+🆕 = Migration 0013 新增字段
 
 ## 自动填充字段
 
@@ -184,7 +225,12 @@ INSERT INTO xhs_image_jobs (
     image_prompt_id,
     input_content,
     style_prompt,
-    generated_config
+    generated_config,
+    track,
+    category,
+    meta_attributes,
+    tags,
+    keywords
 )
 VALUES (
     'a11bec3d-de18-4ce6-801d-cdbdf41db18a'::uuid,
@@ -196,7 +242,12 @@ VALUES (
     'f123abc-...'::uuid,
     $$["番茄美式好喝不？替你们试了！",...]$$,
     $$# 视觉风格规范...$$,
-    '[{"index":1,"type":"cover",...}]'::jsonb
+    '[{"index":1,"type":"cover",...}]'::jsonb,
+    'food',
+    'tutorial',
+    '{"title":"番茄美式","difficulty":"easy","time_required":"5分钟"}'::jsonb,
+    '["咖啡制作","居家自制","快手饮品","颜值饮品"]'::jsonb,
+    '["咖啡","番茄","美式","居家","自制","快手","饮品"]'::jsonb
 )
 RETURNING id, created_at;
 ```
@@ -213,6 +264,11 @@ SELECT
     input_content IS NOT NULL AS has_input,
     style_prompt IS NOT NULL AS has_style,
     generated_config IS NOT NULL AS has_config,
+    track,
+    category,
+    meta_attributes IS NOT NULL AS has_meta,
+    jsonb_array_length(tags) AS tags_count,
+    jsonb_array_length(keywords) AS keywords_count,
     created_at
 FROM xhs_image_jobs
 WHERE created_at > NOW() - INTERVAL '1 minute'
@@ -225,6 +281,11 @@ LIMIT 1;
 - `has_input`: true ✅
 - `has_style`: true ✅
 - `has_config`: true ✅
+- `track`: 不为 NULL ✅ (e.g., 'food', 'lifestyle')
+- `category`: 不为 NULL ✅ (e.g., 'tutorial', 'explore')
+- `has_meta`: true ✅
+- `tags_count`: 5-8 ✅
+- `keywords_count`: 6-10 ✅
 
 ## 错误处理
 
