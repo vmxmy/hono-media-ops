@@ -63,7 +63,11 @@ extracted_shops AS (
     shop_config->>'type' AS type,
     shop_config->>'title' AS shop_name,
     shop_config->>'subtitle' AS subtitle,
-    shop_config->'body_points' AS body_points,
+    -- ✨ 从 body_points 数组中提取具体字段
+    shop_config->'body_points'->>0 AS address,           -- 第一个元素：地址
+    shop_config->'body_points'->>1 AS business_hours,    -- 第二个元素：营业时间
+    shop_config->'body_points'->>2 AS must_try,          -- 第三个元素：必点
+    shop_config->'body_points' AS body_points_raw,       -- 原始数组（备用）
     shop_config->>'image_prompt' AS image_prompt,
     shop_config->'visual_elements' AS visual_elements,
     shop_config->>'color_scheme' AS color_scheme
@@ -80,7 +84,10 @@ SELECT
         'index', es.index,
         'shop_name', es.shop_name,
         'subtitle', es.subtitle,
-        'body_points', es.body_points,
+        'address', es.address,                    -- ✨ 已提取的地址
+        'business_hours', es.business_hours,      -- ✨ 已提取的营业时间
+        'must_try', es.must_try,                  -- ✨ 已提取的必点
+        'body_points_raw', es.body_points_raw,    -- 原始数组（备用）
         'image_prompt', es.image_prompt,
         'visual_elements', es.visual_elements,
         'color_scheme', es.color_scheme
@@ -162,7 +169,10 @@ LIMIT 1;
       "index": 2,
       "shop_name": "瞬间 Slack",
       "subtitle": "韩系马卡龙少女心空间",
-      "body_points": [
+      "address": "📍 地址：深圳龙华区锦龙楼 b4 栋 301",
+      "business_hours": "🕙 时间：建议下午茶时段",
+      "must_try": "🍰 必点：蓝柑冰淇淋汽水",
+      "body_points_raw": [
         "📍 地址：深圳龙华区锦龙楼 b4 栋 301",
         "🕙 时间：建议下午茶时段",
         "🍰 必点：蓝柑冰淇淋汽水"
@@ -175,11 +185,9 @@ LIMIT 1;
       "index": 3,
       "shop_name": "另一家店",
       "subtitle": "...",
-      "body_points": [
-        "📍 地址：...",
-        "🕙 时间：...",
-        "🍰 必点：..."
-      ]
+      "address": "📍 地址：...",
+      "business_hours": "🕙 时间：...",
+      "must_try": "🍰 必点：..."
     }
   ],
 
@@ -200,29 +208,37 @@ const item = $input.first().json;
 const shops = (item.generated_config || [])
   .filter(config => config.type === 'content')  // 只保留店铺内容
   .map(config => {
-    // 解析 body_points，提取地址、时间、必点
+    // 解析 body_points 数组，提取地址、时间、必点
     const bodyPoints = config.body_points || [];
 
-    const address = bodyPoints
-      .find(point => point.includes('地址'))
-      ?.replace(/^📍\s*地址[：:]\s*/, '') || '';
+    // 方法 1: 直接使用数组索引（假设顺序固定）
+    const address = bodyPoints[0] || '';         // 第一个元素：地址
+    const time = bodyPoints[1] || '';            // 第二个元素：时间
+    const mustTry = bodyPoints[2] || '';         // 第三个元素：必点
 
-    const time = bodyPoints
-      .find(point => point.includes('时间'))
-      ?.replace(/^🕙\s*时间[：:]\s*/, '') || '';
-
-    const mustTry = bodyPoints
-      .find(point => point.includes('必点'))
-      ?.replace(/^🍰\s*必点[：:]\s*/, '') || '';
+    // 方法 2: 使用正则匹配清理前缀（可选）
+    const cleanAddress = address.replace(/^📍\s*地址[：:]\s*/, '');
+    const cleanTime = time.replace(/^🕙\s*时间[：:]\s*/, '');
+    const cleanMustTry = mustTry.replace(/^🍰\s*必点[：:]\s*/, '');
 
     return {
       index: config.index,
       shop_name: config.title,
       subtitle: config.subtitle,
+
+      // 原始值（包含 emoji 和标签）
       address: address,
-      time: time,
+      business_hours: time,
       must_try: mustTry,
-      body_points: bodyPoints,
+
+      // 清理后的值（仅内容）
+      address_clean: cleanAddress,
+      business_hours_clean: cleanTime,
+      must_try_clean: cleanMustTry,
+
+      // 保留原始数组（备用）
+      body_points_raw: bodyPoints,
+
       image_prompt: config.image_prompt,
       visual_elements: config.visual_elements,
       color_scheme: config.color_scheme
@@ -250,10 +266,18 @@ return {
       "index": 2,
       "shop_name": "瞬间 Slack",
       "subtitle": "韩系马卡龙少女心空间",
-      "address": "深圳龙华区锦龙楼 b4 栋 301",
-      "time": "建议下午茶时段",
-      "must_try": "蓝柑冰淇淋汽水",
-      "body_points": ["📍 地址：...", "🕙 时间：...", "🍰 必点：..."],
+
+      // 原始值（包含 emoji 和标签）
+      "address": "📍 地址：深圳龙华区锦龙楼 b4 栋 301",
+      "business_hours": "🕙 时间：建议下午茶时段",
+      "must_try": "🍰 必点：蓝柑冰淇淋汽水",
+
+      // 清理后的值（仅内容）
+      "address_clean": "深圳龙华区锦龙楼 b4 栋 301",
+      "business_hours_clean": "建议下午茶时段",
+      "must_try_clean": "蓝柑冰淇淋汽水",
+
+      "body_points_raw": ["📍 地址：...", "🕙 时间：...", "🍰 必点：..."],
       "image_prompt": "...",
       "visual_elements": [...],
       "color_scheme": "..."
