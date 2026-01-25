@@ -101,7 +101,7 @@ export function buildTasksSdui(options: BuildTasksSduiOptions): { nodes: A2UINod
         text: displayTitle,
         variant: "h4",
         className: "line-clamp-2",
-      },
+      } as A2UINode,
       ...(task.articleSubtitle
         ? [
             {
@@ -110,7 +110,7 @@ export function buildTasksSdui(options: BuildTasksSduiOptions): { nodes: A2UINod
               variant: "body",
               color: "muted",
               className: "text-sm line-clamp-2",
-            },
+            } as A2UINode,
           ]
         : []),
       {
@@ -307,27 +307,27 @@ export function buildTasksSdui(options: BuildTasksSduiOptions): { nodes: A2UINod
   }
 
   const hasSearch = search.trim().length > 0
+  const emptyActions: A2UINode[] = hasSearch
+    ? [
+        { type: "text", text: t("tasks.tryDifferentKeywords"), variant: "caption", color: "muted" } as A2UINode,
+        { type: "button", text: t("tasks.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearSearch" } } as A2UINode,
+      ]
+    : []
+  const emptyContent: A2UINode = {
+    type: "column",
+    gap: "0.75rem",
+    className: "items-center",
+    children: [
+      { type: "text", text: hasSearch ? t("tasks.noSearchResults") : t("tasks.noTasks"), color: "muted" } as A2UINode,
+      ...emptyActions,
+    ],
+  }
   const listContent: A2UINode = tasks.length === 0
     ? {
         type: "card",
         hoverable: false,
         className: "p-8 text-center",
-        children: [
-          {
-            type: "column",
-            gap: "0.75rem",
-            className: "items-center",
-            children: [
-              { type: "text", text: hasSearch ? t("tasks.noSearchResults") : t("tasks.noTasks"), color: "muted" },
-              ...(hasSearch
-                ? [
-                    { type: "text", text: t("tasks.tryDifferentKeywords"), variant: "caption", color: "muted" },
-                    { type: "button", text: t("tasks.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearSearch" } },
-                  ]
-                : []),
-            ],
-          },
-        ],
+        children: [emptyContent],
       }
     : {
         type: "column",

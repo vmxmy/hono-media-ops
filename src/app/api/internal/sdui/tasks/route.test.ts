@@ -1,6 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { NextRequest } from "next/server"
+import type { A2UINode } from "../../../../../lib/a2ui"
 
 process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://user:pass@localhost:5432/testdb"
 
@@ -27,7 +28,7 @@ test("GET returns 401 when unauthorized", async () => {
 test("GET returns nodes when authorized", async () => {
   const { GET, setDeps } = await importDeps()
   const sduiResponse = {
-    nodes: { type: "column", children: [] },
+    nodes: { type: "column", children: [] } as A2UINode,
     meta: { processingCount: 0, hasActiveTasks: false },
   }
   setDeps({

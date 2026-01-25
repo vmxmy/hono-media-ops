@@ -4,47 +4,20 @@ import { useState, useCallback, useMemo, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { api } from "@/trpc/react"
 import { useI18n } from "@/contexts/i18n-context"
-import { useTaskPolling } from "@/hooks/use-task-polling"
+import { useSduiTaskPolling } from "@/hooks/use-sdui-task-polling"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { A2UIRenderer, a2uiToast, showConfirmToast } from "@/components/a2ui"
 import type {
   A2UIColumnNode,
   A2UINode,
-  A2UICardNode,
-  A2UIRowNode,
 } from "@/lib/a2ui"
-import { buildStandardCardNode } from "@/lib/a2ui/article-card"
 import { assembleChapterMarkdown, type MediaLike } from "@/lib/markdown"
 
 // Mobile breakpoint (matches Tailwind md:)
 const MOBILE_BREAKPOINT = 768
 
-// Task type from API
-interface TaskWithMaterial {
-  id: string
-  topic: string
-  keywords: string | null
-  status: "pending" | "processing" | "completed" | "failed" | "cancelled"
-  createdAt: Date
-  totalWordCount: number
-  articleWordCount?: number | null
-  articleTitle?: string | null
-  articleSubtitle?: string | null
-  coverPromptId: string | null
-  coverUrl?: string | null
-  refMaterialId: string | null
-  // Progress fields for processing tasks
-  currentChapter?: number | null
-  totalChapters?: number | null
-  refMaterial?: {
-    styleName: string | null
-    sourceTitle: string | null
-    sourceUrl: string | null
-  } | null
-}
-
 export default function TasksPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { status } = useSession()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [articleViewerState, setArticleViewerState] = useState<{
@@ -78,39 +51,43 @@ export default function TasksPage() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // 使用智能轮询：有处理中任务时自动刷新，完成后停止
+  const isArticleOpen = articleViewerState.isOpen
+  const viewingTaskId = isArticleOpen ? articleViewerState.taskId : undefined
+  const isSplitView = isArticleOpen && !isMobile
+  const isMobileArticleView = isArticleOpen && isMobile
+
   const {
-    data,
-    isLoading,
+    data: sduiData,
     isPolling,
     processingCount,
     error,
-    invalidate
-  } = useTaskPolling({
+    refetch,
+  } = useSduiTaskPolling({
     page: 1,
     pageSize: 20,
-    search: searchQuery || undefined,
+    search: searchQuery,
+    locale,
+    compact: isSplitView,
+    viewingTaskId,
     enabled: status !== "loading",
     pollingInterval: 3000,
   })
 
-  const tasks = data?.tasks ?? []
-
   const cancelMutation = api.tasks.cancel.useMutation({
-    onSuccess: () => invalidate(),
+    onSuccess: () => refetch(),
   })
 
   const retryMutation = api.tasks.retry.useMutation({
-    onSuccess: () => invalidate(),
+    onSuccess: () => refetch(),
   })
 
   const deleteMutation = api.tasks.delete.useMutation({
-    onSuccess: () => invalidate(),
+    onSuccess: () => refetch(),
   })
 
   const updateMutation = api.tasks.update.useMutation({
     onSuccess: () => {
-      invalidate()
+      refetch()
       a2uiToast.success(t("common.update"))
     },
     onError: () => {
@@ -171,7 +148,7 @@ export default function TasksPage() {
 
   const updateExecutionResultMutation = api.tasks.updateExecutionResult.useMutation({
     onSuccess: () => {
-      invalidate()
+      refetch()
     },
   })
 
@@ -196,7 +173,7 @@ export default function TasksPage() {
 
   const updateChapterMutation = api.chapters.update.useMutation({
     onSuccess: () => {
-      invalidate()
+      refetch()
       a2uiToast.success(t("common.saved"))
     },
     onError: () => {
@@ -220,7 +197,7 @@ export default function TasksPage() {
 
   const updateMediaInfoMutation = api.tasks.updateExecutionMediaInfo.useMutation({
     onSuccess: () => {
-      invalidate()
+      refetch()
       a2uiToast.success(t("common.saved"))
     },
     onError: () => {
@@ -240,12 +217,17 @@ export default function TasksPage() {
     }))
   }
 
-  const handleRegenerate = (task: TaskWithMaterial) => {
+  const handleRegenerate = (data: {
+    topic?: string
+    keywords?: string | null
+    coverPromptId?: string | null
+    refMaterialId?: string | null
+  }) => {
     setRegenerateData({
-      topic: task.topic,
-      keywords: task.keywords ?? undefined,
-      coverPromptId: task.coverPromptId ?? undefined,
-      refMaterialId: task.refMaterialId ?? undefined,
+      topic: data.topic,
+      keywords: data.keywords ?? undefined,
+      coverPromptId: data.coverPromptId ?? undefined,
+      refMaterialId: data.refMaterialId ?? undefined,
     })
     setIsModalOpen(true)
   }
@@ -254,299 +236,7 @@ export default function TasksPage() {
     updateMutation.mutate({ id, ...data })
   }, [updateMutation])
 
-  const formatWordCount = (articleWordCount?: number | null, totalWordCount?: number) => {
-    // Prefer actual article word count, fallback to target word count
-    if (articleWordCount && articleWordCount > 0) {
-      return `${articleWordCount.toLocaleString("zh-CN")} 字`
-    }
-    if (totalWordCount && totalWordCount > 0) {
-      return `目标 ${totalWordCount.toLocaleString("zh-CN")} 字`
-    }
-    return "字数未知"
-  }
-
-  // Build A2UI task card
-  const buildTaskCard = (task: TaskWithMaterial, options?: { compact?: boolean; highlighted?: boolean }): A2UICardNode => {
-    const isCompact = options?.compact ?? false
-    const isHighlighted = options?.highlighted ?? false
-    const statusColors: Record<string, string> = {
-      pending: "default",
-      processing: "processing",
-      completed: "completed",
-      failed: "failed",
-      cancelled: "cancelled",
-    }
-
-    const canStop = task.status === "pending" || task.status === "processing"
-    const canRetry = task.status === "failed" || task.status === "cancelled"
-    const canViewArticle = task.status === "completed"
-    const canEdit = task.status === "pending" || task.status === "failed" || task.status === "cancelled"
-
-    const actions: A2UINode[] = []
-
-    if (canViewArticle) {
-      actions.push({
-        type: "button",
-        text: t("article.viewArticle"),
-        variant: "primary",
-        size: "sm",
-        onClick: { action: "viewArticle", args: [task.id, task.topic] },
-      })
-      actions.push({
-        type: "button",
-        text: t("taskForm.regenerateTitle"),
-        variant: "secondary",
-        size: "sm",
-        onClick: { action: "regenerate", args: [task.id] },
-      })
-    }
-    if (canRetry) {
-      actions.push({
-        type: "button",
-        text: t("task.retry"),
-        variant: "secondary",
-        size: "sm",
-        onClick: { action: "retry", args: [task.id] },
-      })
-    }
-    if (canStop) {
-      actions.push({
-        type: "button",
-        text: t("task.stop"),
-        variant: "secondary",
-        size: "sm",
-        onClick: { action: "stop", args: [task.id] },
-      })
-    }
-    actions.push({
-      type: "button",
-      text: t("common.delete"),
-      variant: "destructive",
-      size: "sm",
-      onClick: { action: "delete", args: [task.id] },
-    })
-
-    // Use articleTitle if available, otherwise fallback to topic
-    const displayTitle = task.articleTitle || task.topic || t("tasks.untitledTask")
-
-    const headerContentChildren: A2UINode[] = [
-      {
-        type: "text",
-        text: displayTitle,
-        variant: "h4",
-        className: "line-clamp-2",
-      },
-      // Subtitle if available
-      ...(task.articleSubtitle ? [{
-        type: "text",
-        text: task.articleSubtitle,
-        variant: "body",
-        color: "muted",
-        className: "text-sm line-clamp-2",
-      } as A2UINode] : []),
-    ]
-
-    // Keywords and reference material move to body for consistent layout
-
-    // Check if task has progress data
-    const hasProgress = task.status === "processing" && task.currentChapter != null && task.totalChapters != null && task.totalChapters > 0
-    const progressPercent = hasProgress ? Math.min(Math.round((task.currentChapter! / task.totalChapters!) * 100), 100) : 0
-    const isPolishing = hasProgress && task.currentChapter! >= task.totalChapters!
-
-    const headerNodes: A2UINode[] = [
-      ...headerContentChildren,
-      {
-        type: "row",
-        align: "center",
-        gap: "0.5rem",
-        children: [
-          { type: "text", text: t(`status.${task.status}`), variant: "caption", color: "muted" },
-          { type: "text", text: "·", variant: "caption", color: "muted" },
-          { type: "text", text: formatWordCount(task.articleWordCount, task.totalWordCount), variant: "caption", color: "muted" },
-        ],
-      } as A2UIRowNode,
-      // Progress bar for processing tasks
-      ...(hasProgress ? [{
-        type: "column",
-        gap: "0.25rem",
-        children: [
-          {
-            type: "progress",
-            status: "processing",
-            value: progressPercent,
-            className: "h-1.5",
-          } as A2UINode,
-          {
-            type: "row",
-            align: "center",
-            gap: "0.5rem",
-            children: [
-              {
-                type: "text",
-                text: isPolishing
-                  ? t("tasks.polishing")
-                  : t("tasks.writingProgress", { current: task.currentChapter!, total: task.totalChapters! }),
-                variant: "caption",
-                color: "primary",
-              } as A2UINode,
-              {
-                type: "container",
-                className: "w-1.5 h-1.5 rounded-full bg-primary animate-pulse",
-              } as A2UINode,
-            ],
-          } as A2UINode,
-        ],
-      } as A2UINode] : []),
-    ]
-
-    const bodyNodes: A2UINode[] = [
-      ...(!isCompact ? [
-        // Topic (editable)
-        {
-          type: "row",
-          align: "start",
-          gap: "0.5rem",
-          children: [
-            { type: "text", text: t("taskForm.topic") + ":", variant: "caption", color: "muted", className: "shrink-0" },
-            {
-              type: "editable-text",
-              value: task.topic || "",
-              placeholder: t("tasks.untitledTask"),
-              variant: "caption",
-              editable: canEdit,
-              onChange: { action: "updateTopic", args: [task.id] },
-              className: "text-sm leading-normal flex-1",
-            },
-          ],
-        } as A2UINode,
-        // Keywords (editable)
-        {
-          type: "row",
-          align: "start",
-          gap: "0.5rem",
-          children: [
-            { type: "text", text: t("taskForm.keywords") + ":", variant: "caption", color: "muted", className: "shrink-0" },
-            {
-              type: "editable-text",
-              value: task.keywords || "",
-              placeholder: t("tasks.noKeywords"),
-              variant: "caption",
-              multiline: true,
-              editable: canEdit,
-              onChange: { action: "updateKeywords", args: [task.id] },
-              style: {
-                flex: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              },
-            },
-          ],
-        } as A2UINode,
-      ] : []),
-    ]
-
-    const footerNodes: A2UINode[] = [
-      {
-        type: "row",
-        justify: "between",
-        align: "center",
-        wrap: true,
-        gap: "0.5rem",
-        children: [
-          {
-            type: "column",
-            gap: "0.35rem",
-            children: [
-              ...(task.refMaterial
-                ? [
-                    {
-                      type: "column" as const,
-                      gap: "0.35rem",
-                      children: [
-                        {
-                          type: "text",
-                          text: `风格: ${task.refMaterial.styleName ?? t("tasks.refMaterial")}`,
-                          variant: "caption",
-                          color: "primary",
-                        } as A2UINode,
-                        task.refMaterial.sourceUrl
-                          ? ({
-                              type: "link",
-                              text: `原文: ${task.refMaterial.sourceTitle ?? task.refMaterial.sourceUrl}`,
-                              href: task.refMaterial.sourceUrl,
-                              external: true,
-                              className: "text-xs max-w-[var(--a2ui-ref-title-max)] overflow-hidden text-ellipsis whitespace-[var(--a2ui-ref-title-white-space)]",
-                            } as A2UINode)
-                          : ({
-                              type: "text",
-                              text: `原文: ${task.refMaterial.sourceTitle ?? "-"}`,
-                              variant: "caption",
-                              color: "muted",
-                              className: "max-w-[var(--a2ui-ref-title-max)] overflow-hidden text-ellipsis whitespace-[var(--a2ui-ref-title-white-space)]",
-                            } as A2UINode),
-                      ],
-                    } as A2UINode,
-                  ]
-                : []),
-              {
-                type: "row",
-                align: "center",
-                gap: "0.5rem",
-                children: [
-                  {
-                    type: "text",
-                    text: `${t("tasks.created")}: ${new Date(task.createdAt).toLocaleString()}`,
-                    variant: "caption",
-                    color: "muted",
-                  },
-                ],
-              } as A2UIRowNode,
-            ],
-          } as A2UINode,
-          { type: "row", gap: "0.5rem", children: actions } as A2UIRowNode,
-        ],
-      } as A2UIRowNode,
-    ]
-
-    return buildStandardCardNode({
-      id: `task-${task.id}`,
-      hoverable: true,
-      cover: task.coverUrl
-        ? {
-            type: "image",
-            src: task.coverUrl,
-            alt: task.topic,
-            className: "w-full h-40 object-cover",
-          }
-        : {
-            type: "container",
-            className: "w-full h-40 bg-muted flex items-center justify-center",
-            children: [{ type: "text", text: "任务", color: "muted" }],
-          },
-      header: headerNodes,
-      body: bodyNodes,
-      footer: footerNodes,
-      cardStyle: {
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        padding: 0,
-        ...(isHighlighted ? {
-          boxShadow: "0 0 0 2px var(--primary)",
-          backgroundColor: "var(--accent)",
-        } : {}),
-      },
-    })
-  }
-
-  // Build task list content
-  const viewingTaskId = articleViewerState.isOpen ? articleViewerState.taskId : undefined
-
-  const getTaskListContent = (compact: boolean): A2UINode => {
+  const listContentNode: A2UINode = useMemo(() => {
     if (error) {
       return {
         type: "card",
@@ -556,7 +246,7 @@ export default function TasksPage() {
       }
     }
 
-    if (isLoading) {
+    if (!sduiData) {
       return {
         type: "row",
         justify: "center",
@@ -564,38 +254,8 @@ export default function TasksPage() {
       }
     }
 
-    if (tasks.length === 0) {
-      const hasSearch = searchQuery.trim().length > 0
-      return {
-        type: "card",
-        hoverable: false,
-        className: "p-8 text-center",
-        children: [
-          {
-            type: "column",
-            gap: "0.75rem",
-            className: "items-center",
-            children: [
-              { type: "text", text: hasSearch ? t("tasks.noSearchResults") : t("tasks.noTasks"), color: "muted" },
-              ...(hasSearch ? [
-                { type: "text", text: t("tasks.tryDifferentKeywords"), variant: "caption", color: "muted" } as A2UINode,
-                { type: "button", text: t("tasks.clearSearch"), variant: "secondary", size: "sm", onClick: { action: "clearSearch" } } as A2UINode,
-              ] : []),
-            ],
-          },
-        ],
-      }
-    }
-
-    return {
-      type: "column",
-      gap: "1rem",
-      children: tasks.map((task) => buildTaskCard(task as TaskWithMaterial, {
-        compact,
-        highlighted: task.id === viewingTaskId,
-      })),
-    }
-  }
+    return sduiData.nodes
+  }, [error, sduiData, t])
 
   // 页面头部
   const headerNode: A2UIColumnNode = {
@@ -648,8 +308,8 @@ export default function TasksPage() {
   }, [])
 
   const handleCreateTaskSuccess = useCallback(() => {
-    invalidate()
-  }, [invalidate])
+    refetch()
+  }, [refetch])
 
   const handleA2UIAction = useCallback(
     (action: string, args?: unknown[]) => {
@@ -670,9 +330,14 @@ export default function TasksPage() {
           handleViewArticle(args?.[0] as string, args?.[1] as string)
           break
         case "regenerate": {
-          const taskId = args?.[0] as string
-          const task = tasks.find((t) => t.id === taskId)
-          if (task) handleRegenerate(task)
+          const [_taskId, topic, keywords, coverPromptId, refMaterialId] = args as [
+            string,
+            string | undefined,
+            string | null | undefined,
+            string | null | undefined,
+            string | null | undefined
+          ]
+          handleRegenerate({ topic, keywords, coverPromptId, refMaterialId })
           break
         }
         case "closeCreateTask":
@@ -723,7 +388,6 @@ export default function TasksPage() {
     [
       t,
       trpcUtils,
-      tasks,
       handleNewTask,
       handleStop,
       handleRetry,
@@ -748,11 +412,6 @@ export default function TasksPage() {
 
   if (status === "loading") return null
 
-  const isArticleOpen = articleViewerState.isOpen
-  // On mobile, show full screen article; on desktop, show split view
-  const isSplitView = isArticleOpen && !isMobile
-  const isMobileArticleView = isArticleOpen && isMobile
-
   const listColumn: A2UINode = {
     type: "container",
     className: "flex-1 min-w-[280px] min-h-0 flex flex-col overflow-hidden",
@@ -771,7 +430,7 @@ export default function TasksPage() {
           {
             type: "container",
             className: "flex flex-col gap-3",
-            children: [getTaskListContent(isSplitView)],
+            children: [listContentNode],
           },
         ],
       },
@@ -841,7 +500,7 @@ export default function TasksPage() {
             {
               type: "container",
               className: "flex flex-col gap-3",
-              children: [getTaskListContent(false)],
+              children: [listContentNode],
             },
           ],
         },

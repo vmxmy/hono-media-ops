@@ -5,10 +5,13 @@ import type { TaskWithMaterial } from "../../services/task.service"
 
 const makeTask = (overrides: Partial<TaskWithMaterial> = {}): TaskWithMaterial => ({
   id: "task-1",
+  userId: "user-1",
   topic: "Test Topic",
   keywords: "alpha,beta",
   status: "completed",
   createdAt: new Date("2024-01-01T00:00:00Z"),
+  updatedAt: new Date("2024-01-02T00:00:00Z"),
+  deletedAt: null,
   totalWordCount: 1200,
   articleWordCount: 1100,
   articleTitle: "Test Title",
@@ -25,7 +28,7 @@ const makeTask = (overrides: Partial<TaskWithMaterial> = {}): TaskWithMaterial =
 const flatten = (node: any): any[] => {
   if (!node) return []
   const children = Array.isArray(node.children) ? node.children : []
-  return [node, ...children.flatMap((child) => flatten(child))]
+  return [node, ...children.flatMap((child: any) => flatten(child))]
 }
 
 test("buildTasksSdui builds cards with actions and metadata", () => {
