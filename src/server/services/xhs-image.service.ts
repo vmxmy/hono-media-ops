@@ -8,7 +8,7 @@ import {
   type XhsImage,
 } from "@/server/db/schema";
 import { env } from "@/env";
-import { buildCancelJobUpdate, buildXhsImageJobMetadata, getRetryInputFromMetadata } from "./xhs-image-metadata";
+import { buildCancelJobUpdate } from "./xhs-image-metadata";
 import type { XhsImageJobStatus } from "@/lib/xhs-image-job-status";
 import { buildXhsJobStatusCondition } from "./xhs-image-filters";
 
@@ -222,7 +222,8 @@ export const xhsImageService = {
     const [job] = await db
       .select({
         userId: xhsImageJobs.userId,
-        metadata: xhsImageJobs.metadata,
+        imagePromptId: xhsImageJobs.imagePromptId,
+        inputContent: xhsImageJobs.inputContent,
       })
       .from(xhsImageJobs)
       .where(and(eq(xhsImageJobs.id, id), isNull(xhsImageJobs.deletedAt)))
@@ -232,15 +233,14 @@ export const xhsImageService = {
       return { success: false, message: "Job not found" };
     }
 
-    const retryInput = getRetryInputFromMetadata(job.metadata);
-    if (!retryInput) {
-      return { success: false, message: "此任务缺少必要信息，无法重试。请创建新任务。" };
+    if (!job.imagePromptId || !job.inputContent) {
+      return { success: false, message: "此任务缺少必要信息,无法重试。请创建新任务。" };
     }
 
     return this.triggerGeneration({
       userId: job.userId,
-      inputContent: retryInput.inputContent,
-      promptId: retryInput.promptId,
+      inputContent: job.inputContent,
+      promptId: job.imagePromptId,
     });
   },
 
@@ -253,7 +253,7 @@ export const xhsImageService = {
     const [current] = await db
       .select({
         status: xhsImageJobs.status,
-        metadata: xhsImageJobs.metadata,
+        imagePromptId: xhsImageJobs.imagePromptId,
       })
       .from(xhsImageJobs)
       .where(eq(xhsImageJobs.id, id))
@@ -279,12 +279,9 @@ export const xhsImageService = {
 
     const shouldCountUsage = current?.status !== "completed" && status === "completed";
     if (shouldCountUsage) {
-      const metadata = current?.metadata;
-      const promptId = metadata && typeof metadata === "object"
-        ? (metadata as Record<string, unknown>).image_prompt_id
-        : undefined;
+      const promptId = current?.imagePromptId;
 
-      if (typeof promptId === "string" && promptId) {
+      if (promptId) {
         await db
           .update(imagePrompts)
           .set({
