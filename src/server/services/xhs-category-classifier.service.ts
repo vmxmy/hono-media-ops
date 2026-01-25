@@ -78,8 +78,8 @@ export async function classifyXhsJob(job: XhsJobInput): Promise<ClassificationRe
     reasoning = '标题包含"教程/做法/步骤"等教学关键词'
   }
 
-  // 规则5: 教程 - "如何"疑问句
-  if (!category && /如何.+\?|怎么(做|冲|制作)/i.test(title)) {
+  // 规则5: 教程 - "如何"疑问句 (包括无问号的情况)
+  if (!category && /(如何|怎么|怎样).*(做|冲|制作|找|学|判断|计算)/i.test(title)) {
     category = 'tutorial'
     confidence = 0.8
     reasoning = '标题为"如何/怎么做"疑问句，判定为教程'
@@ -93,7 +93,7 @@ export async function classifyXhsJob(job: XhsJobInput): Promise<ClassificationRe
   }
 
   // 规则7: 知识科普 - 原理/知识关键词
-  if (!category && /(原理|知识|科普|你知道吗|最佳|应该|标准)/i.test(title)) {
+  if (!category && /(原理|知识|科普|你知道吗|最佳|应该|标准|到底是|是指什么|影响着)/i.test(title)) {
     category = 'knowledge'
     confidence = 0.8
     reasoning = '标题包含"原理/知识/科普/最佳"等知识类关键词'
@@ -120,7 +120,35 @@ export async function classifyXhsJob(job: XhsJobInput): Promise<ClassificationRe
     reasoning = '标题包含"推荐/种草/适合"等推荐关键词'
   }
 
-  // 规则11: 疑问句 - 如果仍未分类，且包含问号，归为 knowledge
+  // 规则11: Collection - 地图/合集/指南类
+  if (!category && /(地图|指南|合集|清单|攻略)/i.test(title)) {
+    category = 'collection'
+    confidence = 0.75
+    reasoning = '标题包含"地图/指南/合集"等整理类关键词'
+  }
+
+  // 规则12: Case Study - 深度分析类
+  if (!category && /(如何重塑|趋势|解析|分析|思考)/i.test(title)) {
+    category = 'case_study'
+    confidence = 0.7
+    reasoning = '标题包含"分析/趋势/思考"等深度内容关键词'
+  }
+
+  // 规则13: DIY - 小妙招/技巧类
+  if (!category && /(试试这个|试试看|妙招|小技巧|防.*小|分享.*小|找.*小|做.*动作)/i.test(title)) {
+    category = 'diy'
+    confidence = 0.7
+    reasoning = '标题包含"妙招/小技巧/试试"等DIY关键词'
+  }
+
+  // 规则14: Vlog - 日常记录/分享类
+  if (!category && /(一日|日常|记录|vlog|分享.*天|.*之旅)/i.test(title)) {
+    category = 'vlog'
+    confidence = 0.65
+    reasoning = '标题包含"日常/记录/vlog"等日志关键词'
+  }
+
+  // 规则15: 疑问句 - 如果仍未分类，且包含问号，归为 knowledge
   if (!category && /\?/.test(title)) {
     category = 'knowledge'
     confidence = 0.65
