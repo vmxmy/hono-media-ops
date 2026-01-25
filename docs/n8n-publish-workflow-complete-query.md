@@ -172,7 +172,6 @@ SELECT
         'image_prompt', i.image_prompt,
         'ratio', i.ratio,
         'resolution', i.resolution,
-        'status', i.status,
         'created_at', i.created_at
       ) ORDER BY i.index
     ) FILTER (WHERE i.id IS NOT NULL),
@@ -387,7 +386,6 @@ LIMIT 1;
       "image_prompt": "...",
       "ratio": "3:4",
       "resolution": "2K",
-      "status": "completed",
       "created_at": "2026-01-26T10:05:00Z"
     }
     // ... 更多图片
