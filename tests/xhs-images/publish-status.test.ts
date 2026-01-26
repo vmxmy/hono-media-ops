@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import {
   getXhsPublishStatusConfig,
   getXhsPublishMetaItems,
-} from "../../src/lib/xhs-publish-status.ts"
+} from "../../src/lib/xhs-publish-status"
 
 const published = getXhsPublishStatusConfig("published")
 assert.equal(published.labelKey, "xhsImages.publishStatusPublished")
