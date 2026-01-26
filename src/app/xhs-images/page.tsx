@@ -19,6 +19,11 @@ import {
   toggleXhsImageJobStatus,
   type XhsImageJobStatus,
 } from "@/lib/xhs-image-job-status"
+import {
+  getXhsPublishMetaItems,
+  getXhsPublishStatusConfig,
+  type XhsPublishStatus,
+} from "@/lib/xhs-publish-status"
 
 // Polling interval in milliseconds
 const POLLING_INTERVAL = 5000
@@ -40,6 +45,10 @@ interface XhsJob {
   totalImages: number
   completedImages: number
   status: XhsImageJobStatus
+  publishStatus: XhsPublishStatus | null
+  publishedAt: Date | null
+  xhsNoteId: string | null
+  publishErrorMessage: string | null
   errorMessage: string | null
   ratio: string | null
   resolution: string | null
@@ -211,6 +220,15 @@ export default function XhsImagesPage() {
       type: "badge",
       text: labelMap[status] ?? status,
       color: colorMap[status] ?? "default",
+    }
+  }
+
+  const getPublishBadge = (status?: XhsPublishStatus | null): A2UINode => {
+    const config = getXhsPublishStatusConfig(status)
+    return {
+      type: "badge",
+      text: t(config.labelKey),
+      color: config.color,
     }
   }
 
@@ -411,6 +429,13 @@ export default function XhsImagesPage() {
     const isRetryable = isXhsImageJobRetryable(job.status)
     const isCancelling = cancelMutation.isPending && cancelMutation.variables?.id === job.id
     const isRetrying = retryMutation.isPending && retryMutation.variables?.id === job.id
+    const publishMetaItems = getXhsPublishMetaItems({
+      status: job.publishStatus,
+      publishedAt: job.publishedAt,
+      xhsNoteId: job.xhsNoteId,
+      publishErrorMessage: job.publishErrorMessage,
+      formatDate: (value) => value.toLocaleDateString(),
+    })
 
     return {
       type: "card",
@@ -464,6 +489,7 @@ export default function XhsImagesPage() {
                           align: "center",
                           children: [
                             getStatusBadge(job.status),
+                            getPublishBadge(job.publishStatus),
                             ...(isCancellable ? [{
                               type: "button" as const,
                               text: isCancelling ? t("xhsImages.cancelling") : t("xhsImages.cancel"),
@@ -527,6 +553,19 @@ export default function XhsImagesPage() {
                         },
                       ],
                     } as A2UIRowNode,
+                    ...(publishMetaItems.length > 0 ? [{
+                      type: "row" as const,
+                      gap: "0.75rem" as const,
+                      align: "center" as const,
+                      wrap: true as const,
+                      className: "text-muted-foreground",
+                      children: publishMetaItems.map(item => ({
+                        type: "text" as const,
+                        text: `${t(item.labelKey)}: ${item.value}`,
+                        variant: "caption" as const,
+                        color: item.color as "muted" | "destructive",
+                      })),
+                    }] : []),
                     // Progress bar for processing
                     ...(isProcessing ? [{
                       type: "progress" as const,
