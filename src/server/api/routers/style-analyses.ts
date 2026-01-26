@@ -176,6 +176,7 @@ const getAllInputSchema = z.object({
   search: z.string().optional(),
   primaryType: z.string().optional(),
   status: statusSchema.optional(),
+  sortMode: z.enum(["default", "reverse"]).optional(),
 });
 
 const createInputSchema = z.object({

@@ -25,6 +25,7 @@ export interface GetAllStyleAnalysesOptions {
   primaryType?: string;
   status?: string;
   userId?: string;
+  sortMode?: "default" | "reverse";
 }
 
 // ==================== Input Types ====================
