@@ -78,7 +78,7 @@ export default function ReversePage() {
   const utils = api.useUtils()
   // 使用混合搜索 (关键词 + 向量) 当有搜索词时
   const { data, isLoading } = api.reverseLogs.hybridSearch.useQuery(
-    { page: 1, pageSize: 50, search: searchQuery || undefined, useVectorSearch: true },
+    { page: 1, pageSize: 50, search: searchQuery || undefined, useVectorSearch: true, sortMode: "reverse" },
     { enabled: status !== "loading" }
   )
 

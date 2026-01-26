@@ -23,7 +23,7 @@ export const styleAnalysisCrudService = {
    * Only selects fields needed for list display to optimize performance
    */
   async getAll(options: GetAllStyleAnalysesOptions): Promise<GetAllStyleAnalysesResult> {
-    const { page, pageSize, search, primaryType, status, userId } = options;
+    const { page, pageSize, search, primaryType, status, userId, sortMode } = options;
     const offset = (page - 1) * pageSize;
 
     const conditions = [];
@@ -54,6 +54,10 @@ export const styleAnalysisCrudService = {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Select fields needed for card display (includes JSONB for tabs, excludes rawJsonFull)
+    const orderByClause = sortMode === "reverse"
+      ? [desc(sql`use_count`), desc(sql`coalesce(${styleAnalyses.updatedAt}, ${styleAnalyses.createdAt})`)]
+      : [desc(sql`use_count`), desc(styleAnalyses.updatedAt)];
+
     const [data, countResult] = await Promise.all([
       db
         .select({
@@ -91,7 +95,7 @@ export const styleAnalysisCrudService = {
         })
         .from(styleAnalyses)
         .where(whereClause)
-        .orderBy(desc(sql`use_count`), desc(styleAnalyses.updatedAt))
+        .orderBy(...orderByClause)
         .limit(pageSize)
         .offset(offset),
       db
