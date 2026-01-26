@@ -7,10 +7,11 @@ process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://user:pass@l
 
 const importDeps = async () => {
   const route = await import("./route")
+  const deps = await import("./dependencies")
 
   return {
     GET: route.GET,
-    setDeps: route.__setSduiDependencies,
+    setDeps: deps.setSduiDependencies,
   }
 }
 
