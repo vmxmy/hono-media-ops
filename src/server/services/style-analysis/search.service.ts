@@ -233,11 +233,12 @@ export const styleAnalysisSearchService = {
   async hybridSearch(
     options: GetAllStyleAnalysesOptions & { useVectorSearch?: boolean }
   ) {
-    const { search, userId, useVectorSearch = true, page = 1, pageSize = 20 } = options;
+    const { search, userId, useVectorSearch = true, page = 1, pageSize = 20, sortMode } = options;
+    const getAllOptions = { ...options, sortMode };
 
     // If no search query or vector search disabled, use regular getAll
     if (!search || !useVectorSearch || !userId) {
-      return styleAnalysisCrudService.getAll(options);
+      return styleAnalysisCrudService.getAll(getAllOptions);
     }
 
     // Get vector search results
@@ -247,12 +248,12 @@ export const styleAnalysisSearchService = {
     } catch (error) {
       console.error("Vector search failed, falling back to keyword search:", error);
       // Fall back to keyword search if vector search fails
-      return styleAnalysisCrudService.getAll(options);
+      return styleAnalysisCrudService.getAll(getAllOptions);
     }
 
     // If no vector results, fall back to keyword search
     if (vectorResults.length === 0) {
-      return styleAnalysisCrudService.getAll(options);
+      return styleAnalysisCrudService.getAll(getAllOptions);
     }
 
     // Get full records for vector results
@@ -278,7 +279,7 @@ export const styleAnalysisSearchService = {
       );
 
     // Also get keyword search results
-    const keywordResult = await styleAnalysisCrudService.getAll({ ...options, pageSize: 50 });
+    const keywordResult = await styleAnalysisCrudService.getAll({ ...getAllOptions, pageSize: 50 });
 
     // Merge and dedupe results, prioritizing by combined score
     type RecordWithScore = typeof vectorRecords[number] & { score: number };
